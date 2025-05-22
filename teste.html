@@ -1060,7 +1060,7 @@
                     <div class="col-md-3">
                         <div class="card text-center summary-card">
                             <div class="card-body">
-                                <h6 class="card-title">Caminhões Hoje</h6>
+                                <h6 class="card-title">Caminhões (Dia)</h6>
                                 <p class="display-5" id="resumoCaminhoesDia">0</p>
                                 <p class="mb-0"><small>Meta: <span id="metaCaminhoesDia">0</span></small></p>
                             </div>
@@ -1069,7 +1069,7 @@
                     <div class="col-md-3">
                         <div class="card text-center summary-card">
                             <div class="card-body">
-                                <h6 class="card-title">Toneladas Hoje</h6>
+                                <h6 class="card-title">Toneladas (Dia)</h6>
                                 <p class="display-5" id="resumoToneladasDia">0</p>
                                 <p class="mb-0"><small>Meta: <span id="metaToneladasDia">0</span></small></p>
                             </div>
@@ -1087,9 +1087,9 @@
                     <div class="col-md-3">
                         <div class="card text-center summary-card">
                             <div class="card-body">
-                                <h6 class="card-title">Docas Ocupadas</h6>
-                                <p class="display-5" id="resumoDocasOcupadas">0/11</p>
-                                <p class="mb-0"><small>Eficiência: <span id="eficienciaDocas">0%</span></small></p>
+                                <h6 class="card-title">Mix Médio (Dia)</h6>
+                                <p class="display-5" id="resumoMixMedio">0</p>
+                                <p class="mb-0"><small>Por caminhão</small></p>
                             </div>
                         </div>
                     </div>
@@ -1100,7 +1100,7 @@
                     <div class="col-md-3">
                         <div class="card text-center summary-card">
                             <div class="card-body">
-                                <h6 class="card-title">Caminhões Mês</h6>
+                                <h6 class="card-title">Caminhões (Mês)</h6>
                                 <p class="display-5" id="resumoCaminhoesMes">0</p>
                                 <p class="mb-0"><small>Meta mensal: <span id="metaCaminhoesMes">0</span></small></p>
                             </div>
@@ -1109,7 +1109,7 @@
                     <div class="col-md-3">
                         <div class="card text-center summary-card">
                             <div class="card-body">
-                                <h6 class="card-title">Toneladas Mês</h6>
+                                <h6 class="card-title">Toneladas (Mês)</h6>
                                 <p class="display-5" id="resumoToneladasMes">0</p>
                                 <p class="mb-0"><small>Meta mensal: <span id="metaToneladasMes">0</span></small></p>
                             </div>
@@ -1127,8 +1127,8 @@
                     <div class="col-md-3">
                         <div class="card text-center summary-card">
                             <div class="card-body">
-                                <h6 class="card-title">Mix Médio</h6>
-                                <p class="display-5" id="resumoMixMedio">0</p>
+                                <h6 class="card-title">Mix Médio (Mês)</h6>
+                                <p class="display-5" id="resumoMixMedioMes">0</p>
                                 <p class="mb-0"><small>Por caminhão</small></p>
                             </div>
                         </div>
@@ -2107,27 +2107,51 @@ function calcularResumoMes(carregamentos) {
     let totalCam = 0;
     let totalTon = 0;
     let somaTempo = 0;
+    let somaMix = 0;
     let melhorTempo = Infinity;
-    
+
+    const agora = new Date();
+    const mesAtual = agora.getMonth(); // 0 = janeiro, 11 = dezembro
+    const anoAtual = agora.getFullYear();
+
     Object.values(carregamentos).forEach(c => {
         if (c.finalizado && c.unidade === unidadeAtual) {
-            totalCam++;
-            totalTon += parseFloat(c.toneladas || 0);
-            const tempo = (c.fim - c.inicio) / 60000;
-            somaTempo += tempo;
-            if (tempo < melhorTempo) melhorTempo = tempo;
+            const dataInicio = new Date(c.inicio);
+
+            if (dataInicio.getMonth() === mesAtual && dataInicio.getFullYear() === anoAtual) {
+                totalCam++;
+                totalTon += parseFloat(c.toneladas || 0);
+                somaMix += parseInt(c.mixMaterial || 0);
+                
+                // Calcula tempo do carregamento
+                const tempo = (c.fim - c.inicio) / 60000; // em minutos
+                somaTempo += tempo;
+                if (tempo < melhorTempo) melhorTempo = tempo;
+            }
         }
     });
+
+    const mediaMix = totalCam > 0 ? (somaMix / totalCam).toFixed(1) : 0;
+    const mediaTempo = totalCam > 0 ? (somaTempo / totalCam).toFixed(0) : 0;
     
-    // Atualiza resumo do mês
+    // Atualiza todos os elementos do resumo
+    document.getElementById('resumoMixMedioMes').textContent = mediaMix;
     document.getElementById('resumoCaminhoesMes').textContent = totalCam;
     document.getElementById('resumoToneladasMes').textContent = totalTon.toFixed(1);
-    
-    const mediaTempo = totalCam > 0 ? (somaTempo / totalCam).toFixed(0) : 0;
     document.getElementById('resumoTempoMedioMes').textContent = formatarMinutosParaHoraMinuto(mediaTempo);
-    
-    document.getElementById('melhorTempoMes').textContent = melhorTempo !== Infinity ? formatarMinutosParaHoraMinuto(melhorTempo) : 'N/A';
+    document.getElementById('melhorTempoMes').textContent = melhorTempo !== Infinity ? 
+        formatarMinutosParaHoraMinuto(melhorTempo) : 'N/A';
 }
+
+// Função auxiliar para formatar minutos no formato HH:MM
+function formatarMinutosParaHoraMinuto(minutos) {
+    const horas = Math.floor(minutos / 60);
+    const min = minutos % 60;
+    return `${horas}:${min.toString().padStart(2, '0')}h`;
+}
+
+
+
 
 function atualizarStatusDocas() {
     docasRef.once('value', snapshot => {

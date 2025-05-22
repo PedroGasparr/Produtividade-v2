@@ -11,65 +11,34 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
     <link rel="stylesheet" href="./css/style.css">
     <style>
-   /* === FUNCIONÁRIO === */
-.codigo-funcionario {
-    font-weight: bold;
-    color: #007bff;
-}
-/* Estilo para os modais de senha */
-.modal-senha .modal-content {
-    border-radius: 10px;
-}
-
-.chart-container {
-    position: relative;
-    height: 300px;
-    width: 100%;
-}
-
-canvas {
-    max-width: 100%;
-    height: auto !important;
-}
-
-.modal-senha .modal-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-    border-radius: 10px 10px 0 0;
-}
-
-.modal-senha .modal-footer {
-    background-color: #f8f9fa;
-    border-top: 1px solid #dee2e6;
-    border-radius: 0 0 10px 10px;
-}
-
-.btn-remove-funcionario {
-    padding: 0;
-    margin-left: 5px;
-    line-height: 1;
-}
-
-/* === SUMMARY CARD === */
+  
+     /* Estilos existentes... */
+        .codigo-funcionario {
+            font-weight: bold;
+            color: #007bff;
+        }
+        /* Adicione ao seu CSS existente */
 .summary-card {
     border: none;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
     transition: transform 0.3s;
     height: 100%;
 }
+
 .summary-card:hover {
     transform: translateY(-5px);
 }
+
 .summary-card .card-body {
     padding: 1.25rem;
 }
+
 .summary-card .display-5 {
     font-size: 2rem;
     font-weight: bold;
     margin: 0.5rem 0;
 }
 
-/* === DOCAS === */
 .docas-status-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
@@ -102,209 +71,510 @@ canvas {
     font-size: 0.8rem;
 }
 
-/* Container visual das docas */
-.doca-container {
-    border: 1px solid #ddd;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 5px;
-}
-.doca-ocupada {
-    background-color: #92ebad;
-    border-color: #ffffff;
-}
-.doca-tempo-verde {
-    background-color: #d4edda;
-    animation: none;
-}
-.doca-tempo-amarelo {
-    background-color: #fff3cd;
-    animation: pulse 1.8s infinite ease-in-out;
-}
-.doca-tempo-vermelho {
-    background-color: #f8d7da;
-    animation: pulse 0.8s infinite ease-in-out;
-}
-
-.doca-header {
-    font-weight: bold;
-    margin-bottom: 10px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 5px;
-}
-
-/* === CARREGAMENTO === */
 .carregamento-andamento {
     padding: 15px;
     margin-bottom: 15px;
     border-radius: 5px;
     background-color: #f5f5f5;
 }
+
 .carregamento-andamento .doca-placa {
     font-weight: bold;
     margin-bottom: 5px;
 }
+
 .carregamento-andamento .tempo-info {
     display: flex;
     justify-content: space-between;
     margin-bottom: 5px;
 }
+
 .carregamento-andamento .tempo-decorrido {
     color: #1976d2;
     font-weight: bold;
 }
+
 .carregamento-andamento .tempo-restante {
     color: #388e3c;
 }
+
 .carregamento-andamento .participantes {
     margin-top: 10px;
     font-size: 0.9rem;
     color: #555;
 }
 
-/* === DASHBOARD CARD === */
+.progress {
+    height: 10px;
+    margin: 5px 0;
+}
+
+.progress-bar {
+    transition: width 0.5s ease;
+}
+
 .dashboard-card {
     margin-bottom: 20px;
     border: none;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     border-radius: 8px;
 }
+
 .dashboard-card .card-body {
     padding: 20px;
 }
+
+.dashboard-card h5 {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}/* Adicione ao seu CSS existente */
+.summary-card {
+    border: none;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+    height: 100%;
+}
+
+.summary-card:hover {
+    transform: translateY(-5px);
+}
+
+.summary-card .card-body {
+    padding: 1.25rem;
+}
+
+.summary-card .display-5 {
+    font-size: 2rem;
+    font-weight: bold;
+    margin: 0.5rem 0;
+}
+/* Estilo para cartões de resumo */
+.summary-card {
+  border: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: transform 0.3s;
+  height: 100%;
+}
+.summary-card:hover {
+  transform: translateY(-5px);
+}
+.summary-card .card-body {
+  padding: 1rem;
+}/* Estilo para cartões de resumo */
+.summary-card {
+  border: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: transform 0.3s;
+  height: 100%;
+}
+.summary-card:hover {
+  transform: translateY(-5px);
+}
+.summary-card .card-body {
+  padding: 1rem;
+}
+.docas-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.doca-status {
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.doca-status.ocupada {
+    background-color: #ffebee;
+    border-left: 4px solid #f44336;
+}
+
+.doca-status.livre {
+    background-color: #e8f5e9;
+    border-left: 4px solid #4caf50;
+}
+
+.doca-numero {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.doca-info {
+    font-size: 0.8rem;
+}
+
+.carregamento-andamento {
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    background-color: #f5f5f5;
+}
+
+.carregamento-andamento .doca-placa {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.carregamento-andamento .tempo-info {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+}
+
+.carregamento-andamento .tempo-decorrido {
+    color: #1976d2;
+    font-weight: bold;
+}
+
+.carregamento-andamento .tempo-restante {
+    color: #388e3c;
+}
+
+.carregamento-andamento .participantes {
+    margin-top: 10px;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+.progress {
+    height: 10px;
+    margin: 5px 0;
+}
+
+.progress-bar {
+    transition: width 0.5s ease;
+}
+
+.dashboard-card {
+    margin-bottom: 20px;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+.dashboard-card .card-body {
+    padding: 20px;
+}
+
 .dashboard-card h5 {
     color: #333;
     margin-bottom: 15px;
     font-size: 1.1rem;
 }
+        .time-normal { color: green; }
+        .time-warning { color: orange; }
+        .time-critical { color: red; }
+        .progress-bar-tempo { height: 10px; }
+        .doca-container {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+        .doca-ocupada {
+            background-color: #92ebad;
+            border-color: #ffffff;
+        }
+        .doca-tempo-verde { background-color: #d4edda; }   /* acima de 40 min */
+        .doca-tempo-amarelo { background-color: #fff3cd; } /* entre 20 e 40 min */
+        .doca-tempo-vermelho { background-color: #f8d7da; }/* 20 min ou menos */
+        .doca-header {
+            font-weight: bold;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        #card-title-text-centerrr{
+            padding-bottom: 45px;
+            color: #005abb;
+        }
+        .podium-container {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            height: 300px;
+            margin-top: 50px;
+        }
+        .podium-step {
+            width: 100px;
+            text-align: center;
+            position: relative;
+            margin: 0 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .podium-step .name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 1.1em;
+        }
+        .podium-step .medal-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .podium-step .base {
+            width: 100%;
+            background-color: #e9ecef;
+            border: 1px solid #dee2e6;
+            position: relative;
+        }
+        .podium-step.gold .base { height: 200px; background-color: #ffda6a; border-color: #fec500; }
+        .podium-step.silver .base { height: 150px; background-color: #ced4da; border-color: #adb5bd; }
+        .podium-step.bronze .base { height: 100px; background-color: #e3b17b; border-color: #c68e56; }
+        .podium-step.gold { order: 2; }
+        .podium-step.silver { order: 1; }
+        .podium-step.bronze { order: 3; }
+        .podium-step .content {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 10px;
+            width: 150%;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+        @keyframes pulse {
+        0%   { transform: scale(1);   opacity: 1; }
+        50%  { transform: scale(1.1); opacity: 0.8; }
+        100% { transform: scale(1);   opacity: 1; }
+        }
 
-/* === PROGRESS BARS === */
-.progress {
-    height: 10px;
-    margin: 5px 0;
-}
-.progress-bar {
-    transition: width 0.5s linear;
-}
-.progress-bar-tempo {
-    height: 10px;
-}
+        /* Sem animação no verde */
+        .doca-container.doca-tempo-verde {
+        animation: none;
+        }
 
-/* === TEMPOS === */
-.time-normal {
-    color: green;
-}
-.time-warning {
-    color: orange;
-}
-.time-critical {
-    color: red;
-}
+        /* Amarelo: pulso mais suave / lento */
+        .doca-container.doca-tempo-amarelo {
+        animation: pulse 1.8s infinite ease-in-out;
+        }
 
-/* === PODIUM === */
-.podium-container {
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    height: 300px;
-    margin-top: 50px;
+        /* Vermelho: pulso mais rápido */
+        .doca-container.doca-tempo-vermelho {
+        animation: pulse 0.8s infinite ease-in-out;
+        }
+        .podium-step .medal-icon {
+            animation: pulse 1.5s infinite ease-in-out;
+        } 
+        .btn-remove-funcionario {
+            padding: 0;
+            margin-left: 5px;
+            line-height: 1;
+        }
+        .progress-bar {
+            transition: width 0.5s linear;
+        }
+        /* Novos estilos */
+        .login-container {
+            max-width: 500px;
+            margin: 100px auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__choice {
+            background-color: #e9ecef;
+            border: 1px solid #dee2e6;
+            border-radius: 3px;
+            padding: 2px 5px;
+        }
+        .paused {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .paused-badge {
+            background-color: #dc3545;
+        }
+        
+        /* Novos estilos para dashboard */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .dashboard-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            background-color: white;
+        }
+        .dashboard-card h3 {
+            margin-top: 0;
+            color: #333;
+            font-size: 1.2rem;
+        }
+        .thermometer {
+            width: 100%;
+            height: 300px;
+            position: relative;
+            margin: 20px auto;
+        }
+        .thermometer-body {
+            width: 30px;
+            height: 200px;
+            background: linear-gradient(to top, #f00, #ff0, #0f0);
+            border-radius: 15px;
+            border: 2px solid #333;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 50px;
+        }
+        .thermometer-bulb {
+            width: 60px;
+            height: 60px;
+            background: #f00;
+            border-radius: 50%;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 0;
+            border: 2px solid #333;
+        }
+        .thermometer-mercury {
+            width: 26px;
+            background: #333;
+            border-radius: 10px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 60px;
+            transition: height 0.5s ease;
+        }
+        .thermometer-labels {
+            position: absolute;
+            right: 10px;
+            top: 0;
+            height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .thermometer-labels span {
+            font-size: 12px;
+        }
+        .thermometer-title {
+            text-align: center;
+            font-weight: bold;
+        }
+        .thermometer-value {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-top: 10px;
+            position: absolute;
+            align-items: center;
+        }
+        .meta-input {
+            margin-top: 15px;
+        }
+        .meta-input input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .meta-input button {
+            margin-top: 5px;
+            width: 100%;
+            padding: 8px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .chart-container {
+            width: 100%;
+            height: 300px;
+            margin-top: 20px;
+        }
+        .docas-ordenadas {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .docas-ordenadas .doca-container {
+            flex: 1 1 calc(33% - 15px);
+            min-width: 250px;
+        }
+        .summary-card {
+  border: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  background: #f8f9fa;
 }
+.summary-card .card-body {
+  padding: 1rem;
+}
+.thermometer-wrapper {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  margin-top: 1rem;
+}
+.thermometer-title {
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  font-weight: bold;
+}
+.thermometer-body {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 30px; height: 180px;
+  background: #e9ecef;
+  border-radius: 15px;
+  overflow: hidden;
+}
+.thermometer-mercury {
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 26px; background: #007bff;
+  border-radius: 10px;
+  transition: height .5s ease;
+  height: 0;
+}
+.thermometer-bulb {
+  position: absolute;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 50px; height: 50px;
+  background: #007bff;
+  border-radius: 50%;
+}
+.thermometer-labels {
+  position: absolute;
+  bottom: 50px; left: calc(50% + 20px);
+  display: flex; flex-direction: column;
+  justify-content: space-between; height: 180px;
+}
+.dashboard-card {
+  padding: 1rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  background: #fff;
 
-.podium-step {
-    width: 100px;
-    text-align: center;
-    position: relative;
-    margin: 0 20px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.podium-step .name {
-    font-weight: bold;
-    margin-bottom: 5px;
-    font-size: 1.1em;
-}
-
-.podium-step .medal-icon {
-    font-size: 2.5em;
-    margin-bottom: 10px;
-    animation: pulse 1.5s infinite ease-in-out;
-}
-
-.podium-step .base {
-    width: 100%;
-    background-color: #e9ecef;
-    border: 1px solid #dee2e6;
-    position: relative;
-}
-
-.podium-step.gold .base {
-    height: 200px;
-    background-color: #ffda6a;
-    border-color: #fec500;
-}
-
-.podium-step.silver .base {
-    height: 150px;
-    background-color: #ced4da;
-    border-color: #adb5bd;
-}
-
-.podium-step.bronze .base {
-    height: 100px;
-    background-color: #e3b17b;
-    border-color: #c68e56;
-}
-
-.podium-step.gold {
-    order: 2;
-}
-.podium-step.silver {
-    order: 1;
-}
-.podium-step.bronze {
-    order: 3;
-}
-
-.podium-step .content {
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-bottom: 10px;
-    width: 150%;
-    white-space: normal;
-    word-wrap: break-word;
-}
-
-/* === ANIMAÇÕES === */
-@keyframes pulse {
-    0%   { transform: scale(1); opacity: 1; }
-    50%  { transform: scale(1.1); opacity: 0.8; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-/* === TITULOS === */
-#card-title-text-centerrr {
-    padding-bottom: 45px;
-    color: #005abb;
 }
 #dashboard2-tab {
     display: none;
   }
-
-/* === LOGIN === */
-.login-container {
-    max-width: 500px;
-    margin: 100px auto;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
-}
-#dashboard {
+  #dashboard{
     display: none;
-}
+  }
 
     </style>
 </head>
@@ -790,7 +1060,7 @@ canvas {
                     <div class="col-md-3">
                         <div class="card text-center summary-card">
                             <div class="card-body">
-                                <h6 class="card-title">Caminhões Hoje</h6>
+                                <h6 class="card-title">Caminhões (Dia)</h6>
                                 <p class="display-5" id="resumoCaminhoesDia">0</p>
                                 <p class="mb-0"><small>Meta: <span id="metaCaminhoesDia">0</span></small></p>
                             </div>
@@ -799,7 +1069,7 @@ canvas {
                     <div class="col-md-3">
                         <div class="card text-center summary-card">
                             <div class="card-body">
-                                <h6 class="card-title">Toneladas Hoje</h6>
+                                <h6 class="card-title">Toneladas (Dia)</h6>
                                 <p class="display-5" id="resumoToneladasDia">0</p>
                                 <p class="mb-0"><small>Meta: <span id="metaToneladasDia">0</span></small></p>
                             </div>
@@ -817,9 +1087,9 @@ canvas {
                     <div class="col-md-3">
                         <div class="card text-center summary-card">
                             <div class="card-body">
-                                <h6 class="card-title">Docas Ocupadas</h6>
-                                <p class="display-5" id="resumoDocasOcupadas">0/11</p>
-                                <p class="mb-0"><small>Eficiência: <span id="eficienciaDocas">0%</span></small></p>
+                                <h6 class="card-title">Mix Médio (Dia)</h6>
+                                <p class="display-5" id="resumoMixMedio">0</p>
+                                <p class="mb-0"><small>Por caminhão</small></p>
                             </div>
                         </div>
                     </div>
@@ -830,7 +1100,7 @@ canvas {
                     <div class="col-md-3">
                         <div class="card text-center summary-card">
                             <div class="card-body">
-                                <h6 class="card-title">Caminhões Mês</h6>
+                                <h6 class="card-title">Caminhões (Mês)</h6>
                                 <p class="display-5" id="resumoCaminhoesMes">0</p>
                                 <p class="mb-0"><small>Meta mensal: <span id="metaCaminhoesMes">0</span></small></p>
                             </div>
@@ -839,7 +1109,7 @@ canvas {
                     <div class="col-md-3">
                         <div class="card text-center summary-card">
                             <div class="card-body">
-                                <h6 class="card-title">Toneladas Mês</h6>
+                                <h6 class="card-title">Toneladas (Mês)</h6>
                                 <p class="display-5" id="resumoToneladasMes">0</p>
                                 <p class="mb-0"><small>Meta mensal: <span id="metaToneladasMes">0</span></small></p>
                             </div>
@@ -857,8 +1127,8 @@ canvas {
                     <div class="col-md-3">
                         <div class="card text-center summary-card">
                             <div class="card-body">
-                                <h6 class="card-title">Mix Médio</h6>
-                                <p class="display-5" id="resumoMixMedio">0</p>
+                                <h6 class="card-title">Mix Médio (Mês)</h6>
+                                <p class="display-5" id="resumoMixMedioMes">0</p>
                                 <p class="mb-0"><small>Por caminhão</small></p>
                             </div>
                         </div>
@@ -1837,27 +2107,51 @@ function calcularResumoMes(carregamentos) {
     let totalCam = 0;
     let totalTon = 0;
     let somaTempo = 0;
+    let somaMix = 0;
     let melhorTempo = Infinity;
-    
+
+    const agora = new Date();
+    const mesAtual = agora.getMonth(); // 0 = janeiro, 11 = dezembro
+    const anoAtual = agora.getFullYear();
+
     Object.values(carregamentos).forEach(c => {
         if (c.finalizado && c.unidade === unidadeAtual) {
-            totalCam++;
-            totalTon += parseFloat(c.toneladas || 0);
-            const tempo = (c.fim - c.inicio) / 60000;
-            somaTempo += tempo;
-            if (tempo < melhorTempo) melhorTempo = tempo;
+            const dataInicio = new Date(c.inicio);
+
+            if (dataInicio.getMonth() === mesAtual && dataInicio.getFullYear() === anoAtual) {
+                totalCam++;
+                totalTon += parseFloat(c.toneladas || 0);
+                somaMix += parseInt(c.mixMaterial || 0);
+                
+                // Calcula tempo do carregamento
+                const tempo = (c.fim - c.inicio) / 60000; // em minutos
+                somaTempo += tempo;
+                if (tempo < melhorTempo) melhorTempo = tempo;
+            }
         }
     });
+
+    const mediaMix = totalCam > 0 ? (somaMix / totalCam).toFixed(1) : 0;
+    const mediaTempo = totalCam > 0 ? (somaTempo / totalCam).toFixed(0) : 0;
     
-    // Atualiza resumo do mês
+    // Atualiza todos os elementos do resumo
+    document.getElementById('resumoMixMedioMes').textContent = mediaMix;
     document.getElementById('resumoCaminhoesMes').textContent = totalCam;
     document.getElementById('resumoToneladasMes').textContent = totalTon.toFixed(1);
-    
-    const mediaTempo = totalCam > 0 ? (somaTempo / totalCam).toFixed(0) : 0;
     document.getElementById('resumoTempoMedioMes').textContent = formatarMinutosParaHoraMinuto(mediaTempo);
-    
-    document.getElementById('melhorTempoMes').textContent = melhorTempo !== Infinity ? formatarMinutosParaHoraMinuto(melhorTempo) : 'N/A';
+    document.getElementById('melhorTempoMes').textContent = melhorTempo !== Infinity ? 
+        formatarMinutosParaHoraMinuto(melhorTempo) : 'N/A';
 }
+
+// Função auxiliar para formatar minutos no formato HH:MM
+function formatarMinutosParaHoraMinuto(minutos) {
+    const horas = Math.floor(minutos / 60);
+    const min = minutos % 60;
+    return `${horas}:${min.toString().padStart(2, '0')}h`;
+}
+
+
+
 
 function atualizarStatusDocas() {
     docasRef.once('value', snapshot => {
