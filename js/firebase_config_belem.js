@@ -8,13 +8,14 @@
             measurementId: "G-GF1C65E0MK"
         };
 
-        const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-        const auth = firebase.auth();
+        // Inicializa Firebase e expõe variáveis globais
+        window.app = firebase.initializeApp(firebaseConfig);
+        window.database = firebase.database();
+        window.auth = firebase.auth();
 
-        // Referências do banco de dados
-        const funcionariosRef = database.ref('funcionarios');
-        const carregamentosRef = database.ref('carregamentos');
-        const docasRef = database.ref('docas');
-        const unidadesRef = database.ref('unidades');
-        const metasRef = database.ref('metas');
+        // Referências do banco de dados expostas globalmente
+        window.funcionariosRef = window.database.ref('funcionarios');
+        window.carregamentosRef = window.database.ref('carregamentos');
+        window.docasRef = window.database.ref('docas');
+        window.unidadesRef = window.database.ref('unidades');
+        window.metasRef = window.database.ref('metas');
