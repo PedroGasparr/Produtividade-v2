@@ -591,7 +591,9 @@
                 <option value="">Selecione a unidade</option>
                 <option value="cd_cariacica">CD Cariacica</option>
                 <option value="fabrica_belem">Fábrica Belém</option>
-                <!-- Outras unidades podem ser adicionadas aqui -->
+                <option value="fabrica_maracanau">Fábrica Maracanau</option>
+                <option value="fabrica_imperatriz">Fábrica Imperatriz</option>
+                <option value="teste">teste</option>
             </select>
         </div>
         <div class="mb-3">
@@ -1403,9 +1405,24 @@
         let configFile;
         if (unidade === 'cd_cariacica') {
             configFile = './js/firebase_config_cariacica.js';
-        } else {
+        } 
+        
+        else if (unidade === 'fabrica_belem') {
             configFile = './js/firebase_config_belem.js';
+        } 
+        
+        else if (unidade === 'fabrica_maracanau') {
+            configFile = './js/firebase_config_maracanau.js';
         }
+
+        else if (unidade === 'teste') {
+            configFile = './js/firebase_config_teste.js';
+        }
+        
+        else {
+            configFile = './js/firebase_config_imperatriz.js';
+        }
+        
 
         try {
             // Carrega o config e aguarda
