@@ -40,6 +40,7 @@
           <option value="fabrica_maracanau">Fábrica Maracanau</option>
           <option value="fabrica_imperatriz">Fábrica Imperatriz</option>
           <option value="fabrica_Mogi_Das_Cruzes">Fábrica Mogi Das Cruzes</option>
+          <option value="fabrica_aracruz">Fábrica Aracruz</option>
           <option value="teste">teste</option>
         </select>
       </div>
@@ -180,6 +181,8 @@
         ? 'js/firebase_config_maracanau.js'
         : val === 'teste'
         ? 'js/firebase_config_teste.js'
+        : val === 'fabrica_aracruz'
+        ? 'js/firebase_config_aracruz.js'
         : val === 'fabrica_Mogi_Das_Cruzes'
         ? 'js/firebase_config_Mogi_Das_Cruzes.js'
         : 'js/firebase_config_imperatriz.js';

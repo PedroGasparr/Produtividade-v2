@@ -814,13 +814,48 @@
             margin-bottom: 15px;
             border-radius: 5px;
         }
-        .doca-ocupada {
-            background-color: #92ebad;
-            border-color: #ffffff;
-        }
-        .doca-tempo-verde { background-color: #d4edda; }   /* acima de 40 min */
-        .doca-tempo-amarelo { background-color: #fff3cd; } /* entre 20 e 40 min */
-        .doca-tempo-vermelho { background-color: #ff5361; }/* 20 min ou menos */
+        .form-control:required:invalid {
+    border-color: #dc3545;
+}
+        /* Animação para pulsar */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+@keyframes pulse-fast {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* Classes para os diferentes estados */
+.doca-ocupada {
+    background-color: #acf8c3;
+    border-color: #ffffff;
+    animation: none;
+}
+
+.doca-ocupada.tempo-amarelo {
+    background-color: #fff599;
+    animation: pulse 3s infinite;
+}
+
+.doca-ocupada.tempo-vermelho {
+    background-color: #ff6b6b;
+    animation: pulse 0.8s infinite;
+}
+          .card-carregamento.time-warning { background-color: #fff3cd; }
+          .card-carregamento.time-critical { background-color: #ff5361; }
+
+          /* Animações */
+          .card-carregamento.time-warning {
+            animation: pulse 1.8s infinite ease-in-out;
+          }
+          .card-carregamento.time-critical {
+            animation: pulse 0.8s infinite ease-in-out;
+          }
         .doca-header {
             font-weight: bold;
             margin-bottom: 10px;
@@ -884,20 +919,6 @@
         100% { transform: scale(1);   opacity: 1; }
         }
 
-        /* Sem animação no verde */
-        .doca-container.doca-tempo-verde {
-        animation: none;
-        }
-
-        /* Amarelo: pulso mais suave / lento */
-        .doca-container.doca-tempo-amarelo {
-        animation: pulse 1.8s infinite ease-in-out;
-        }
-
-        /* Vermelho: pulso mais rápido */
-        .doca-container.doca-tempo-vermelho {
-        animation: pulse 0.8s infinite ease-in-out;
-        }
         .podium-step .medal-icon {
             animation: pulse 1.5s infinite ease-in-out;
         } 
