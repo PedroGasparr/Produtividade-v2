@@ -7,7 +7,393 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/todos.css">
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --danger-color: #f72585;
+            --success-color: #6af04c;
+            --warning-color: #f8961e;
+            --dark-color: #212529;
+            --light-color: #f8f9fa;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f7fa;
+            color: var(--dark-color);
+        }
+        
+        .main-container {
+            min-height: 100vh;
+        }
+        
+        .login-container {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .login-logo {
+            font-size: 3rem;
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .login-title {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .dashboard-container {
+            display: none;
+            padding: 1rem;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .unit-card {
+            transition: all 0.3s ease;
+            border: none;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .unit-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .unit-card .card-title {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .unit-card .card-subtitle {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .doca-details {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .doca-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .doca-status {
+            padding: 0.5rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        
+        .doca-status.ocupada {
+            background-color: rgba(247, 37, 133, 0.1);
+            color: var(--danger-color);
+        }
+        
+        .doca-status.pausada {
+            background-color: rgba(248, 150, 30, 0.1);
+            color: var(--warning-color);
+        }
+        
+        .tempo-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        
+        .tempo-label {
+            color: #6c757d;
+        }
+        
+        .tempo-value {
+            font-weight: 500;
+        }
+        
+        .time-progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+        
+        .pausas-list {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+        
+        .pausas-container {
+            margin-top: 0.5rem;
+        }
+        
+        .pausa-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed #eee;
+        }
+        
+        .pausa-num {
+            font-weight: 500;
+            margin-right: 0.5rem;
+        }
+        
+        .pausa-duracao {
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+        
+        .pausa-total {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            font-weight: 500;
+            border-top: 1px dashed #eee;
+        }
+        
+        .colaboradores-list {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #eee;
+        }
+        
+        .colaborador {
+            padding: 0.5rem;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .doca-status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        
+        .status-indicator.free {
+            background-color: var(--success-color);
+        }
+        
+        .status-indicator.occupied {
+            background-color: var(--danger-color);
+        }
+        
+        .occupied-docks-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1rem;
+        }
+        
+        /* Novo estilo para o card de tempo excedido */
+        .exceeded-card {
+            border-left: 4px solid var(--danger-color);
+        }
+        
+        .exceeded-badge {
+            background-color: var(--danger-color);
+        }
+        
+        /* Estilo para comparação */
+        .compare-container {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .compare-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .compare-unit {
+            width: 48%;
+            text-align: center;
+            padding: 10px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .compare-metric {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 12px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            align-items: center;
+        }
+        
+        .compare-metric-value {
+            font-weight: 600;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        .compare-metric-label {
+            flex: 1;
+            display: flex;
+            align-items: center;
+        }
+        
+        .compare-metric-label i {
+            margin-right: 8px;
+            font-size: 1.1rem;
+        }
+        
+        .better-value {
+            color: var(--success-color);
+            font-weight: 700;
+        }
+        
+        .worse-value {
+            color: var(--danger-color);
+            font-weight: 700;
+        }
+        
+        .equal-value {
+            color: var(--warning-color);
+            font-weight: 700;
+        }
+        
+        /* Estilo para cards menores */
+        .small-card {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .small-card .card-body {
+            padding: 1rem;
+        }
+        
+        .small-card .card-title {
+            font-size: 1rem;
+        }
+        
+        .small-card .stat-value {
+            font-size: 1.1rem;
+        }
+        
+        /* Auto-update indicator */
+        .auto-update-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+        }
+        
+        .auto-update-indicator i {
+            margin-right: 5px;
+        }
+        
+        /* Responsividade */
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .occupied-docks-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .compare-header {
+                flex-direction: column;
+            }
+            
+            .compare-unit {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="main-container">
@@ -46,6 +432,25 @@
                 </div>
             </div>
 
+            <!-- Seletor para comparação -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <select id="compareUnit1" class="form-select">
+                        <option value="">Selecione a 1ª unidade</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <select id="compareUnit2" class="form-select">
+                        <option value="">Selecione a 2ª unidade</option>
+                    </select>
+                </div>
+                <div class="col-12 mt-3">
+                    <button id="btnCompare" class="btn btn-primary w-100" disabled>
+                        <i class="bi bi-graph-up"></i> Comparar Unidades
+                    </button>
+                </div>
+            </div>
+
             <div class="grid" id="unitsContainer">
                 <!-- Os cards das unidades serão carregados dinamicamente via JavaScript -->
                 <div class="card unit-card">
@@ -74,9 +479,9 @@
             </div>
             
             <!-- Resumo rápido -->
-            <div class="row row-cols-1 row-cols-md-3 g-4 mb-4" id="quickStatsContainer">
+            <div class="row row-cols-1 row-cols-md-4 g-4 mb-4" id="quickStatsContainer">
                 <div class="col">
-                    <div class="card">
+                    <div class="card small-card">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
@@ -100,7 +505,7 @@
                     </div>
                 </div>
                 <div class="col">
-                    <div class="card">
+                    <div class="card small-card">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
@@ -124,7 +529,7 @@
                     </div>
                 </div>
                 <div class="col">
-                    <div class="card">
+                    <div class="card small-card">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
@@ -142,6 +547,30 @@
                                 </div>
                                 <div class="progress mt-1">
                                     <div id="timeProgress" class="progress-bar bg-primary" role="progressbar" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card small-card exceeded-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="card-subtitle mb-2 text-muted">Tempo Excedido</h6>
+                                    <h3 class="mb-0" id="quick-exceeded">0</h3>
+                                </div>
+                                <div class="bg-danger bg-opacity-10 p-3 rounded">
+                                    <i class="bi bi-exclamation-triangle text-danger fs-4"></i>
+                                </div>
+                            </div>
+                            <div class="mt-3">
+                                <div class="d-flex justify-content-between">
+                                    <small class="text-muted">Total hoje:</small>
+                                    <small class="fw-bold" id="quick-exceeded-percent">0%</small>
+                                </div>
+                                <div class="progress mt-1">
+                                    <div id="exceededProgress" class="progress-bar bg-danger" role="progressbar" style="width: 0%"></div>
                                 </div>
                             </div>
                         </div>
@@ -171,7 +600,7 @@
                                     <span class="stat-label d-flex align-items-center">
                                         <i class="bi bi-door-closed me-2"></i>Docas ocupadas:
                                     </span>
-                                    <span class="stat-value" id="unit-docks">0/11</span>
+                                    <span class="stat-value" id="unit-docks"><span id="quick-occupied">0</span>/11</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
                                     <span class="stat-label d-flex align-items-center">
@@ -193,6 +622,36 @@
                 <div class="col">
                     <div class="card h-100">
                         <div class="card-header">
+                            <i class="bi bi-box-seam me-2"></i>Operações e Materiais
+                        </div>
+                        <div class="card-body">
+                            <div class="unit-stats">
+                                <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                                    <span class="stat-label d-flex align-items-center">
+                                        <i class="bi bi-tags me-2"></i>Tipo de Operação:
+                                    </span>
+                                    <span class="stat-value" id="unit-operation-type">-</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                                    <span class="stat-label d-flex align-items-center">
+                                        <i class="bi bi-boxes me-2"></i>Mix de Material médio:
+                                    </span>
+                                    <span class="stat-value" id="unit-mix-material">0</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span class="stat-label d-flex align-items-center">
+                                        <i class="bi bi-speedometer2 me-2"></i>Toneladas:
+                                    </span>
+                                    <span class="stat-value" id="unit-toneladas">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-header">
                             <i class="bi bi-list-check me-2"></i>Status das Docas
                         </div>
                         <div class="card-body">
@@ -200,6 +659,22 @@
                                 <div class="text-center py-3">
                                     <div class="loader mx-auto"></div>
                                     <p class="mt-2 mb-0">Carregando status...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col">
+                    <div class="card h-100">
+                        <div class="card-header">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Carregamentos com Atraso
+                        </div>
+                        <div class="card-body">
+                            <div id="unit-exceeded-list">
+                                <div class="text-center py-3">
+                                    <div class="loader mx-auto"></div>
+                                    <p class="mt-2 mb-0">Carregando dados...</p>
                                 </div>
                             </div>
                         </div>
@@ -215,6 +690,11 @@
             
             <div id="occupiedDocksContainer" class="occupied-docks-container"></div>
         </div>
+    </div>
+
+    <!-- Indicador de atualização automática -->
+    <div id="autoUpdateIndicator" class="auto-update-indicator d-none">
+        <i class="bi bi-arrow-repeat"></i> Atualizando dados...
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -295,7 +775,6 @@
                 type: "Unidade de Produção",
                 firebaseConfig: {
                     apiKey: "AIzaSyCybArOCPgqBDE-9PjachpOkf74cKdLC2g",
-                    authDomain: "produtividade-pa-aracruz.firebaseapp.com",
                     databaseURL: "https://produtividade-pa-aracruz-default-rtdb.firebaseio.com",
                     projectId: "produtividade-pa-aracruz",
                     storageBucket: "produtividade-pa-aracruz.firebasestorage.app",
@@ -317,7 +796,6 @@
                     measurementId: "G-TFZDQGTYX6"
                 }
             }
-            
         };
 
         // Variáveis globais
@@ -326,6 +804,7 @@
         let activeUnit = null;
         let dataUpdateInterval = null;
         let isInitialized = false;
+        let lastUpdateTime = null;
 
         // DOM Elements
         const dom = {
@@ -345,7 +824,11 @@
             loginText: document.getElementById('loginText'),
             unitDashboardTitle: document.getElementById('unitDashboardTitle'),
             quickStatsContainer: document.getElementById('quickStatsContainer'),
-            occupiedBadge: document.getElementById('occupiedBadge')
+            occupiedBadge: document.getElementById('occupiedBadge'),
+            compareUnit1: document.getElementById('compareUnit1'),
+            compareUnit2: document.getElementById('compareUnit2'),
+            btnCompare: document.getElementById('btnCompare'),
+            autoUpdateIndicator: document.getElementById('autoUpdateIndicator')
         };
 
         // Inicializa todas as conexões Firebase
@@ -381,33 +864,41 @@
             return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
         }
 
+        // Formata data completa
+        function formatFullDate(timestamp) {
+            if (!timestamp) return 'N/A';
+            const date = new Date(timestamp);
+            return date.toLocaleString('pt-BR');
+        }
+
         // Calcula tempo decorrido e restante
         function calculateTimeDetails(inicioTimestamp, pausas = [], isPaused = false) {
-    if (!inicioTimestamp) return { decorrido: '0min', restante: '0min', progress: 0 };
-    
-    const agora = new Date().getTime();
-    let decorridoMs = agora - inicioTimestamp;
-    
-    // Subtrai o tempo das pausas
-    if (pausas && pausas.length > 0) {
-        const tempoPausadoMs = pausas.reduce((total, pausa) => {
-            const fimPausa = pausa.fim || (isPaused ? agora : pausa.inicio);
-            return total + (fimPausa - pausa.inicio);
-        }, 0);
-        
-        decorridoMs -= tempoPausadoMs;
-    }
-    
-    const decorridoMin = Math.floor(decorridoMs / 60000);
-    const tempoLimiteMin = 140;
-    const restanteMin = Math.max(0, tempoLimiteMin - decorridoMin);
-    
-    return {
-        decorrido: decorridoMin > 0 ? formatMinutesToTime(decorridoMin) : '0min',
-        restante: restanteMin > 0 ? formatMinutesToTime(restanteMin) : '0min',
-        progress: decorridoMin > 0 ? Math.min(100, Math.floor((decorridoMin / tempoLimiteMin) * 100)) : 0
-    };
-}
+            if (!inicioTimestamp) return { decorrido: '0min', restante: '0min', progress: 0 };
+            
+            const agora = new Date().getTime();
+            let decorridoMs = agora - inicioTimestamp;
+            
+            // Subtrai o tempo das pausas
+            if (pausas && pausas.length > 0) {
+                const tempoPausadoMs = pausas.reduce((total, pausa) => {
+                    const fimPausa = pausa.fim || (isPaused ? agora : pausa.inicio);
+                    return total + (fimPausa - pausa.inicio);
+                }, 0);
+                
+                decorridoMs -= tempoPausadoMs;
+            }
+            
+            const decorridoMin = Math.floor(decorridoMs / 60000);
+            const tempoLimiteMin = 140;
+            const restanteMin = Math.max(0, tempoLimiteMin - decorridoMin);
+            
+            return {
+                decorrido: decorridoMin > 0 ? formatMinutesToTime(decorridoMin) : '0min',
+                restante: restanteMin > 0 ? formatMinutesToTime(restanteMin) : '0min',
+                progress: decorridoMin > 0 ? Math.min(100, Math.floor((decorridoMin / tempoLimiteMin) * 100)) : 0,
+                exceeded: decorridoMin > tempoLimiteMin
+            };
+        }
 
         // Cria os cards das unidades no dashboard principal
         function createUnitsCards() {
@@ -489,30 +980,47 @@
                 const finalizados = Object.values(carregamentos).filter(c => c.finalizado).length;
                 document.getElementById(`${unit}-today`).textContent = finalizados;
                 
-                // Calcula tempo médio
+                // Calcula tempo médio e carregamentos que excederam o tempo
                 let tempoTotal = 0;
                 let count = 0;
+                let exceededCount = 0;
                 
                 Object.values(carregamentos).forEach(c => {
                     if (c.finalizado && c.inicio && c.fim) {
-                        tempoTotal += (c.fim - c.inicio) / 60000; // minutos
+                        const tempoMin = (c.fim - c.inicio) / 60000;
+                        tempoTotal += tempoMin;
                         count++;
+                        
+                        if (tempoMin > 140) {
+                            exceededCount++;
+                        }
                     }
                 });
                 
                 const tempoMedio = count > 0 ? tempoTotal / count : 0;
                 document.getElementById(`${unit}-time`).textContent = formatMinutesToTime(tempoMedio);
 
+                // Atualiza contagem de excedidos
+                document.getElementById(`${unit}-exceeded`).textContent = exceededCount;
+                document.getElementById(`${unit}-exceeded-percent`).textContent = 
+                    finalizados > 0 ? `${Math.round((exceededCount / finalizados) * 100)}%` : '0%';
+
                 // Busca status das docas
                 const docasSnapshot = await databaseRefs[unit].ref('docas').once('value');
                 const docas = docasSnapshot.val() || {};
                 let ocupadas = 0;
-                
-                for (let i = 1; i <= 11; i++) {
-                    if (docas[i] && docas[i].ocupada) ocupadas++;
+
+                for (const key in docas) {
+                    if (docas[key] && docas[key].ocupada) ocupadas++;
                 }
-                
+
                 document.getElementById(`${unit}-docks`).textContent = `${ocupadas}/11`;
+                
+                // Atualiza o horário da última atualização
+                const now = new Date();
+                const timeString = now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                document.querySelector(`.unit-card[data-unit="${unit}"] .card-footer small`).textContent = 
+                    `Última atualização: ${timeString}`;
                 
             } catch (error) {
                 console.error(`Erro ao atualizar dados da unidade ${unit}:`, error);
@@ -521,8 +1029,24 @@
 
         // Atualiza os dados de todas as unidades
         async function updateAllUnitsData() {
-            const updatePromises = Object.keys(unitsConfig).map(unit => updateUnitData(unit));
-            await Promise.all(updatePromises);
+            try {
+                // Mostra indicador de atualização
+                dom.autoUpdateIndicator.classList.remove('d-none');
+                
+                const updatePromises = Object.keys(unitsConfig).map(unit => updateUnitData(unit));
+                await Promise.all(updatePromises);
+                
+                // Atualiza o tempo da última atualização
+                lastUpdateTime = new Date();
+                
+            } catch (error) {
+                console.error('Erro ao atualizar unidades:', error);
+            } finally {
+                // Esconde indicador de atualização
+                setTimeout(() => {
+                    dom.autoUpdateIndicator.classList.add('d-none');
+                }, 1000);
+            }
         }
 
         // Mostra o dashboard de uma unidade específica
@@ -546,269 +1070,692 @@
             
             // Atualiza os dados da unidade
             updateUnitDashboard(unit);
+            
+            // Configura atualização automática a cada 30 segundos
+            if (dataUpdateInterval) clearInterval(dataUpdateInterval);
+            dataUpdateInterval = setInterval(() => updateUnitDashboard(unit), 30000);
         }
 
+        // Mostra detalhes de uma doca ocupada
         function showDocaDetails(docaNum, docaData, carregamentoData) {
-    if (!docaData.ocupada) return '';
-    
-    // Verifica se o carregamento está pausado
-    const isPaused = carregamentoData?.pausado || false;
-    const pausaAtiva = isPaused && carregamentoData.pausas && 
-                       carregamentoData.pausas.some(p => !p.fim);
-    
-    // Calcula tempo de pausa ativa
-    let tempoPausaAtiva = '0min';
-    if (pausaAtiva) {
-        const pausa = carregamentoData.pausas.find(p => !p.fim);
-        const tempoPausadoMs = new Date().getTime() - pausa.inicio;
-        const tempoPausadoMin = Math.floor(tempoPausadoMs / 60000);
-        tempoPausaAtiva = formatMinutesToTime(tempoPausadoMin);
-    }
-    
-    const timeDetails = calculateTimeDetails(carregamentoData?.inicio, carregamentoData?.pausas, isPaused);
-    const colaboradores = carregamentoData?.participantes ? Object.values(carregamentoData.participantes) : [];
-    
-    // Calcula tempo total de pausas
-    let tempoTotalPausado = 0;
-    let pausasHtml = '';
-    
-    if (carregamentoData?.pausas && carregamentoData.pausas.length > 0) {
-        tempoTotalPausado = carregamentoData.pausas.reduce((total, pausa) => {
-            const fimPausa = pausa.fim || (isPaused ? new Date().getTime() : pausa.inicio);
-            return total + (fimPausa - pausa.inicio);
-        }, 0) / 60000; // Converte para minutos
-        
-        pausasHtml = `
-            <div class="pausas-list mt-3">
-                <strong><i class="bi bi-pause-circle me-1"></i>Pausas:</strong>
-                <div class="pausas-container">
-                    ${carregamentoData.pausas.map((pausa, index) => {
-                        const inicioPausa = new Date(pausa.inicio);
-                        const fimPausa = pausa.fim ? new Date(pausa.fim) : null;
-                        const duracao = fimPausa ? 
-                            ((fimPausa - inicioPausa) / 60000).toFixed(1) + ' min' : 
-                            'Em pausa';
-                        
-                        return `
-                            <div class="pausa-item">
-                                <span class="pausa-info">
-                                    <span class="pausa-num">${index + 1}.</span>
-                                    ${pausa.motivo || 'Pausa'} - 
-                                    ${inicioPausa.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
-                                    ${fimPausa ? ` até ${fimPausa.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}` : ''}
-                                </span>
-                                <span class="pausa-duracao">${duracao}</span>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-                <div class="pausa-total">
-                    <strong>Tempo total em pausa:</strong> ${tempoTotalPausado.toFixed(1)} min
-                </div>
-            </div>
-        `;
-    }
-    
-    // Calcula tempo efetivo (tempo total - tempo em pausa)
-    const tempoEfetivoMin = timeDetails.progress > 0 ? 
-        (parseInt(timeDetails.decorrido.replace('h', '').replace('min', '')) - tempoTotalPausado) : 0;
-    const tempoEfetivoFormatado = formatMinutesToTime(tempoEfetivoMin);
-    
-    return `
-        <div class="doca-details animate-fadeIn">
-            <div class="doca-title">
-                <i class="bi bi-door-open"></i> Doca ${docaNum}
-                ${isPaused ? `
-                    <span class="badge bg-warning text-dark ms-2">
-                        <i class="bi bi-pause-fill"></i> PAUSADO (${tempoPausaAtiva})
-                    </span>
-                ` : ''}
-            </div>
-            <div class="doca-status ${isPaused ? 'pausada' : 'ocupada'}">
-                <i class="bi bi-truck"></i> Status: ${isPaused ? 'Pausado' : 'Ocupada'}
-            </div>
+            if (!docaData.ocupada) return '';
             
-            ${carregamentoData?.placa ? `
-            <div class="tempo-info">
-                <span class="tempo-label"><i class="bi bi-upc-scan me-1"></i>Placa:</span>
-                <span class="tempo-value">${carregamentoData.placa}</span>
-            </div>
-            ` : ''}
+            // Verifica se o carregamento está pausado
+            const isPaused = carregamentoData?.pausado || false;
+            const pausaAtiva = isPaused && carregamentoData.pausas && 
+                               carregamentoData.pausas.some(p => !p.fim);
             
-            ${carregamentoData?.inicio ? `
-            <div class="tempo-info">
-                <span class="tempo-label"><i class="bi bi-play-circle me-1"></i>Início:</span>
-                <span class="tempo-value">${formatTimestamp(carregamentoData.inicio)}</span>
-            </div>
-            ` : ''}
+            // Calcula tempo de pausa ativa
+            let tempoPausaAtiva = '0min';
+            if (pausaAtiva) {
+                const pausa = carregamentoData.pausas.find(p => !p.fim);
+                const tempoPausadoMs = new Date().getTime() - pausa.inicio;
+                const tempoPausadoMin = Math.floor(tempoPausadoMs / 60000);
+                tempoPausaAtiva = formatMinutesToTime(tempoPausadoMin);
+            }
             
-            <div class="tempo-info">
-                <span class="tempo-label"><i class="bi bi-clock-history me-1"></i>Tempo Total:</span>
-                <span class="tempo-value">${timeDetails.decorrido}</span>
-            </div>
+            const timeDetails = calculateTimeDetails(carregamentoData?.inicio, carregamentoData?.pausas, isPaused);
+            const colaboradores = carregamentoData?.participantes ? Object.values(carregamentoData.participantes) : [];
             
-            <div class="tempo-info">
-                <span class="tempo-label"><i class="bi bi-stopwatch me-1"></i>Tempo Efetivo:</span>
-                <span class="tempo-value">${tempoEfetivoFormatado}</span>
-            </div>
+            // Calcula tempo total de pausas
+            let tempoTotalPausado = 0;
+            let pausasHtml = '';
             
-            <div class="tempo-info">
-                <span class="tempo-label"><i class="bi bi-hourglass-bottom me-1"></i>Tempo Restante:</span>
-                <span class="tempo-value">${timeDetails.restante}</span>
-            </div>
-            
-            <div class="time-progress mt-3">
-                <div class="time-progress-label">
-                    <span>Progresso do carregamento</span>
-                    <span>${timeDetails.progress}%</span>
-                </div>
-                <div class="progress">
-                    <div class="progress-bar ${isPaused ? 'bg-warning' : 'bg-primary'}" 
-                         role="progressbar" 
-                         style="width: ${timeDetails.progress}%">
+            if (carregamentoData?.pausas && carregamentoData.pausas.length > 0) {
+                tempoTotalPausado = carregamentoData.pausas.reduce((total, pausa) => {
+                    const fimPausa = pausa.fim || (isPaused ? new Date().getTime() : pausa.inicio);
+                    return total + (fimPausa - pausa.inicio);
+                }, 0) / 60000; // Converte para minutos
+                
+                pausasHtml = `
+                    <div class="pausas-list mt-3">
+                        <strong><i class="bi bi-pause-circle me-1"></i>Pausas:</strong>
+                        <div class="pausas-container">
+                            ${carregamentoData.pausas.map((pausa, index) => {
+                                const inicioPausa = new Date(pausa.inicio);
+                                const fimPausa = pausa.fim ? new Date(pausa.fim) : null;
+                                const duracao = fimPausa ? 
+                                    ((fimPausa - inicioPausa) / 60000).toFixed(1) + ' min' : 
+                                    'Em pausa';
+                                
+                                return `
+                                    <div class="pausa-item">
+                                        <span class="pausa-info">
+                                            <span class="pausa-num">${index + 1}.</span>
+                                            ${pausa.motivo || 'Pausa'} - 
+                                            ${inicioPausa.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}
+                                            ${fimPausa ? ` até ${fimPausa.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}` : ''}
+                                        </span>
+                                        <span class="pausa-duracao">${duracao}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        <div class="pausa-total">
+                            <strong>Tempo total em pausa:</strong> ${tempoTotalPausado.toFixed(1)} min
+                        </div>
                     </div>
-                </div>
-            </div>
-            
-            ${pausasHtml}
-            
-            ${colaboradores.length > 0 ? `
-            <div class="colaboradores-list mt-3">
-                <strong><i class="bi bi-people me-1"></i>Colaboradores:</strong>
-                ${colaboradores.map(colab => `
-                    <div class="colaborador">${colab.nome}</div>
-                `).join('')}
-            </div>
-            ` : ''}
-        </div>
-    `;
-}
-
-        // Atualiza o dashboard da unidade específica
-        async function updateUnitDashboard(unit) {
-    if (!databaseRefs[unit]) return;
-
-    try {
-        const hoje = new Date();
-        const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
-        const fimDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59).getTime();
-
-        // Busca carregamentos do dia
-        const carregamentosSnapshot = await databaseRefs[unit].ref('carregamentos')
-            .orderByChild('inicio')
-            .startAt(inicioDia)
-            .endAt(fimDia)
-            .once('value');
-            
-        const carregamentos = carregamentosSnapshot.val() || {};
-        const finalizados = Object.values(carregamentos).filter(c => c.finalizado).length;
-        
-        // Atualiza os valores nos cards de resumo
-        document.getElementById('unit-today').textContent = finalizados;
-        document.getElementById('quick-today').textContent = finalizados;
-        
-        // Atualiza a barra de progresso
-        const todayProgress = Math.min(100, (finalizados / 20) * 100);
-        document.getElementById('todayProgress').style.width = `${todayProgress}%`;
-        
-        // Calcula tempo médio
-        let tempoTotal = 0;
-        let count = 0;
-        
-        Object.values(carregamentos).forEach(c => {
-            if (c.finalizado && c.inicio && c.fim) {
-                tempoTotal += (c.fim - c.inicio) / 60000;
-                count++;
+                `;
             }
-        });
-        
-        const tempoMedio = count > 0 ? tempoTotal / count : 0;
-        const formattedTime = formatMinutesToTime(tempoMedio);
-        
-        document.getElementById('unit-time').textContent = formattedTime;
-        document.getElementById('quick-time').textContent = formattedTime;
-        
-        // Calcula eficiência (quanto mais próximo de 140min, pior)
-        const efficiency = tempoMedio > 0 ? Math.max(0, Math.min(100, 100 - ((tempoMedio / 140) * 100))) : 0;
-        document.getElementById('unit-efficiency').textContent = `${Math.round(efficiency)}%`;
-        
-        // Atualiza a barra de progresso do tempo
-        const timeProgress = 100 - efficiency;
-        document.getElementById('timeProgress').style.width = `${timeProgress}%`;
-
-        // Busca status das docas
-        const docasSnapshot = await databaseRefs[unit].ref('docas').once('value');
-        const docas = docasSnapshot.val() || {};
-        let ocupadas = 0;
-        let docasHtml = '';
-        
-        // Limpa o container de docas ocupadas
-        dom.occupiedDocksContainer.innerHTML = '';
-        
-        // Verifica docas ocupadas para mostrar detalhes
-        for (let i = 1; i <= 11; i++) {
-            const doca = docas[i] || { ocupada: false };
             
-            if (doca.ocupada) {
-                ocupadas++;
-                
-                // Busca o carregamento ativo para esta doca
-                const carregamentosSnapshot = await databaseRefs[unit].ref('carregamentos')
-                    .orderByChild('doca')
-                    .equalTo(i.toString())
-                    .limitToLast(1)
-                    .once('value');
+            // Calcula tempo efetivo (tempo total - tempo em pausa)
+            const tempoEfetivoMin = timeDetails.progress > 0 ? 
+                (parseInt(timeDetails.decorrido.replace('h', '').replace('min', '')) - tempoTotalPausado) : 0;
+            const tempoEfetivoFormatado = formatMinutesToTime(tempoEfetivoMin);
+            
+            return `
+                <div class="doca-details animate-fadeIn">
+                    <div class="doca-title">
+                        <i class="bi bi-door-open"></i> Doca ${docaNum}
+                        ${isPaused ? `
+                            <span class="badge bg-warning text-dark ms-2">
+                                <i class="bi bi-pause-fill"></i> PAUSADO (${tempoPausaAtiva})
+                            </span>
+                        ` : ''}
+                        ${timeDetails.exceeded ? `
+                            <span class="badge bg-danger ms-2">
+                                <i class="bi bi-exclamation-triangle"></i> TEMPO EXCEDIDO
+                            </span>
+                        ` : ''}
+                    </div>
+                    <div class="doca-status ${isPaused ? 'pausada' : 'ocupada'}">
+                        <i class="bi bi-truck"></i> Status: ${isPaused ? 'Pausado' : 'Ocupada'}
+                    </div>
                     
-                const carregamentos = carregamentosSnapshot.val() || {};
-                const carregamento = Object.values(carregamentos)[0];
-                
-                if (carregamento) {
-                    // Cria um novo elemento para cada doca ocupada
-                    const docaElement = document.createElement('div');
-                    docaElement.innerHTML = showDocaDetails(i, doca, carregamento);
-                    dom.occupiedDocksContainer.appendChild(docaElement);
-                }
-            }
-        }
-        
-        // Atualiza o contador de docas ocupadas
-        document.getElementById('unit-docks').textContent = `${ocupadas}/11`;
-        document.getElementById('quick-occupied').textContent = ocupadas;
-        dom.occupiedBadge.textContent = ocupadas;
-        
-        // Atualiza a barra de progresso das docas ocupadas
-        const occupiedProgress = Math.round((ocupadas / 11) * 100);
-        document.getElementById('occupiedProgress').style.width = `${occupiedProgress}%`;
-        
-        // Gera o HTML para o status de todas as docas
-        for (let i = 1; i <= 11; i++) {
-            const doca = docas[i] || { ocupada: false };
-            
-            docasHtml += `
-                <div class="doca-status-item">
-                    <span>
-                        <span class="status-indicator ${doca.ocupada ? 'occupied' : 'free'}"></span>
-                        Doca ${i}
-                    </span>
-                    <span class="badge ${doca.ocupada ? 'bg-danger' : 'bg-success'}">
-                        ${doca.ocupada ? 'Ocupada' : 'Livre'}
-                    </span>
+                    ${carregamentoData?.placa ? `
+                    <div class="tempo-info">
+                        <span class="tempo-label"><i class="bi bi-upc-scan me-1"></i>Dt:</span>
+                        <span class="tempo-value">${carregamentoData.placa}</span>
+                    </div>
+                    ` : ''}
+                    
+                    ${carregamentoData?.inicio ? `
+                    <div class="tempo-info">
+                        <span class="tempo-label"><i class="bi bi-play-circle me-1"></i>Início:</span>
+                        <span class="tempo-value">${formatTimestamp(carregamentoData.inicio)}</span>
+                    </div>
+                    ` : ''}
+                    
+                    <div class="tempo-info">
+                        <span class="tempo-label"><i class="bi bi-clock-history me-1"></i>Tempo Total:</span>
+                        <span class="tempo-value">${timeDetails.decorrido}</span>
+                    </div>
+                    
+                    <div class="tempo-info">
+                        <span class="tempo-label"><i class="bi bi-stopwatch me-1"></i>Tempo Efetivo:</span>
+                        <span class="tempo-value">${tempoEfetivoFormatado}</span>
+                    </div>
+                    
+                    <div class="tempo-info">
+                        <span class="tempo-label"><i class="bi bi-hourglass-bottom me-1"></i>Tempo Restante:</span>
+                        <span class="tempo-value">${timeDetails.restante}</span>
+                    </div>
+                    
+                    <div class="time-progress mt-3">
+                        <div class="time-progress-label">
+                            <span>Progresso do carregamento</span>
+                            <span>${timeDetails.progress}%</span>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar ${isPaused ? 'bg-warning' : timeDetails.exceeded ? 'bg-danger' : 'bg-primary'}" 
+                                 role="progressbar" 
+                                 style="width: ${timeDetails.progress}%">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${pausasHtml}
+                    
+                    ${colaboradores.length > 0 ? `
+                    <div class="colaboradores-list mt-3">
+                        <strong><i class="bi bi-people me-1"></i>Colaboradores:</strong>
+                        ${colaboradores.map(colab => `
+                            <div class="colaborador">${colab.nome}</div>
+                        `).join('')}
+                    </div>
+                    ` : ''}
+                    
+                    ${carregamentoData?.tipoOperacao ? `
+                    <div class="tempo-info mt-3">
+                        <span class="tempo-label"><i class="bi bi-tags me-1"></i>Tipo de Operação:</span>
+                        <span class="tempo-value">${carregamentoData.tipoOperacao}</span>
+                    </div>
+                    ` : ''}
+                    
+                    ${carregamentoData?.mixMaterial !== undefined ? `
+                    <div class="tempo-info">
+                        <span class="tempo-label"><i class="bi bi-boxes me-1"></i>Mix de Material:</span>
+                        <span class="tempo-value">${carregamentoData.mixMaterial}</span>
+                    </div>
+                    ` : ''}
+                    
+                    ${carregamentoData?.toneladas !== undefined ? `
+                    <div class="tempo-info">
+                        <span class="tempo-label"><i class="bi bi-speedometer2 me-1"></i>Toneladas:</span>
+                        <span class="tempo-value">${carregamentoData.toneladas}</span>
+                    </div>
+                    ` : ''}
                 </div>
             `;
         }
-        
-        document.getElementById('unit-docas-status').innerHTML = docasHtml;
-        
-    } catch (error) {
-        console.error(`Erro ao atualizar dashboard da unidade ${unit}:`, error);
-        document.getElementById('unit-docas-status').innerHTML = `
-            <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                Erro ao carregar dados. Tente novamente mais tarde.
-            </div>
-        `;
-    }
-}
+
+        // Atualiza os dados de operação e materiais
+        async function updateOperationData(unit) {
+            if (!databaseRefs[unit]) return;
+
+            try {
+                const hoje = new Date();
+                const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
+                const fimDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59).getTime();
+
+                const snapshot = await databaseRefs[unit].ref('carregamentos')
+                    .orderByChild('inicio')
+                    .startAt(inicioDia)
+                    .endAt(fimDia)
+                    .once('value');
+
+                const carregamentos = snapshot.val() || {};
+                const carregamentosArray = Object.values(carregamentos);
+
+                // Calcula totais
+                let totalToneladas = 0;
+                let totalMixMaterial = 0;
+                const tiposOperacao = {};
+
+                carregamentosArray.forEach(c => {
+                    totalToneladas += c.toneladas || 0;
+                    totalMixMaterial += c.mixMaterial || 0;
+                    
+                    const tipo = c.tipoOperacao || 'desconhecido';
+                    tiposOperacao[tipo] = (tiposOperacao[tipo] || 0) + 1;
+                });
+
+                // Tipo de operação mais comum
+                let tipoMaisComum = '-';
+                if (Object.keys(tiposOperacao).length > 0) {
+                    tipoMaisComum = Object.entries(tiposOperacao)
+                        .sort((a, b) => b[1] - a[1])[0][0];
+                }
+
+                // Atualiza a UI
+                document.getElementById('unit-operation-type').textContent = tipoMaisComum;
+                document.getElementById('unit-mix-material').textContent = 
+                    carregamentosArray.length > 0 ? Math.round(totalMixMaterial / carregamentosArray.length) : '0';
+                document.getElementById('unit-toneladas').textContent = totalToneladas;
+
+            } catch (error) {
+                console.error(`Erro ao atualizar dados de operação para ${unit}:`, error);
+            }
+        }
+
+        // Atualiza a lista de carregamentos que excederam o tempo
+        async function updateExceededList(unit) {
+            if (!databaseRefs[unit]) return;
+
+            try {
+                const hoje = new Date();
+                const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
+                const fimDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59).getTime();
+
+                const snapshot = await databaseRefs[unit].ref('carregamentos')
+                    .orderByChild('inicio')
+                    .startAt(inicioDia)
+                    .endAt(fimDia)
+                    .once('value');
+
+                const carregamentos = snapshot.val() || {};
+                const carregamentosArray = Object.values(carregamentos);
+                
+                // Filtra carregamentos que excederam o tempo (140 minutos)
+                const exceededList = carregamentosArray.filter(c => {
+                    if (c.finalizado && c.inicio && c.fim) {
+                        const tempoMin = (c.fim - c.inicio) / 60000;
+                        return tempoMin > 140;
+                    }
+                    return false;
+                });
+
+                // Atualiza o card de resumo
+                document.getElementById('quick-exceeded').textContent = exceededList.length;
+                const totalFinalizados = carregamentosArray.filter(c => c.finalizado).length;
+                const percentExceeded = totalFinalizados > 0 ? Math.round((exceededList.length / totalFinalizados) * 100) : 0;
+                document.getElementById('quick-exceeded-percent').textContent = `${percentExceeded}%`;
+                document.getElementById('exceededProgress').style.width = `${percentExceeded}%`;
+
+                // Gera a lista de carregamentos excedidos
+                let exceededHtml = '';
+                
+                if (exceededList.length === 0) {
+                    exceededHtml = `
+                        <div class="text-center py-3">
+                            <i class="bi bi-check-circle text-success fs-4"></i>
+                            <p class="mt-2 mb-0">Nenhum carregamento excedeu o tempo hoje</p>
+                        </div>
+                    `;
+                } else {
+                    exceededHtml = `
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Doca</th>
+                                        <th>Placa</th>
+                                        <th>Tempo</th>
+                                        <th>Tipo</th>
+                                        <th>Finalizado</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${exceededList.map(c => {
+                                        const tempoMin = (c.fim - c.inicio) / 60000;
+                                        return `
+                                            <tr>
+                                                <td>${c.doca || '-'}</td>
+                                                <td>${c.placa || '-'}</td>
+                                                <td>${formatMinutesToTime(tempoMin)}</td>
+                                                <td>${c.tipoOperacao || '-'}</td>
+                                                <td>${formatFullDate(c.fim)}</td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+
+                document.getElementById('unit-exceeded-list').innerHTML = exceededHtml;
+
+            } catch (error) {
+                console.error(`Erro ao atualizar lista de excedidos para ${unit}:`, error);
+                document.getElementById('unit-exceeded-list').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Erro ao carregar dados. Tente novamente mais tarde.
+                    </div>
+                `;
+            }
+        }
+
+        // Atualiza o dashboard da unidade específica
+        async function updateUnitDashboard(unit) {
+            if (!databaseRefs[unit]) return;
+
+            try {
+                // Mostra indicador de atualização
+                dom.autoUpdateIndicator.classList.remove('d-none');
+                
+                const hoje = new Date();
+                const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
+                const fimDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59).getTime();
+
+                // Busca carregamentos do dia
+                const carregamentosSnapshot = await databaseRefs[unit].ref('carregamentos')
+                    .orderByChild('inicio')
+                    .startAt(inicioDia)
+                    .endAt(fimDia)
+                    .once('value');
+                    
+                const carregamentos = carregamentosSnapshot.val() || {};
+                const carregamentosArray = Object.values(carregamentos);
+                const finalizados = carregamentosArray.filter(c => c.finalizado).length;
+                
+                // Atualiza os valores nos cards de resumo
+                document.getElementById('unit-today').textContent = finalizados;
+                document.getElementById('quick-today').textContent = finalizados;
+                
+                // Atualiza a barra de progresso
+                const todayProgress = Math.min(100, (finalizados / 20) * 100);
+                document.getElementById('todayProgress').style.width = `${todayProgress}%`;
+                
+                // Calcula tempo médio
+                let tempoTotal = 0;
+                let count = 0;
+                
+                carregamentosArray.forEach(c => {
+                    if (c.finalizado && c.inicio && c.fim) {
+                        tempoTotal += (c.fim - c.inicio) / 60000;
+                        count++;
+                    }
+                });
+                
+                const tempoMedio = count > 0 ? tempoTotal / count : 0;
+                const formattedTime = formatMinutesToTime(tempoMedio);
+                
+                document.getElementById('unit-time').textContent = formattedTime;
+                document.getElementById('quick-time').textContent = formattedTime;
+                
+                // Calcula eficiência (quanto mais próximo de 140min, pior)
+                const efficiency = tempoMedio > 0 ? Math.max(0, Math.min(100, 100 - ((tempoMedio / 140) * 100))) : 0;
+                document.getElementById('unit-efficiency').textContent = `${Math.round(efficiency)}%`;
+                
+                // Atualiza a barra de progresso do tempo
+                const timeProgress = 100 - efficiency;
+                document.getElementById('timeProgress').style.width = `${timeProgress}%`;
+
+                // Busca status das docas
+                const docasSnapshot = await databaseRefs[unit].ref('docas').once('value');
+                const docas = docasSnapshot.val() || {};
+                let ocupadas = 0;
+                let docasHtml = '';
+
+                // Limpa o container de docas ocupadas
+                dom.occupiedDocksContainer.innerHTML = '';
+
+                // Verifica docas ocupadas para mostrar detalhes
+                for (const key in docas) {
+                    const doca = docas[key] || { ocupada: false };
+                    
+                    if (doca.ocupada) {
+                        ocupadas++;
+                        
+                        // Busca o carregamento ativo para esta doca
+                        const carregamentosSnapshot = await databaseRefs[unit].ref('carregamentos')
+                            .orderByChild('doca')
+                            .equalTo(key.toString())
+                            .limitToLast(1)
+                            .once('value');
+                            
+                        const carregamentos = carregamentosSnapshot.val() || {};
+                        const carregamento = Object.values(carregamentos)[0];
+                        
+                        if (carregamento) {
+                            // Cria um novo elemento para cada doca ocupada
+                            const docaElement = document.createElement('div');
+                            docaElement.innerHTML = showDocaDetails(key, doca, carregamento);
+                            dom.occupiedDocksContainer.appendChild(docaElement);
+                        }
+                    }
+                }
+
+                // Atualiza o contador de docas ocupadas
+                document.getElementById('unit-docks').textContent = `${ocupadas}/11`;
+                document.getElementById('quick-occupied').textContent = ocupadas;
+                dom.occupiedBadge.textContent = ocupadas;
+
+                // Atualiza a barra de progresso das docas ocupadas
+                const occupiedProgress = Math.round((ocupadas / 11) * 100);
+                document.getElementById('occupiedProgress').style.width = `${occupiedProgress}%`;
+
+                // Gera o HTML para o status de todas as docas
+                for (const key in docas) {
+                    const doca = docas[key] || { ocupada: false };
+                    
+                    docasHtml += `
+                        <div class="doca-status-item">
+                            <span>
+                                <span class="status-indicator ${doca.ocupada ? 'occupied' : 'free'}"></span>
+                                Doca ${key}
+                            </span>
+                            <span class="badge ${doca.ocupada ? 'bg-danger' : 'bg-success'}">
+                                ${doca.ocupada ? 'Ocupada' : 'Livre'}
+                            </span>
+                        </div>
+                    `;
+                }
+
+                document.getElementById('unit-docas-status').innerHTML = docasHtml;
+                
+                // Atualiza dados de operação e materiais
+                await updateOperationData(unit);
+                
+                // Atualiza lista de carregamentos que excederam o tempo
+                await updateExceededList(unit);
+                
+                // Atualiza o tempo da última atualização
+                lastUpdateTime = new Date();
+                
+            } catch (error) {
+                console.error(`Erro ao atualizar dashboard da unidade ${unit}:`, error);
+                document.getElementById('unit-docas-status').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Erro ao carregar dados. Tente novamente mais tarde.
+                    </div>
+                `;
+            } finally {
+                // Esconde indicador de atualização
+                setTimeout(() => {
+                    dom.autoUpdateIndicator.classList.add('d-none');
+                }, 1000);
+            }
+        }
+
+        // Preenche os selects de comparação
+        function populateCompareSelects() {
+            const select1 = document.getElementById('compareUnit1');
+            const select2 = document.getElementById('compareUnit2');
+            
+            select1.innerHTML = '<option value="">Selecione a 1ª unidade</option>';
+            select2.innerHTML = '<option value="">Selecione a 2ª unidade</option>';
+            
+            Object.keys(unitsConfig).forEach(unit => {
+                const option = `<option value="${unit}">${unitsConfig[unit].name}</option>`;
+                select1.innerHTML += option;
+                select2.innerHTML += option;
+            });
+            
+            // Habilita o botão quando duas unidades diferentes são selecionadas
+            [select1, select2].forEach(select => {
+                select.addEventListener('change', () => {
+                    const btnCompare = document.getElementById('btnCompare');
+                    btnCompare.disabled = !(select1.value && select2.value && select1.value !== select2.value);
+                });
+            });
+        }
+
+        // Função para comparar unidades estilo "placar de futebol"
+        async function compareUnits(unit1, unit2) {
+            // Busca dados das duas unidades
+            async function getUnitStats(unit) {
+                if (!databaseRefs[unit]) return null;
+                const hoje = new Date();
+                const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
+                const fimDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59).getTime();
+
+                // Carregamentos do dia
+                const carregamentosSnap = await databaseRefs[unit].ref('carregamentos')
+                    .orderByChild('inicio')
+                    .startAt(inicioDia)
+                    .endAt(fimDia)
+                    .once('value');
+                const carregamentos = carregamentosSnap.val() || {};
+                const carregamentosArr = Object.values(carregamentos);
+
+                // Tempo médio
+                let tempoTotal = 0, count = 0, exceeded = 0, totalToneladas = 0, totalMix = 0;
+                carregamentosArr.forEach(c => {
+                    if (c.finalizado && c.inicio && c.fim) {
+                        const tempoMin = (c.fim - c.inicio) / 60000;
+                        tempoTotal += tempoMin;
+                        count++;
+                        if (tempoMin > 140) exceeded++;
+                    }
+                    totalToneladas += c.toneladas || 0;
+                    totalMix += c.mixMaterial || 0;
+                });
+                const tempoMedio = count > 0 ? tempoTotal / count : 0;
+                const percentExceeded = count > 0 ? Math.round((exceeded / count) * 100) : 0;
+                
+                // Docas ocupadas
+                const docasSnap = await databaseRefs[unit].ref('docas').once('value');
+                const docas = docasSnap.val() || {};
+                let ocupadas = 0;
+                for (const key in docas) {
+                    if (docas[key] && docas[key].ocupada) ocupadas++;
+                }
+                
+                return {
+                    nome: unitsConfig[unit].name,
+                    carregamentos: count,
+                    tempoMedio,
+                    tempoMedioFmt: formatMinutesToTime(tempoMedio),
+                    excedidos: exceeded,
+                    percentExceeded,
+                    docasOcupadas: ocupadas,
+                    toneladas: totalToneladas,
+                    mixMaterial: carregamentosArr.length > 0 ? Math.round(totalMix / carregamentosArr.length) : 0
+                };
+            }
+
+            // Mostra a comparação na tela
+            function showCompare(stats1, stats2) {
+                // Remove comparação anterior se existir
+                let old = document.getElementById('compareContainer');
+                if (old) old.remove();
+
+                // Cria container
+                const compareDiv = document.createElement('div');
+                compareDiv.id = 'compareContainer';
+                compareDiv.className = 'compare-container animate-fadeIn';
+
+                // Função auxiliar para determinar qual valor é melhor
+                function getComparisonClass(value1, value2, lowerIsBetter = false) {
+                    if (value1 === value2) return 'equal-value';
+                    if (lowerIsBetter) {
+                        return value1 < value2 ? 'better-value' : 'worse-value';
+                    } else {
+                        return value1 > value2 ? 'better-value' : 'worse-value';
+                    }
+                }
+
+                compareDiv.innerHTML = `
+                    <div class="compare-header">
+                        <div class="compare-unit">
+                            <h5>${stats1.nome}</h5>
+                        </div>
+                        <div class="compare-unit">
+                            <h5>${stats2.nome}</h5>
+                        </div>
+                    </div>
+                    
+                    <div class="compare-metric">
+                        <div class="compare-metric-label">
+                            <i class="bi bi-calendar-day"></i> Carregamentos Hoje
+                        </div>
+                        <div class="compare-metric-value ${getComparisonClass(stats1.carregamentos, stats2.carregamentos)}">
+                            ${stats1.carregamentos}
+                        </div>
+                        <div class="compare-metric-value ${getComparisonClass(stats2.carregamentos, stats1.carregamentos)}">
+                            ${stats2.carregamentos}
+                        </div>
+                    </div>
+                    
+                    <div class="compare-metric">
+                        <div class="compare-metric-label">
+                            <i class="bi bi-clock"></i> Tempo Médio
+                        </div>
+                        <div class="compare-metric-value ${getComparisonClass(stats1.tempoMedio, stats2.tempoMedio, true)}">
+                            ${stats1.tempoMedioFmt}
+                        </div>
+                        <div class="compare-metric-value ${getComparisonClass(stats2.tempoMedio, stats1.tempoMedio, true)}">
+                            ${stats2.tempoMedioFmt}
+                        </div>
+                    </div>
+                    
+                    <div class="compare-metric">
+                        <div class="compare-metric-label">
+                            <i class="bi bi-exclamation-triangle"></i> Excedidos (%)
+                        </div>
+                        <div class="compare-metric-value ${getComparisonClass(stats1.percentExceeded, stats2.percentExceeded, true)}">
+                            ${stats1.percentExceeded}%
+                        </div>
+                        <div class="compare-metric-value ${getComparisonClass(stats2.percentExceeded, stats1.percentExceeded, true)}">
+                            ${stats2.percentExceeded}%
+                        </div>
+                    </div>
+                    
+                    <div class="compare-metric">
+                        <div class="compare-metric-label">
+                            <i class="bi bi-door-closed"></i> Docas Ocupadas
+                        </div>
+                        <div class="compare-metric-value ${getComparisonClass(stats1.docasOcupadas, stats2.docasOcupadas)}">
+                            ${stats1.docasOcupadas}
+                        </div>
+                        <div class="compare-metric-value ${getComparisonClass(stats2.docasOcupadas, stats1.docasOcupadas)}">
+                            ${stats2.docasOcupadas}
+                        </div>
+                    </div>
+                    
+                    <div class="compare-metric">
+                        <div class="compare-metric-label">
+                            <i class="bi bi-speedometer2"></i> Toneladas
+                        </div>
+                        <div class="compare-metric-value ${getComparisonClass(stats1.toneladas, stats2.toneladas)}">
+                            ${stats1.toneladas}
+                        </div>
+                        <div class="compare-metric-value ${getComparisonClass(stats2.toneladas, stats1.toneladas)}">
+                            ${stats2.toneladas}
+                        </div>
+                    </div>
+                    
+                    <div class="compare-metric">
+                        <div class="compare-metric-label">
+                            <i class="bi bi-boxes"></i> Mix de Material
+                        </div>
+                        <div class="compare-metric-value ${getComparisonClass(stats1.mixMaterial, stats2.mixMaterial)}">
+                            ${stats1.mixMaterial}
+                        </div>
+                        <div class="compare-metric-value ${getComparisonClass(stats2.mixMaterial, stats1.mixMaterial)}">
+                            ${stats2.mixMaterial}
+                        </div>
+                    </div>
+                    
+                    <div class="text-end mt-3">
+                        <button class="btn btn-outline-secondary btn-sm" id="btnCloseCompare">
+                            <i class="bi bi-x"></i> Fechar Comparação
+                        </button>
+                    </div>
+                `;
+                
+                // Insere no dashboard
+                dom.dashboardContainer.appendChild(compareDiv);
+
+                // Botão fechar
+                document.getElementById('btnCloseCompare').onclick = () => {
+                    compareDiv.remove();
+                };
+                
+                // Scroll até a comparação
+                compareDiv.scrollIntoView({ behavior: 'smooth' });
+            }
+
+            // Mostra loader enquanto busca
+            let old = document.getElementById('compareContainer');
+            if (old) old.remove();
+            
+            const loaderDiv = document.createElement('div');
+            loaderDiv.id = 'compareContainer';
+            loaderDiv.className = 'compare-container text-center';
+            loaderDiv.innerHTML = `
+                <div class="loader mx-auto"></div>
+                <p>Carregando comparação...</p>
+            `;
+            
+            dom.dashboardContainer.appendChild(loaderDiv);
+
+            // Busca e mostra
+            try {
+                const [stats1, stats2] = await Promise.all([
+                    getUnitStats(unit1),
+                    getUnitStats(unit2)
+                ]);
+                
+                if (stats1 && stats2) {
+                    showCompare(stats1, stats2);
+                } else {
+                    throw new Error('Erro ao carregar dados das unidades');
+                }
+            } catch (error) {
+                console.error('Erro ao comparar unidades:', error);
+                loaderDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Erro ao comparar unidades. Tente novamente mais tarde.
+                    </div>
+                `;
+            }
+        }
 
         // Event Listeners
         function setupEventListeners() {
@@ -839,6 +1786,7 @@
                     // Inicializa as conexões e cria os cards
                     initializeFirebaseConnections();
                     createUnitsCards();
+                    populateCompareSelects();
                     await updateAllUnitsData();
                     
                     // Atualiza os dados a cada 30 segundos
@@ -887,6 +1835,15 @@
             dom.btnRefreshData.addEventListener('click', function() {
                 if (activeUnit) {
                     updateUnitDashboard(activeUnit);
+                }
+            });
+
+            // Botão Comparar
+            dom.btnCompare.addEventListener('click', function() {
+                const unit1 = document.getElementById('compareUnit1').value;
+                const unit2 = document.getElementById('compareUnit2').value;
+                if (unit1 && unit2 && unit1 !== unit2) {
+                    compareUnits(unit1, unit2);
                 }
             });
 

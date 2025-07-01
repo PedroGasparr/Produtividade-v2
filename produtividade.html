@@ -27,6 +27,7 @@
                 <option value="fabrica_maracanau">Fábrica Maracanau</option>
                 <option value="fabrica_imperatriz">Fábrica Imperatriz</option>
                 <option value="fabrica_Mogi_Das_Cruzes">Fábrica Mogi Das Cruzes</option>
+                <option value="fabrica_aracruz">Fábrica Aracruz</option>
                 <option value="teste">teste</option>
             </select>
         </div>
@@ -97,60 +98,77 @@
                 </div>
 
                 <div class="row mt-3" id="formContainer" style="display: none;">
-                    <div class="col-md-6">
-                        <div class="card">
-                            <div class="card-body">
-                                <h5 class="card-title" id="formTitle">Informações do Carregamento</h5>
-                                <div id="carregadoresContainer">
-                                    <div class="mb-3">
-                                        <label for="funcionarioId" class="form-label">Código do Funcionário Principal</label>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control funcionario-input" placeholder="Ex: GZL-EO-1234">
-                                            <button class="btn btn-outline-secondary btn-scan" type="button">
-                                                <i class="bi bi-camera"></i> Ler QR Code
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <button id="btnAddCarregador" class="btn btn-outline-primary btn-sm add-carregador-btn">
-                                    <i class="bi bi-plus"></i> Adicionar outro carregador
-                                </button>
-                                <div class="mb-3">
-                                    <label for="placaCaminhao" class="form-label">DT</label>
-                                    <input type="text" class="form-control" id="placaCaminhao" placeholder="Ex: 1234">
-                                </div>
-                                <div class="mb-3">
-                                <label for="tipoVeiculo" class="form-label">Tipo de Veículo</label>
-                                <select class="form-select" id="tipoVeiculo">
-                                    <option value="">Selecione o tipo de veículo</option>
-                                    <option value="carreta">Carreta</option>
-                                    <option value="rodotrem">Rodotrem</option>
-                                    <option value="truck">Truck</option>
-                                    <option value="608">608</option>
-                                    <option value="kombi">Kombi</option>
-                                </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="docaNumero" class="form-label">Doca</label>
-                                    <select class="form-select" id="docaNumero">
-                                        <option value="">Selecione a Doca</option>
-                                        <option value="1">Doca 1</option>
-                                        <option value="2">Doca 2</option>
-                                        <option value="3">Doca 3</option>
-                                        <option value="4">Doca 4</option>
-                                        <option value="5">Doca 5</option>
-                                        <option value="6">Doca 6</option>
-                                        <option value="7">Doca 7</option>
-                                        <option value="8">Doca 8</option>
-                                        <option value="9">Doca 9</option>
-                                        <option value="10">Doca 10</option>
-                                        <option value="11">Doca 11</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3" id="armagensContainer" style="display: none;">
-                                    <label for="armagens" class="form-label">Armagens (onde foi buscar material)</label>
-                                    <select class="form-select" id="armagens" multiple="multiple">
-                                        <option value="Unico Armazém">Unico Armazém</option>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title" id="formTitle">Informações do Carregamento</h5>
+                
+                <!-- Campos comuns a ambos os tipos -->
+                <div class="mb-3">
+                    <label for="funcionarioPrincipal" class="form-label">Código do Funcionário Principal</label>
+                    <div class="input-group">
+                        <input type="text" id="funcionarioPrincipal" class="form-control funcionario-input" placeholder="Ex: GZL-EO-1234">
+                        <button class="btn btn-outline-secondary btn-scan" type="button">
+                            <i class="bi bi-camera"></i> Ler QR Code
+                        </button>
+                    </div>
+                </div>
+                <!-- Container para carregadores adicionais -->
+                <div id="carregadoresContainer"></div>
+                <button id="btnAddCarregador" class="btn btn-outline-primary btn-sm mb-3">
+                    <i class="bi bi-plus"></i> Adicionar carregador
+                </button>
+                
+                <!-- Tipo de Operação (sempre visível) -->
+                <div class="mb-3">
+                    <label class="form-label">Tipo de Operação</label>
+                    <select id="tipoOperacao" class="form-select">
+                        <option value="carregamento">Carregamento</option>
+                        <option value="separacao">Separação</option>
+                    </select>
+                </div>
+                
+                <!-- Doca (sempre visível) -->
+                <div class="mb-3">
+                    <label class="form-label">Doca</label>
+                    <select class="form-select" id="docaNumero">
+                        <option value="">Selecione a Doca</option>
+                        <option value="1">Doca 1</option>
+                        <option value="2">Doca 2</option>
+                        <option value="3">Doca 3</option>
+                        <option value="4">Doca 4</option>
+                        <option value="5">Doca 5</option>
+                        <option value="6">Doca 6</option>
+                        <option value="7">Doca 7</option>
+                        <option value="8">Doca 8</option>
+                        <option value="9">Doca 9</option>
+                        <option value="10">Doca 10</option>
+                        <option value="11">Doca 11</option>
+                    </select>
+                </div>
+                
+                <!-- Campos específicos para CARREGAMENTO (inicialmente visíveis) -->
+                <div class="mb-3" id="placaContainer">
+                    <label class="form-label">DT</label>
+                    <input type="text" class="form-control" id="placaCaminhao" placeholder="Ex: 12345">
+                </div>
+                
+                <div class="mb-3" id="tipoVeiculoContainer">
+                    <label class="form-label">Tipo de Veículo</label>
+                    <select class="form-select" id="tipoVeiculo">
+                        <option value="">Selecione...</option>
+                        <option value="carreta">Carreta</option>
+                        <option value="rodotrem">Rodotrem</option>
+                        <option value="truck">Truck</option>
+                        <option value="608">608</option>
+                        <option value="kombi">Kombi</option>
+                    </select>
+                </div>
+                
+                <div class="mb-3" id="armagensContainer">
+                    <label class="form-label">Armazens (onde foi buscar material)</label>
+                    <select class="form-select" id="armagens" multiple="multiple">
+                        <option value="Unico Armazém">Unico Armazém</option>
                                         <option value="Armazém 1">Armazém 1</option>
                                         <option value="Armazém 2">Armazém 2</option>
                                         <option value="Armazém 3">Armazém 3</option>
@@ -164,51 +182,66 @@
                                         <option value="Armazém Externo 3">Armazém Externo 3</option>
                                         <option value="Armazém Externo 4">Armazém Externo 4</option>
                                         <option value="Armazém Externo 5">Armazém Externo 5</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3" id="mixContainer" style="display: none;">
-                                    <label for="mixMaterial" class="form-label">Quantidade de Mix de Material</label>
-                                    <input type="number" class="form-control" id="mixMaterial" placeholder="Ex: 5" min="1">
-                                    <label for="toneladas" class="form-label mt-2">Toneladas Carregadas</label>
-                                    <input type="number" class="form-control" id="toneladas" placeholder="Ex: 10.5" step="0.1" min="0">
-                                    <label for="Just" class="form-label mt-2">Observação:</label>
-                                    <input type="text" class="form-control" id="Just" placeholder="Justifique">
-                                </div>
-                                <button id="btnConfirmar" class="btn btn-primary">Confirmar</button>
-                                <button id="btnCancelar" class="btn btn-secondary">Cancelar</button>
-                            </div>
-                        </div>
+                    </select>
+                </div>
+                
+                <!-- Campos do FINALIZAR (sempre ocultos no início) -->
+                <div id="mixContainer" style="display: none;">
+                    <div class="mb-3">
+                        <label class="form-label">Quantidade de Mix de Material</label>
+                        <input type="number" class="form-control" id="mixMaterial" placeholder="Ex: 5" min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Toneladas Carregadas</label>
+                        <input type="number" class="form-control" id="toneladas" placeholder="Ex: 10.5" step="0.1" min="0" max="9.9">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observação:</label>
+                        <input type="text" class="form-control" id="Just" placeholder="Justifique">
                     </div>
                 </div>
+                
+                <div class="d-flex justify-content-between">
+                    <button id="btnConfirmar" class="btn btn-primary">Confirmar</button>
+                    <button id="btnCancelar" class="btn btn-secondary">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
                  <!-- Formulário para Adicionar Funcionário a Carregamento Existente -->
                  <div class="row mt-3" id="formAddFuncionarioContainer" style="display: none;">
-                     <div class="col-md-6">
-                         <div class="card">
-                             <div class="card-body">
-                                 <h5 class="card-title">Adicionar Funcionário a Carregamento Existente</h5>
-                                 <div class="mb-3">
-                                     <label for="addFuncionarioId" class="form-label">Código do Funcionário a Adicionar</label>
-                                     <div class="input-group">
-                                         <input type="text" class="form-control" id="addFuncionarioId" placeholder="Ex: GZL-EO-1234">
-                                          <button class="btn btn-outline-secondary btn-scan" type="button" data-target-input="#addFuncionarioId">
-                                             <i class="bi bi-camera"></i> Ler QR Code
-                                         </button>
-                                     </div>
-                                 </div>
-                                 <div class="mb-3">
-                                     <label for="carregamentoDestino" class="form-label">Selecionar Carregamento (Doca - DT)</label>
-                                     <select class="form-select" id="carregamentoDestino">
-                                         <option value="">Selecione um carregamento em andamento</option>
-                                         <!-- Opções serão preenchidas via JS -->
-                                     </select>
-                                 </div>
-                                 <button id="btnConfirmarAddFuncionario" class="btn btn-primary">Adicionar Funcionário</button>
-                                 <button id="btnCancelarAddFuncionario" class="btn btn-secondary">Cancelar</button>
-                             </div>
-                         </div>
-                     </div>
-                 </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Adicionar Funcionário a Carregamento Existente</h5>
+                <div class="mb-3">
+                    <label for="addFuncionarioId" class="form-label">Código do Funcionário a Adicionar</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" id="addFuncionarioId" placeholder="Ex: GZL-EO-1234">
+                        <button class="btn btn-outline-secondary btn-scan" type="button" data-target-input="#addFuncionarioId">
+                            <i class="bi bi-camera"></i> Ler QR Code
+                        </button>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="carregamentoDestino" class="form-label">Selecionar Carregamento (Doca - DT)</label>
+                    <select class="form-select" id="carregamentoDestino">
+                        <option value="">Selecione um carregamento em andamento</option>
+                        <!-- Opções serão preenchidas via JS -->
+                    </select>
+                </div>
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="forcarRemocaoPausados">
+                    <label class="form-check-label" for="forcarRemocaoPausados">Permitir remoção de carregamentos pausados</label>
+                </div>
+                <button id="btnConfirmarAddFuncionario" class="btn btn-primary">Adicionar Funcionário</button>
+                <button id="btnCancelarAddFuncionario" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
 
                 <!-- Formulário para Pausar/Retomar Carregamento -->
                 <div class="row mt-3" id="formPausarContainer" style="display: none;">
@@ -235,10 +268,24 @@
                                 <div class="mb-3">
                                     <label for="acaoPausar" class="form-label">Ação</label>
                                     <select class="form-select" id="acaoPausar">
-                                        <option value="pausar">Pausar (horário de almoço)</option>
-                                        <option value="retomar">Retomar (após almoço)</option>
-                                        <option value="pausar_chuva">Pausar (chuva)</option>
-                                        <option value="retomar_chuva">Retomar (após chuva)</option>
+                                        <option value="pausar_refeicao">Pausar (Refeição)</option>
+                                        <option value="retomar_refeicao">Retomar (Após Refeição)</option>
+                                        <option value="pausar_faturar">Pausar (Aguardando Faturar)</option>
+                                        <option value="retomar_faturar">Retomar (Após Faturar)</option>
+                                        <option value="pausar_treinamento">Pausar (Treinamento)</option>
+                                        <option value="retomar_treinamento">Retomar (Após Treinamento)</option>
+                                        <option value="pausar_sna">Pausar (SNA)</option>
+                                        <option value="retomar_sna">Retomar (Após SNA)</option>
+                                        <option value="pausar_prioridade">Pausar (Prioridade Operacional)</option>
+                                        <option value="retomar_prioridade">Retomar (Após Prioridade)</option>
+                                        <option value="pausar_limpeza">Pausar (Limpeza/Organização)</option>
+                                        <option value="retomar_limpeza">Retomar (Após Limpeza)</option>
+                                        <option value="pausar_ocorrencia">Pausar (Ocorrência)</option>
+                                        <option value="retomar_ocorrencia">Retomar (Após Ocorrência)</option>
+                                        <option value="pausar_tombamento">Pausar (Tombamento)</option>
+                                        <option value="retomar_tombamento">Retomar (Após Tombamento)</option>
+                                        <option value="pausar_chuva">Pausar (Chuva)</option>
+                                        <option value="retomar_chuva">Retomar (Após Chuva)</option>
                                     </select>
                                 </div>
                                 <button id="btnConfirmarPausar" class="btn btn-primary">Confirmar</button>
@@ -858,7 +905,11 @@
         else if (unidade === 'fabrica_Mogi_Das_Cruzes') {
             configFile = './js/firebase_config_Mogi_Das_Cruzes.js';
         }
-        
+
+        else if (unidade === 'fabrica_aracruz') {
+            configFile = './js/firebase_config_aracruz.js';
+        }
+
         else {
             configFile = './js/firebase_config_imperatriz.js';
         }
@@ -907,6 +958,7 @@
         let produtividadeChart = null;
         let topCarregadoresChart = null;
         let dashboardAutenticado = false;
+        let forcarRemocaoPausados = false;
         
 
         // Valor base por colaborador por carregamento COMPLETO
@@ -914,6 +966,10 @@
         const TEMPO_LIMITE_MINUTOS = 140; // 2 horas e 20 minutos
         const SENHA_HISTORICO = "195#%$*7advan!7";
         const SENHA_DASHBOARD = "195#%$*7advan!7"; 
+        const LIMITE_MIN = TEMPO_LIMITE_MINUTOS; // Alias para compatibilidade
+        const AMARELO = 40;
+        const VERMELHO = 20;
+        let intervaloAtualizacaoDoca;
 
         // Inicializa o Select2 para o campo de armagens
         $(document).ready(function() {
@@ -941,6 +997,14 @@
             atualizarDashboard();
             atualizarRankingDashboard();
             atualizarDashboardCompleto();
+            iniciarAtualizacaoAutomatica();
+            atualizarTemposContinuamente();
+            iniciarAtualizacaoAutomatica();
+
+
+            carregamentosRef.orderByChild('finalizado').equalTo(false).on('value', (snapshot) => {
+                atualizarCarregamentosAndamento();
+            });
 
             // Configura o filtro do histórico para o mês/ano atual
             const hoje = new Date();
@@ -950,18 +1014,39 @@
             document.getElementById('filtroMes').value = mesAtual;
             document.getElementById('filtroAno').value = anoAtual;
 
+            document.getElementById('tipoOperacao').addEventListener('change', function() {
+                // Só aplica as mudanças se estivermos no modo "iniciar"
+                if (operacaoAtual !== 'iniciar') return;
+                
+                const tipo = this.value;
+                const isCarregamento = tipo === 'carregamento';
+                
+                document.getElementById('placaContainer').style.display = isCarregamento ? 'block' : 'none';
+                document.getElementById('tipoVeiculoContainer').style.display = isCarregamento ? 'block' : 'none';
+                document.getElementById('armagensContainer').style.display = isCarregamento ? 'block' : 'none';
+            });
+
+
+            atualizarTemposContinuamente();
             // Event Listeners
             document.getElementById('btnIniciarCarregamento').addEventListener('click', function() {
                 operacaoAtual = 'iniciar';
                 hideAllForms();
                 document.getElementById('formContainer').style.display = 'block';
-                document.getElementById('formTitle').textContent = 'Iniciar Carregamento';
+                document.getElementById('formTitle').textContent = 'Iniciar Operação';
                 document.getElementById('btnConfirmar').textContent = 'Iniciar';
-                document.getElementById('placaCaminhao').closest('.mb-3').style.display = 'block';
-                document.getElementById('docaNumero').closest('.mb-3').style.display = 'block';
-                document.getElementById('armagensContainer').style.display = 'block';
+                
+                // Mostra campos conforme o tipo selecionado
+                const tipo = document.getElementById('tipoOperacao').value;
+                const isCarregamento = tipo === 'carregamento';
+
+                // Campos específicos para carregamento
+                document.getElementById('placaContainer').style.display = isCarregamento ? 'block' : 'none';
+                document.getElementById('tipoVeiculoContainer').style.display = isCarregamento ? 'block' : 'none';
+                document.getElementById('armagensContainer').style.display = isCarregamento ? 'block' : 'none';
+                
+                // Sempre oculta campos do finalizar
                 document.getElementById('mixContainer').style.display = 'none';
-                document.getElementById('btnAddCarregador').style.display = 'block';
                 
                 // Limpa os inputs
                 document.querySelectorAll('#carregadoresContainer .funcionario-input').forEach(input => input.value = '');
@@ -973,23 +1058,33 @@
                     carregadoresContainer.removeChild(carregadoresContainer.lastChild);
                 }
             });
+            atualizarTemposContinuamente();
 
             document.getElementById('btnFinalizarCarregamento').addEventListener('click', function() {
                 operacaoAtual = 'finalizar';
                 hideAllForms();
                 document.getElementById('formContainer').style.display = 'block';
-                document.getElementById('formTitle').textContent = 'Finalizar Carregamento';
+                document.getElementById('formTitle').textContent = 'Finalizar Operação';
                 document.getElementById('btnConfirmar').textContent = 'Finalizar';
-                document.getElementById('placaCaminhao').closest('.mb-3').style.display = 'none';
-                document.getElementById('docaNumero').closest('.mb-3').style.display = 'none';
-                document.getElementById('armagensContainer').style.display = 'none';
+                
+                // Mostra apenas os campos do finalizar
                 document.getElementById('mixContainer').style.display = 'block';
+                
+                // Oculta TODOS os campos específicos do início (independente do tipo de operação)
+                document.getElementById('placaContainer').style.display = 'none';
+                document.getElementById('tipoVeiculoContainer').style.display = 'none';
+                document.getElementById('armagensContainer').style.display = 'none';
                 document.getElementById('btnAddCarregador').style.display = 'none';
+                
+                // Mantém visível apenas os campos comuns necessários
+                document.getElementById('docaNumero').closest('.mb-3').style.display = 'none'; // Oculta doca no finalizar
+                document.getElementById('tipoOperacao').closest('.mb-3').style.display = 'block'; // Mantém tipo operação visível
                 
                 // Limpa os inputs
                 document.querySelectorAll('#carregadoresContainer .funcionario-input').forEach(input => input.value = '');
                 document.getElementById('mixMaterial').value = '';
                 document.getElementById('toneladas').value = '';
+                document.getElementById('Just').value = '';
                 
                 // Remove carregadores adicionais, exceto o primeiro
                 const carregadoresContainer = document.getElementById('carregadoresContainer');
@@ -1045,7 +1140,10 @@
 
             document.getElementById('btnConfirmarPausar').addEventListener('click', pausarRetomarCarregamento);
 
-            document.getElementById('btnConfirmarAddFuncionario').addEventListener('click', addFuncionarioToCarregamento);
+            document.getElementById('btnConfirmarAddFuncionario').addEventListener('click', function() {
+                forcarRemocaoPausados = document.getElementById('forcarRemocaoPausados').checked;
+                addFuncionarioToCarregamento();
+            });
 
             document.getElementById('btnAddCarregador').addEventListener('click', function() {
                 const container = document.getElementById('carregadoresContainer');
@@ -1066,6 +1164,7 @@
                     iniciarScanner(newInput.querySelector('.funcionario-input'));
                 });
             });
+            atualizarTemposContinuamente();
 
             document.querySelectorAll('.btn-scan').forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -1275,6 +1374,7 @@ function carregarMetasDoDia() {
         }
     });
 }
+
 
 // Função para salvar as metas
 function salvarMetas() {
@@ -1809,45 +1909,92 @@ function atualizarGraficoArmagens(carregamentos) {
 }
 
 function atualizarCarregamentosAndamento() {
-    carregamentosRef.orderByChild('finalizado').equalTo(false).on('value', snapshot => {
+    carregamentosRef.orderByChild('finalizado').equalTo(false).once('value', (snapshot) => {
         const carregamentos = snapshot.val() || {};
-        let html = '';
+        let operacaoHtml = '';
         
-        Object.entries(carregamentos).forEach(([key, c]) => {
-            if (c.unidade === unidadeAtual) {
-                const tempoDecorrido = Math.floor((Date.now() - c.inicio) / 60000);
-                const tempoRestante = Math.max(0, 140 - tempoDecorrido);
+        Object.entries(carregamentos).forEach(([key, carregamento]) => {
+            // Pula carregamentos de separação
+            if (carregamento.unidade === unidadeAtual && carregamento.tipoOperacao !== 'separacao') {
+                const { tempoDecorrido, tempoPausado, tempoEfetivo } = calcularTempos(carregamento);
+                const tempoClass = getClassTempo(tempoEfetivo);
+                const tempoRestanteTexto = getTextoRestante(tempoEfetivo);
                 
-                html += `
-                    <div class="carregamento-andamento">
-                        <div class="doca-placa">Doca ${c.doca || 'N/A'} - DT ${c.placa || 'N/A'}</div>
-                        <div class="tempo-info">
-                            <span class="tempo-decorrido">${tempoDecorrido} min</span>
-                            <span class="tempo-restante">${tempoRestante} min restantes</span>
-                        </div>
-                        <div class="progress">
-                            <div class="progress-bar" 
-                                 role="progressbar" 
-                                 style="width: ${Math.min(100, (tempoDecorrido / 140) * 100)}%" 
-                                 aria-valuenow="${tempoDecorrido}" 
-                                 aria-valuemin="0" 
-                                 aria-valuemax="140">
-                            </div>
-                        </div>
-                        <div class="participantes">
-                            ${Object.values(c.participantes || {})
-                                .filter(p => !p.saida)
-                                .map(p => p.nome || 'N/A')
-                                .join(', ')}
+                const participantesHtml = gerarHtmlParticipantes(carregamento, key);
+                
+                // Adiciona o motivo da pausa se estiver pausado
+                let pausaBadge = '';
+                let motivoPausa = '';
+                if (carregamento.pausado && carregamento.pausas && carregamento.pausas.length > 0) {
+                    // Encontra a última pausa não finalizada
+                    const ultimaPausa = [...carregamento.pausas]
+                        .reverse()
+                        .find(p => !p.fim);
+                    
+                    if (ultimaPausa) {
+                        motivoPausa = ultimaPausa.motivo || 'Não especificado';
+                        pausaBadge = `<span class="badge paused-badge">PAUSADO (Motivo: ${motivoPausa})</span>`;
+                    }
+                }
+                
+                operacaoHtml += `
+                    <div class="card card-carregamento em-andamento mb-2 carregamento-${key} ${carregamento.pausado ? 'paused' : ''}">
+                        <div class="card-body">
+                            <h6 class="card-title">Carregamento: ${carregamento.placa || 'N/A'} ${pausaBadge}</h6>
+                            <p class="card-text">Doca: ${carregamento.doca || 'N/A'}</p>
+                            ${participantesHtml}
+                            <p class="card-text tempo-decorrido ${tempoClass}">
+                               Tempo: ${Math.floor(tempoEfetivo)} minutos (${tempoDecorrido} min total)<br>
+                               Tempo Restante (2:20h): ${tempoRestanteTexto}
+                            </p>
+                            ${motivoPausa ? `<p class="card-text"><small></small></p>` : ''}
+                            <p class="card-text mb-0"><small>Início: ${new Date(carregamento.inicio).toLocaleTimeString()}</small></p>
+                            ${carregamento.armagens && carregamento.armagens.length > 0 ? 
+                              `<p class="card-text mb-0"><small>Armagens: ${carregamento.armagens.join(', ')}</small></p>` : ''}
                         </div>
                     </div>
                 `;
             }
         });
-        
-        document.getElementById('dashboardCarregamentos').innerHTML = html || 
-            '<div class="alert alert-info">Nenhum carregamento em andamento</div>';
+
+        document.getElementById('carregamentosAndamento').innerHTML = operacaoHtml || 
+            '<div class="alert alert-info">Nenhum carregamento em andamento no momento</div>';
+        configurarBotoesRemoverFuncionario();
     });
+}
+
+function calcularTempos(carregamento) {
+    try {
+        const agora = new Date().getTime();
+        const inicio = carregamento.inicio || agora;
+        const tempoDecorrido = Math.floor((agora - inicio) / 60000);
+        
+        // Calcula tempo pausado (em minutos)
+        let tempoPausado = 0;
+        if (carregamento.pausas && Array.isArray(carregamento.pausas)) {
+            tempoPausado = carregamento.pausas.reduce((total, pausa) => {
+                const inicioPausa = pausa.inicio || agora;
+                const fimPausa = pausa.fim || (carregamento.pausado ? agora : inicioPausa);
+                return total + (fimPausa - inicioPausa);
+            }, 0) / 60000;
+        }
+        
+        // Tempo efetivo é o tempo decorrido menos as pausas
+        const tempoEfetivo = Math.max(0, Math.floor(tempoDecorrido - tempoPausado));
+        
+        return { 
+            tempoDecorrido, 
+            tempoPausado: Math.floor(tempoPausado), 
+            tempoEfetivo 
+        };
+    } catch (error) {
+        console.error("Erro ao calcular tempos:", error);
+        return {
+            tempoDecorrido: 0,
+            tempoPausado: 0,
+            tempoEfetivo: 0
+        };
+    }
 }
 
 function formatarMinutosParaHoraMinuto(minutos) {
@@ -2493,217 +2640,353 @@ document.getElementById('dashboard2-tab')
 
         // Função para remover um funcionário de um carregamento em andamento
         function removerFuncionarioDeCarregamento(funcionarioId, carregamentoKey, timestampSaida) {
-            return new Promise((resolve, reject) => {
-                carregamentosRef.child(carregamentoKey).once('value', (snapshot) => {
-                    const carregamento = snapshot.val();
+    return new Promise((resolve, reject) => {
+        carregamentosRef.child(carregamentoKey).once('value', (snapshot) => {
+            const carregamento = snapshot.val();
 
-                    if (!carregamento || carregamento.finalizado || !carregamento.participantes || !carregamento.participantes[funcionarioId] || carregamento.participantes[funcionarioId].saida) {
-                        resolve();
-                        return;
-                    }
+            if (!carregamento || carregamento.finalizado || !carregamento.participantes || !carregamento.participantes[funcionarioId] || carregamento.participantes[funcionarioId].saida) {
+                resolve();
+                return;
+            }
 
-                    const numParticipantesAtivos = Object.values(carregamento.participantes).filter(p => !p.saida).length;
+            // Permite remover o último funcionário se o carregamento estiver pausado
+            const numParticipantesAtivos = Object.values(carregamento.participantes).filter(p => !p.saida).length;
+            
+            if (numParticipantesAtivos <= 1 && !carregamento.pausado) {
+                reject(`Não é possível remover o último funcionário (${carregamento.participantes[funcionarioId].nome || funcionarioId}) de um carregamento em andamento.`);
+                return;
+            }
 
-                    if (numParticipantesAtivos <= 1 && carregamento.participantes[funcionarioId] && !carregamento.participantes[funcionarioId].saida) {
-                        reject(`Não é possível remover o último funcionário (${carregamento.participantes[funcionarioId].nome || funcionarioId}) de um carregamento em andamento.`);
-                        return;
-                    }
+            const entrada = carregamento.participantes[funcionarioId].entrada;
+            const valorParcial = calcularValorParcial(entrada, timestampSaida, carregamento.inicio, timestampSaida);
 
-                    const entrada = carregamento.participantes[funcionarioId].entrada;
-                    const valorParcial = calcularValorParcial(entrada, timestampSaida, carregamento.inicio, timestampSaida);
+            const updates = {};
+            updates[`participantes/${funcionarioId}/saida`] = timestampSaida;
 
-                    const updates = {};
-                    updates[`participantes/${funcionarioId}/saida`] = timestampSaida;
-
-                    carregamentosRef.child(carregamentoKey).update(updates)
-                        .then(() => {
-                            console.log(`Funcionário ${funcionarioId} removido de ${carregamentoKey}. Valor parcial calculado: R$ ${valorParcial.toFixed(2)}`);
-                            resolve();
-                        })
-                        .catch(error => {
-                            console.error("Erro ao remover funcionário e calcular parcial:", error);
-                            reject("Erro ao remover funcionário e calcular parcial.");
-                        });
+            carregamentosRef.child(carregamentoKey).update(updates)
+                .then(() => {
+                    console.log(`Funcionário ${funcionarioId} removido de ${carregamentoKey}. Valor parcial calculado: R$ ${valorParcial.toFixed(2)}`);
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Erro ao remover funcionário e calcular parcial:", error);
+                    reject("Erro ao remover funcionário e calcular parcial.");
                 });
-            });
-        }
+        });
+    });
+}
 
         // Busca todos os carregamentos em andamento de um ou mais funcionários
-        function buscarCarregamentosEmAndamentoPorFuncionarios(funcionarioIds) {
-            return new Promise((resolve, reject) => {
-                carregamentosRef.orderByChild('finalizado').equalTo(false).once('value', (snapshot) => {
-                    const carregamentos = snapshot.val() || {};
-                    const carregamentosEncontrados = [];
+        function buscarCarregamentosEmAndamentoPorFuncionarios(funcionarioIds, incluirPausados = true) {
+    return new Promise((resolve, reject) => {
+        carregamentosRef.orderByChild('finalizado').equalTo(false).once('value', (snapshot) => {
+            const carregamentos = snapshot.val() || {};
+            const carregamentosEncontrados = [];
 
-                    Object.entries(carregamentos).forEach(([key, carregamento]) => {
-                        if (carregamento.participantes) {
-                            const participantesNoCarregamento = Object.keys(carregamento.participantes);
-                            const anyMatch = funcionarioIds.some(id => participantesNoCarregamento.includes(id) && carregamento.participantes[id] && !carregamento.participantes[id].saida);
-
-                            if (anyMatch) {
-                                carregamentosEncontrados.push({ key, ...carregamento });
-                            }
-                        }
-                    });
-                    resolve(carregamentosEncontrados);
-                }, reject);
+            Object.entries(carregamentos).forEach(([key, carregamento]) => {
+                if (carregamento.unidade === unidadeAtual && carregamento.participantes && 
+                    (incluirPausados || !carregamento.pausado)) {
+                    
+                    const temParticipanteAtivo = funcionarioIds.some(id => 
+                        carregamento.participantes[id] && !carregamento.participantes[id].saida
+                    );
+                    
+                    if (temParticipanteAtivo) {
+                        carregamentosEncontrados.push({ key, ...carregamento });
+                    }
+                }
             });
-        }
+            resolve(carregamentosEncontrados);
+        }, reject);
+    });
+}
 
         // Remove funcionários de carregamentos anteriores antes de iniciar/adicionar
         function removerFuncionariosDeCarregamentosAnteriores(funcionarioIds) {
-            const timestampSaida = new Date().getTime();
-            const promises = [];
+    const timestampSaida = new Date().getTime();
+    const promises = [];
 
-            return buscarCarregamentosEmAndamentoPorFuncionarios(funcionarioIds)
-                .then(carregamentosAnteriores => {
-                    carregamentosAnteriores.forEach(carregamento => {
-                        funcionarioIds.forEach(id => {
-                            if (carregamento.participantes && carregamento.participantes[id] && !carregamento.participantes[id].saida) {
+    return buscarCarregamentosEmAndamentoPorFuncionarios(funcionarioIds)
+        .then(carregamentosAnteriores => {
+            carregamentosAnteriores.forEach(carregamento => {
+                funcionarioIds.forEach(id => {
+                    if (carregamento.participantes && carregamento.participantes[id] && !carregamento.participantes[id].saida) {
+                        // Permite remoção se o carregamento estiver pausado
+                        if (carregamento.pausado) {
+                            promises.push(removerFuncionarioDeCarregamento(id, carregamento.key, timestampSaida));
+                        } else {
+                            // Para carregamentos não pausados, mantém a verificação original
+                            const numParticipantesAtivos = Object.values(carregamento.participantes)
+                                .filter(p => !p.saida).length;
+                            
+                            if (numParticipantesAtivos > 1) {
                                 promises.push(removerFuncionarioDeCarregamento(id, carregamento.key, timestampSaida));
                             }
-                        });
-                    });
-                    return Promise.all(promises);
+                        }
+                    }
                 });
-        }
+            });
+            return Promise.all(promises);
+        });
+}
 
         // Inicia um novo carregamento
         function iniciarCarregamento() {
-            const funcionarioInputs = document.querySelectorAll('#carregadoresContainer .funcionario-input');
-            const todosParticipantesIds = Array.from(funcionarioInputs)
+            const tipoOperacao = document.getElementById('tipoOperacao').value;
+            const funcionarioPrincipal = document.getElementById('funcionarioPrincipal').value.trim();
+            
+            // Pega todos os funcionários adicionais (opcionais)
+            const funcionarioAdicionais = Array.from(document.querySelectorAll('#carregadoresContainer .funcionario-input:not(#funcionarioPrincipal)'))
                 .map(input => input.value.trim())
                 .filter(id => id);
+            
+            // Combina todos os funcionários (principal + adicionais se existirem)
+            const todosParticipantesIds = [funcionarioPrincipal];
+            if (funcionarioAdicionais.length > 0) {
+                todosParticipantesIds.push(...funcionarioAdicionais);
+            }
 
+            // Resto da função permanece igual...
             const placa = document.getElementById('placaCaminhao').value.trim().toUpperCase();
             const doca = document.getElementById('docaNumero').value;
             const armagens = $('#armagens').val() || [];
             const tipoVeiculo = document.getElementById('tipoVeiculo').value;
 
-            if (todosParticipantesIds.length === 0 || !placa || !doca || armagens.length === 0 || !tipoVeiculo) {
-        alert('Preencha pelo menos um funcionário, DT, Doca, selecione as armagens e o tipo de veículo!');
-        return;
-    }
-
-            const timestampEntrada = new Date().getTime();
-            let funcionariosComNome = {};
-
-            const buscaFuncionariosPromises = todosParticipantesIds.map(id =>
-                buscarFuncionario(id)
-                    .then(func => {
-                        funcionariosComNome[id] = func.nome || id;
-                        return func;
-                    })
-                    .catch(() => {
-                        alert(`Funcionário ${id} não encontrado! Verifique o código.`);
-                        throw new Error(`Funcionário ${id} não encontrado`);
-                    })
-            );
-
-            Promise.all(buscaFuncionariosPromises)
-                .then(() => {
-                    return removerFuncionariosDeCarregamentosAnteriores(todosParticipantesIds);
-                })
-                .then(() => {
-                    return docasRef.child(doca).once('value');
-                })
-                .then((snapshot) => {
-                    const docaStatus = snapshot.val();
-
-                    if (docaStatus && docaStatus.ocupada) {
-                        alert(`Doca ${doca} já está ocupada!`);
-                        throw new Error('Doca ocupada');
-                    }
-
-                    const participantes = {};
-                    todosParticipantesIds.forEach(id => {
-                        participantes[id] = {
-                            nome: funcionariosComNome[id],
-                            entrada: timestampEntrada,
-                            saida: null
-                        };
-                    });
-
-                    const carregamento = {
-                    placa,
-                    doca,
-                    inicio: timestampEntrada,
-                    fim: null,
-                    finalizado: false,
-                    participantes: participantes,
-                    armagens: armagens,
-                    unidade: unidadeAtual,
-                    pausado: false,
-                    pausas: [],
-                    tipoVeiculo: tipoVeiculo,
-                };
-
-                    const newKey = carregamentosRef.push().key;
-                    return carregamentosRef.child(newKey).set(carregamento)
-                        .then(() => {
-                            return docasRef.child(doca).set({
-                                ocupada: true,
-                                placa,
-                                inicio: carregamento.inicio
-                            });
-                        });
-                })
-                .then(() => {
-                    document.getElementById('formContainer').style.display = 'none';
-                    document.querySelectorAll('.funcionario-input').forEach(input => input.value = '');
-                    $('#armagens').val(null).trigger('change');
-                    const carregadoresContainer = document.getElementById('carregadoresContainer');
-                    while (carregadoresContainer.children.length > 1) {
-                        carregadoresContainer.removeChild(carregadoresContainer.lastChild);
-                    }
-
-                    alert('Carregamento iniciado com sucesso!');
-                })
-                .catch((error) => {
-                    if (error.message !== 'Doca ocupada' && !error.message.startsWith('Funcionário')) {
-                        console.error("Erro ao iniciar carregamento:", error);
-                        alert('Erro ao iniciar carregamento.');
-                    }
-                });
-        }
-
-        // Finaliza um carregamento
-        function finalizarCarregamento() {
-            const funcionarioInputs = document.querySelectorAll('#carregadoresContainer .funcionario-input');
-            const funcionarioId = funcionarioInputs[0].value.trim();
-            const mixMaterial = document.getElementById('mixMaterial').value.trim();
-            const toneladas = document.getElementById('toneladas').value.trim();
-
-            if (!funcionarioId || !mixMaterial || !toneladas) {
-                alert('Informe o código do funcionário, a quantidade de mix de material e as toneladas!');
+            // Validações comuns
+            if (!funcionarioPrincipal) {
+                alert('Preencha o funcionário principal!');
+                return;
+            }
+            
+            if (!doca) {
+                alert('Informe a doca!');
                 return;
             }
 
-            carregamentosRef.orderByChild('finalizado').equalTo(false)
-                .once('value', (snapshot) => {
-                    const carregamentos = snapshot.val() || {};
-                    let carregamentoEmAndamento = null;
-                    let carregamentoKey = null;
-
-                    Object.entries(carregamentos).forEach(([key, c]) => {
-                        if (c.participantes && c.participantes[funcionarioId] && !c.participantes[funcionarioId].saida) {
-                            carregamentoEmAndamento = c;
-                            carregamentoKey = key;
-                            return false;
-                        }
-                    });
-
-                    if (carregamentoEmAndamento && carregamentoKey) {
-                        if (!confirm(`Tem certeza que deseja finalizar o carregamento DT: ${carregamentoEmAndamento.placa || 'N/A'} na Doca: ${carregamentoEmAndamento.doca || 'N/A'}?`)) {
-                            return;
-                        }
-                        finalizarCarregamentoFirebase(carregamentoKey, carregamentoEmAndamento, mixMaterial, toneladas);
-                    } else {
-                        alert('Nenhum carregamento em andamento encontrado para este funcionário!');
-                        funcionarioInputs[0].value = '';
-                    }
-                });
+    // Validações específicas para carregamento
+    if (tipoOperacao === 'carregamento') {
+        if (!placa) {
+            alert('Para carregamento, informe a DT do caminhão!');
+            return;
         }
+        if (armagens.length === 0) {
+            alert('Para carregamento, selecione pelo menos uma armagem!');
+            return;
+        }
+        if (!tipoVeiculo) {
+            alert('Para carregamento, selecione o tipo de veículo!');
+            return;
+        }
+    }
+
+    // Resto da função permanece igual...
+    const timestampEntrada = new Date().getTime();
+    let funcionariosComNome = {};
+
+    const buscaFuncionariosPromises = todosParticipantesIds.map(id =>
+        buscarFuncionario(id)
+            .then(func => {
+                funcionariosComNome[id] = func.nome || id;
+                return func;
+            })
+            .catch(() => {
+                alert(`Funcionário ${id} não encontrado! Verifique o código.`);
+                throw new Error(`Funcionário ${id} não encontrado`);
+            })
+    );
+
+    Promise.all(buscaFuncionariosPromises)
+        .then(() => {
+            return removerFuncionariosDeCarregamentosAnteriores(todosParticipantesIds);
+        })
+        .then(() => {
+            return docasRef.child(doca).once('value');
+        })
+        .then((snapshot) => {
+            const docaStatus = snapshot.val();
+
+            // Permite usar a mesma doca para separação e carregamento simultaneamente
+            if (docaStatus && docaStatus.ocupada && 
+                ((tipoOperacao === 'carregamento' && docaStatus.tipoOperacao === 'carregamento') || 
+                (tipoOperacao === 'separacao' && docaStatus.tipoOperacao === 'separacao'))) {
+                alert(`Doca ${doca} já está ocupada com outra ${tipoOperacao === 'carregamento' ? 'carregamento' : 'separação'}!`);
+                throw new Error('Doca ocupada');
+            }
+
+            const participantes = {};
+            todosParticipantesIds.forEach(id => {
+                participantes[id] = {
+                    nome: funcionariosComNome[id],
+                    entrada: timestampEntrada,
+                    saida: null
+                };
+            });
+
+            const carregamento = {
+                placa: tipoOperacao === 'carregamento' ? placa : null,
+                doca,
+                inicio: timestampEntrada,
+                fim: null,
+                finalizado: false,
+                participantes: participantes,
+                armagens: tipoOperacao === 'carregamento' ? armagens : [],
+                unidade: unidadeAtual,
+                pausado: false,
+                pausas: [],
+                tipoVeiculo: tipoOperacao === 'carregamento' ? tipoVeiculo : null,
+                tipoOperacao: tipoOperacao // Adiciona o tipo de operação
+            };
+
+            const newKey = carregamentosRef.push().key;
+            return carregamentosRef.child(newKey).set(carregamento)
+                .then(() => {
+                    return docasRef.child(doca).set({
+                        ocupada: true,
+                        placa: tipoOperacao === 'carregamento' ? placa : 'SEPARAÇÃO',
+                        inicio: carregamento.inicio,
+                        tipoOperacao: tipoOperacao
+                    });
+                });
+        })
+        .then(() => {
+            document.getElementById('formContainer').style.display = 'none';
+            document.querySelectorAll('.funcionario-input').forEach(input => input.value = '');
+            $('#armagens').val(null).trigger('change');
+            const carregadoresContainer = document.getElementById('carregadoresContainer');
+            while (carregadoresContainer.children.length > 1) {
+                carregadoresContainer.removeChild(carregadoresContainer.lastChild);
+            }
+
+            alert(`${tipoOperacao === 'carregamento' ? 'Carregamento' : 'Separação'} iniciada com sucesso!`);
+        })
+        .catch((error) => {
+            if (error.message !== 'Doca ocupada' && !error.message.startsWith('Funcionário')) {
+                console.error(`Erro ao iniciar ${tipoOperacao}:`, error);
+                alert(`Erro ao iniciar ${tipoOperacao}.`);
+            }
+        });
+}
+
+        // Finaliza um carregamento
+       function finalizarCarregamento() {
+    const funcionarioPrincipal = document.getElementById('funcionarioPrincipal').value.trim();
+    
+    if (!funcionarioPrincipal) {
+        alert('Informe o funcionário principal!');
+        return;
+    }
+
+    const mixMaterial = document.getElementById('mixMaterial').value.trim();
+    const toneladas = document.getElementById('toneladas').value.trim();
+    const observacao = document.getElementById('Just').value.trim();
+
+    // Validações básicas
+    if (!mixMaterial || isNaN(mixMaterial)) {
+        alert('Informe uma quantidade válida de mix de material!');
+        return;
+    }
+
+    carregamentosRef.orderByChild('finalizado').equalTo(false).once('value', (snapshot) => {
+        const carregamentos = snapshot.val() || {};
+        let carregamentoEmAndamento = null;
+        let carregamentoKey = null;
+
+        // Encontra o carregamento ativo
+        Object.entries(carregamentos).forEach(([key, c]) => {
+            if (c.unidade === unidadeAtual && c.participantes && c.participantes[funcionarioPrincipal] && !c.participantes[funcionarioPrincipal].saida) {
+                carregamentoEmAndamento = c;
+                carregamentoKey = key;
+                return false;
+            }
+        });
+
+        if (!carregamentoEmAndamento) {
+            alert('Nenhuma operação em andamento encontrada para este funcionário!');
+            return;
+        }
+
+        const isSeparacao = carregamentoEmAndamento.tipoOperacao === 'separacao';
+        const docaNumero = carregamentoEmAndamento.doca;
+
+        // Prepara atualizações
+        const timestampFim = new Date().getTime();
+        const updates = {
+            fim: timestampFim,
+            finalizado: true,
+            mixMaterial: parseInt(mixMaterial),
+            observacao: observacao || null
+        };
+
+        // Só atualiza toneladas se não for separação
+        if (!isSeparacao) {
+            if (!toneladas || isNaN(toneladas)) {
+                alert('Informe as toneladas carregadas!');
+                return;
+            }
+            updates.toneladas = parseFloat(toneladas);
+        }
+
+        // Marca saída dos participantes
+        if (carregamentoEmAndamento.participantes) {
+            Object.entries(carregamentoEmAndamento.participantes).forEach(([id, p]) => {
+                if (!p.saida) updates[`participantes/${id}/saida`] = timestampFim;
+            });
+        }
+
+        carregamentosRef.child(carregamentoKey).update(updates)
+            .then(() => {
+                // Limpa formulário
+                hideAllForms();
+                document.querySelectorAll('#carregadoresContainer .funcionario-input').forEach(i => i.value = '');
+                document.getElementById('mixMaterial').value = '';
+                document.getElementById('toneladas').value = '';
+                document.getElementById('Just').value = '';
+                
+                // Remove carregadores adicionais
+                const container = document.getElementById('carregadoresContainer');
+                while (container.children.length > 1) container.removeChild(container.lastChild);
+
+                if (isSeparacao) {
+                    // Para separação: mantém a doca ocupada e não atualiza cards
+                    alert('Separação registrada com sucesso! A doca permanece ocupada.');
+                    
+                    // Atualiza apenas os dados do carregamento sem mexer no status da doca
+                    return docasRef.child(docaNumero).once('value').then((docaSnap) => {
+                        const doca = docaSnap.val() || {};
+                        return docasRef.child(docaNumero).update({
+                            placa: 'SEPARAÇÃO',
+                            tipoOperacao: 'separacao',
+                            // Mantém todos os outros valores originais
+                            ocupada: true,
+                            inicio: doca.inicio || Date.now()
+                        });
+                    });
+                } else {
+                    // Para carregamento normal: libera a doca
+                    alert('Carregamento finalizado com sucesso!');
+                    if (docaNumero) {
+                        return docasRef.child(docaNumero).update({
+                            ocupada: false,
+                            placa: '',
+                            inicio: null,
+                            tipoOperacao: null
+                        });
+                    }
+                }
+            })
+            .then(() => {
+                // Atualiza a interface conforme necessário
+                if (!isSeparacao) {
+                    atualizarCarregamentosAndamento();
+                    atualizarInterfaceDocas();
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao finalizar:', error);
+                alert(`Erro ao finalizar ${isSeparacao ? 'separação' : 'carregamento'}`);
+            });
+    });
+}
         
         document.getElementById('dashboard-tab').addEventListener('hide.bs.tab', function() {
         // Destruir gráficos quando a aba é fechada para evitar vazamento de memória
@@ -2723,53 +3006,58 @@ document.getElementById('dashboard2-tab')
 
         // Função auxiliar para finalizar no Firebase
         function finalizarCarregamentoFirebase(key, carregamento, mixMaterial, toneladas) {
-            const timestampFim = new Date().getTime();
-            const Justificativa = document.getElementById('Just').value;
-            const updates = {
-                fim: timestampFim,
-                finalizado: true,
-                mixMaterial: parseInt(mixMaterial),
-                toneladas: parseFloat(toneladas),
-                Justificativa:Justificativa,
-            };
+    const timestampFim = new Date().getTime();
+    const Justificativa = document.getElementById('Just').value;
+    const updates = {
+        fim: timestampFim,
+        finalizado: true,
+        Justificativa: Justificativa,
+    };
 
-            if (carregamento.participantes) {
-                Object.entries(carregamento.participantes).forEach(([id, participacao]) => {
-                    if (!participacao.saida) {
-                        updates[`participantes/${id}/saida`] = timestampFim;
-                    }
+    // Só atualiza mix e toneladas se for carregamento
+    if (carregamento.tipoOperacao === 'carregamento') {
+        updates.mixMaterial = parseInt(mixMaterial);
+        updates.toneladas = parseFloat(toneladas);
+    }
+
+    if (carregamento.participantes) {
+        Object.entries(carregamento.participantes).forEach(([id, participacao]) => {
+            if (!participacao.saida) {
+                updates[`participantes/${id}/saida`] = timestampFim;
+            }
+        });
+    }
+
+    carregamentosRef.child(key).update(updates)
+        .then(() => {
+            if (carregamento.doca) {
+                docasRef.child(carregamento.doca).update({
+                    ocupada: false,
+                    placa: '',
+                    inicio: null,
+                    tipoOperacao: null
                 });
             }
 
-            carregamentosRef.child(key).update(updates)
-                .then(() => {
-                    if (carregamento.doca) {
-                        docasRef.child(carregamento.doca).update({
-                            ocupada: false,
-                            placa: '',
-                            inicio: null
-                        });
-                    }
+            document.getElementById('formContainer').style.display = 'none';
+            document.querySelectorAll('#carregadoresContainer .funcionario-input').forEach(input => input.value = '');
+            document.getElementById('mixMaterial').value = '';
+            document.getElementById('toneladas').value = '';
+            const carregadoresContainer = document.getElementById('carregadoresContainer');
+            while (carregadoresContainer.children.length > 1) {
+                carregadoresContainer.removeChild(carregadoresContainer.lastChild);
+            }
 
-                    document.getElementById('formContainer').style.display = 'none';
-                    document.querySelectorAll('#carregadoresContainer .funcionario-input').forEach(input => input.value = '');
-                    document.getElementById('mixMaterial').value = '';
-                    document.getElementById('toneladas').value = '';
-                    const carregadoresContainer = document.getElementById('carregadoresContainer');
-                    while (carregadoresContainer.children.length > 1) {
-                        carregadoresContainer.removeChild(carregadoresContainer.lastChild);
-                    }
+            // Atualiza o dashboard completo após finalizar
+            atualizarDashboardCompleto();
 
-                    // Atualiza o dashboard completo após finalizar um carregamento
-                    atualizarDashboardCompleto();
-
-                    alert('Carregamento finalizado com sucesso!');
-                })
-                .catch(error => {
-                    console.error("Erro ao finalizar carregamento:", error);
-                    alert('Erro ao finalizar carregamento.');
-                });
-        }
+            alert(`${carregamento.tipoOperacao === 'carregamento' ? 'Carregamento' : 'Separação'}:  finalizada com sucesso!`);
+        })
+        .catch(error => {
+            console.error(`Erro ao finalizar ${carregamento.tipoOperacao}:`, error);
+            alert(`Erro ao finalizar ${carregamento.tipoOperacao}.`);
+        });
+}
 
         // Preenche o select de carregamentos em andamento
         function preencherSelectCarregamentos() {
@@ -2808,131 +3096,178 @@ document.getElementById('dashboard2-tab')
         }
 
         // Pausa ou retoma um carregamento
-        function pausarRetomarCarregamento() {
-            const funcionarioId = document.getElementById('pausarFuncionarioId').value.trim();
-            const carregamentoKey = document.getElementById('carregamentoPausar').value;
-            const acao = document.getElementById('acaoPausar').value;
+       function pausarRetomarCarregamento() {
+    const funcionarioId = document.getElementById('pausarFuncionarioId').value.trim();
+    const carregamentoKey = document.getElementById('carregamentoPausar').value;
+    const acao = document.getElementById('acaoPausar').value;
 
-            if (!funcionarioId || !carregamentoKey) {
-                alert('Informe o funcionário e selecione o carregamento!');
+    if (!funcionarioId || !carregamentoKey) {
+        alert('Informe o funcionário e selecione o carregamento!');
+        return;
+    }
+
+    carregamentosRef.child(carregamentoKey).once('value', (snapshot) => {
+        const carregamento = snapshot.val() || {};
+
+        // Verificação mais robusta
+        if (!carregamento || carregamento.finalizado) {
+            alert('Carregamento selecionado inválido ou já finalizado.');
+            return;
+        }
+
+        // Verifica participantes de forma segura
+        if (!carregamento.participantes || !carregamento.participantes[funcionarioId] || 
+            (carregamento.participantes[funcionarioId].saida !== undefined && 
+             carregamento.participantes[funcionarioId].saida !== null)) {
+            alert('Este funcionário não está participando ativamente deste carregamento.');
+            return;
+        }
+
+        const updates = {};
+        const agora = new Date().getTime();
+
+        // Garante que o array de pausas exista
+        updates.pausas = carregamento.pausas || [];
+
+        // Mapeamento de ações para motivos
+        const motivoMap = {
+            'pausar_refeicao': 'Refeição',
+            'retomar_refeicao': 'Refeição',
+            'pausar_faturar': 'Aguardando Faturar',
+            'retomar_faturar': 'Aguardando Faturar',
+            'pausar_treinamento': 'Treinamento',
+            'retomar_treinamento': 'Treinamento',
+            'pausar_sna': 'SNA',
+            'retomar_sna': 'SNA',
+            'pausar_prioridade': 'Prioridade Operacional',
+            'retomar_prioridade': 'Prioridade Operacional',
+            'pausar_limpeza': 'Limpeza/Organização',
+            'retomar_limpeza': 'Limpeza/Organização',
+            'pausar_ocorrencia': 'Ocorrência',
+            'retomar_ocorrencia': 'Ocorrência',
+            'pausar_tombamento': 'Tombamento',
+            'retomar_tombamento': 'Tombamento',
+            'pausar_chuva': 'Chuva',
+            'retomar_chuva': 'Chuva'
+        };
+
+        if (acao.startsWith('pausar_')) {
+            if (carregamento.pausado) {
+                alert('Este carregamento já está pausado!');
                 return;
             }
-
-            carregamentosRef.child(carregamentoKey).once('value', (snapshot) => {
-                const carregamento = snapshot.val();
-
-                if (!carregamento || carregamento.finalizado) {
-                    alert('Carregamento selecionado inválido ou já finalizado.');
-                    return;
-                }
-
-                if (!carregamento.participantes || !carregamento.participantes[funcionarioId] || carregamento.participantes[funcionarioId].saida) {
-                    alert('Este funcionário não está participando ativamente deste carregamento.');
-                    return;
-                }
-
-                const updates = {};
-                const agora = new Date().getTime();
-
-                if (acao === 'pausar' || acao === 'pausar_chuva') {
-                    if (carregamento.pausado) {
-                        alert('Este carregamento já está pausado!');
-                        return;
-                    }
-                    
-                    updates.pausado = true;
-                    updates.pausas = carregamento.pausas || [];
-                    updates.pausas.push({
-                        inicio: agora,
-                        fim: null,
-                        motivo: acao === 'pausar' ? 'Horário de almoço' : 'Chuva'
-                    });
-                } else { // retomar ou retomar_chuva
-                    if (!carregamento.pausado) {
-                        alert('Este carregamento não está pausado!');
-                        return;
-                    }
-                    
-                    updates.pausado = false;
-                    updates.pausas = carregamento.pausas || [];
-                    const ultimaPausa = updates.pausas[updates.pausas.length - 1];
-                    if (ultimaPausa && !ultimaPausa.fim) {
-                        ultimaPausa.fim = agora;
-                    }
-                }
-
-                carregamentosRef.child(carregamentoKey).update(updates)
-                    .then(() => {
-                        alert(`Carregamento ${acao === 'pausar' || acao === 'pausar_chuva' ? 'pausado' : 'retomado'} com sucesso!`);
-                        hideAllForms();
-                        document.getElementById('pausarFuncionarioId').value = '';
-                        document.getElementById('carregamentoPausar').value = '';
-                    })
-                    .catch(error => {
-                        console.error("Erro ao pausar/retomar carregamento:", error);
-                        alert('Erro ao pausar/retomar carregamento.');
-                    });
+            
+            updates.pausado = true;
+            updates.pausas.push({
+                inicio: agora,
+                fim: null,
+                motivo: motivoMap[acao] || 'Outro motivo'
             });
+        } 
+        else if (acao.startsWith('retomar_')) {
+            if (!carregamento.pausado) {
+                alert('Este carregamento não está pausado!');
+                return;
+            }
+            
+            // Encontra a última pausa não finalizada
+            const ultimaPausa = [...updates.pausas]
+                .reverse()
+                .find(p => !p.fim);
+
+            if (ultimaPausa) {
+                ultimaPausa.fim = agora;
+            }
+
+            updates.pausado = false;
         }
+
+        // Atualiza no Firebase
+        carregamentosRef.child(carregamentoKey).update(updates)
+            .then(() => {
+                const motivo = motivoMap[acao] || '';
+                const tipoAcao = acao.startsWith('pausar_') ? 'pausado' : 'retomado';
+                alert(`Carregamento ${tipoAcao} (Motivo: ${motivo}) com sucesso!`);
+                
+                hideAllForms();
+                document.getElementById('pausarFuncionarioId').value = '';
+                document.getElementById('carregamentoPausar').value = '';
+                
+                // Força atualização imediata da interface
+                atualizarDocaEspecifica(carregamento.doca);
+                atualizarCarregamentosAndamento();
+            })
+            .catch(error => {
+                console.error("Erro ao pausar/retomar carregamento:", error);
+                alert(`Erro ao ${acao.startsWith('pausar_') ? 'pausar' : 'retomar'} carregamento: ${error.message}`);
+            });
+    });
+}
 
         // Adiciona um funcionário a um carregamento existente
         function addFuncionarioToCarregamento() {
-            const funcionarioId = document.getElementById('addFuncionarioId').value.trim();
-            const carregamentoKey = document.getElementById('carregamentoDestino').value;
+    const funcionarioId = document.getElementById('addFuncionarioId').value.trim();
+    const carregamentoKey = document.getElementById('carregamentoDestino').value;
 
-            if (!funcionarioId || !carregamentoKey) {
-                alert('Informe o funcionário e selecione o carregamento!');
-                return;
+    if (!funcionarioId || !carregamentoKey) {
+        alert('Informe o funcionário e selecione o carregamento!');
+        return;
+    }
+
+    const timestampEntrada = new Date().getTime();
+    let funcionarioNome = funcionarioId;
+
+    buscarFuncionario(funcionarioId)
+        .then(func => {
+            funcionarioNome = func.nome || funcionarioId;
+            return carregamentosRef.child(carregamentoKey).once('value');
+        })
+        .then(snapshot => {
+            const carregamentoDestino = snapshot.val();
+
+            if (!carregamentoDestino || carregamentoDestino.finalizado) {
+                alert('Carregamento selecionado inválido ou já finalizado.');
+                throw new Error('Carregamento inválido');
             }
 
-            const timestampEntrada = new Date().getTime();
-            let funcionarioNome = funcionarioId;
+            // Verifica se o funcionário já está no carregamento de destino
+            if (carregamentoDestino.participantes && carregamentoDestino.participantes[funcionarioId] && !carregamentoDestino.participantes[funcionarioId].saida) {
+                alert('Este funcionário já está participando deste carregamento.');
+                throw new Error('Funcionário já participando');
+            }
 
-            buscarFuncionario(funcionarioId)
-                .then(func => {
-                    funcionarioNome = func.nome || funcionarioId;
-                    return removerFuncionariosDeCarregamentosAnteriores([funcionarioId]);
-                })
-                .then(() => {
-                    return carregamentosRef.child(carregamentoKey).once('value');
-                })
-                .then(snapshot => {
-                    const carregamento = snapshot.val();
+            return removerFuncionariosDeCarregamentosAnteriores([funcionarioId]);
+        })
+        .then(() => {
+            return carregamentosRef.child(carregamentoKey).once('value');
+        })
+        .then(snapshot => {
+            const carregamento = snapshot.val();
 
-                    if (!carregamento || carregamento.finalizado) {
-                        alert('Carregamento selecionado inválido ou já finalizado.');
-                        return;
-                    }
+            const updates = {};
+            updates[`participantes/${funcionarioId}`] = {
+                nome: funcionarioNome,
+                entrada: timestampEntrada,
+                saida: null
+            };
 
-                    if (carregamento.participantes && carregamento.participantes[funcionarioId] && !carregamento.participantes[funcionarioId].saida) {
-                        alert('Este funcionário já está participando deste carregamento.');
-                        return;
-                    }
-
-                    const updates = {};
-                    updates[`participantes/${funcionarioId}`] = {
-                        nome: funcionarioNome,
-                        entrada: timestampEntrada,
-                        saida: null
-                    };
-
-                    return carregamentosRef.child(carregamentoKey).update(updates);
-                })
-                .then(() => {
-                    alert('Funcionário adicionado ao carregamento com sucesso!');
-                    hideAllForms();
-                    document.getElementById('addFuncionarioId').value = '';
-                    document.getElementById('carregamentoDestino').value = '';
-                })
-                .catch(error => {
-                    console.error("Erro ao adicionar funcionário ao carregamento:", error);
-                    if (typeof error === 'string' && error.startsWith('Não é possível remover o último funcionário')) {
-                        alert(error);
-                    } else {
-                        alert('Erro ao adicionar funcionário ao carregamento.');
-                    }
-                });
-        }
+            return carregamentosRef.child(carregamentoKey).update(updates);
+        })
+        .then(() => {
+            alert('Funcionário adicionado ao carregamento com sucesso!');
+            hideAllForms();
+            document.getElementById('addFuncionarioId').value = '';
+            document.getElementById('carregamentoDestino').value = '';
+        })
+        .catch(error => {
+            console.error("Erro ao adicionar funcionário ao carregamento:", error);
+            if (error.message === 'Carregamento inválido' || error.message === 'Funcionário já participando') {
+                // Já tratado
+            } else {
+                alert('Erro ao adicionar funcionário ao carregamento: ' + (error.message || 'Consulte o console para detalhes'));
+            }
+        });
+}
 
         // Remove um funcionário de um carregamento em andamento
         function handleRemoveFuncionario(event) {
@@ -2959,277 +3294,460 @@ document.getElementById('dashboard2-tab')
 
         // Atualiza o dashboard em tempo real
         function atualizarDashboard() {
-            carregamentosRef.orderByChild('finalizado').equalTo(false).on('value', (snapshot) => {
-                const carregamentos = snapshot.val() || {};
-                carregamentosEmAndamento = carregamentos;
+    carregamentosRef.orderByChild('finalizado').equalTo(false).on('value', (snapshot) => {
+        const carregamentos = snapshot.val() || {};
+        carregamentosEmAndamento = carregamentos;
 
-                let operacaoHtml = '';
-                Object.entries(carregamentos).forEach(([key, carregamento]) => {
-                    if (carregamento.unidade === unidadeAtual) {
-                        const tempoDecorrido = Math.floor((new Date().getTime() - carregamento.inicio) / 60000);
-                        const tempoPausado = carregamento.pausas ? carregamento.pausas.reduce((total, pausa) => {
-                            return total + ((pausa.fim || new Date().getTime()) - pausa.inicio);
-                        }, 0) / 60000 : 0;
-                        const tempoEfetivo = tempoDecorrido - tempoPausado;
+        // Atualiza cards de carregamento
+        atualizarCardsCarregamento(carregamentos);
+        
+        // Atualiza dashboard resumido
+        atualizarDashboardResumido(carregamentos);
+        
+        // Atualiza lista de funcionários
+        atualizarFuncionariosEmAcao(carregamentos);
+    });
 
-                        let tempoClass = 'time-normal';
-                        if (tempoEfetivo > 120) tempoClass = 'time-critical';
-                        else if (tempoEfetivo > 90) tempoClass = 'time-warning';
+    // Monitora mudanças nas docas
+    docasRef.on('value', snapshot => {
+        const docas = snapshot.val() || {};
+        atualizarInterfaceDocas(docas);
+    });
+}
+function iniciarAtualizacaoAutomatica() {
+    // Atualiza todas as docas imediatamente e depois a cada minuto
+    for (let i = 1; i <= 11; i++) {
+        atualizarDocaEspecifica(i);
+    }
+    
+    intervaloAtualizacaoDoca = setInterval(() => {
+        for (let i = 1; i <= 11; i++) {
+            atualizarDocaEspecifica(i);
+        }
+    }, 60000); // 60 segundos
+}
+function atualizarDocaEspecifica(numeroDoca) {
+    // Busca os dados atualizados da doca
+    docasRef.child(numeroDoca).once('value', (snapshot) => {
+        const doca = snapshot.val();
+        const docaElement = document.querySelector(`.doca-${numeroDoca}`);
+        
+        if (!docaElement) return;
 
-                        const tempoRestante = TEMPO_LIMITE_MINUTOS - tempoEfetivo;
-                        const tempoRestanteTexto = tempoRestante >= 0 ?
-                            `${tempoRestante} minutos restantes` :
-                            `Estourou em ${Math.abs(tempoRestante)} minutos`;
-
-                        let participantesHtml = '';
-                        const participantesAtivos = Object.entries(carregamento.participantes || {})
-                            .filter(([id, p]) => !p.saida);
-
-                        if (participantesAtivos.length > 0) {
-                            participantesHtml = '<div class="mt-2"><strong>Colaboradores:</strong><ul class="list-unstyled mb-0 carregadores-lista-operacao">';
-                            participantesAtivos.forEach(([id, p]) => {
-                                participantesHtml += `
-                                    <li>
-                                        ${p.nome || id}
-                                        <button class="btn btn-outline-danger btn-sm btn-remove-funcionario"
-                                                data-carregamento-key="${key}"
-                                                data-funcionario-id="${id}"
-                                                data-funcionario-nome="${p.nome || id}">
-                                            <i class="bi bi-x"></i>
-                                        </button>
-                                    </li>
-                                `;
-                            });
-                            participantesHtml += '</ul></div>';
-                        }
-
-                        let pausaBadge = '';
-                        if (carregamento.pausado) {
-                            pausaBadge = '<span class="badge paused-badge">PAUSADO</span>';
-                        }
-
-                        operacaoHtml += `
-                            <div class="card card-carregamento em-andamento mb-2 carregamento-${key} ${carregamento.pausado ? 'paused' : ''}">
-                                <div class="card-body">
-                                    <h6 class="card-title">DT: ${carregamento.placa || 'N/A'} ${pausaBadge}</h6>
-                                    <p class="card-text">Doca: ${carregamento.doca || 'N/A'}</p>
-                                    ${participantesHtml}
-                                    <p class="card-text tempo-decorrido ${tempoClass}">
-                                       Tempo: ${Math.floor(tempoEfetivo)} minutos (${tempoDecorrido} min total)<br>
-                                       Tempo Restante (2:20h): ${tempoRestanteTexto}
-                                    </p>
-                                    <p class="card-text mb-0"><small>Início: ${new Date(carregamento.inicio).toLocaleTimeString()}</small></p>
-                                    ${carregamento.armagens ? `<p class="card-text mb-0"><small>Armagens: ${carregamento.armagens.join(', ')}</small></p>` : ''}
-                                </div>
-                            </div>
+        if (doca && doca.ocupada) {
+            // Busca o carregamento associado
+            carregamentosRef
+                .orderByChild('doca')
+                .equalTo(numeroDoca.toString())
+                .once('value', (snapCar) => {
+                    const dados = snapCar.val() || {};
+                    const key = Object.keys(dados).find(k => !dados[k].finalizado);
+                    
+                    if (key) {
+                        const carregamento = dados[key];
+                        atualizarInterfaceDoca(numeroDoca, carregamento, doca);
+                    } else {
+                        // Se não encontrar carregamento ativo, mantém a doca como ocupada
+                        docaElement.innerHTML = `
+                            <div class="doca-header">Doca ${numeroDoca}</div>
+                            <p class="mb-1"><strong>Status:</strong> <span class="text-danger">Ocupada 🚚💨</span></p>
+                            <p>Carregando informações...</p>
                         `;
                     }
                 });
+        } else {
+            // Doca livre
+            docaElement.innerHTML = `
+                <div class="doca-header">Doca ${numeroDoca}</div>
+                <p class="mb-1"><strong>Status:</strong> <span class="text-success">Livre 🚛</span></p>
+            `;
+            docaElement.classList.remove('paused');
+        }
+    });
+}
 
-                document.getElementById('carregamentosAndamento').innerHTML = operacaoHtml || '<p>Nenhum carregamento em andamento no momento.</p>';
 
-                document.querySelectorAll('.btn-remove-funcionario').forEach(btn => {
-                    btn.removeEventListener('click', handleRemoveFuncionario);
-                    btn.addEventListener('click', handleRemoveFuncionario);
-                });
-
-                let dashboardHtml = '';
-                const funcionariosEmAcao = {};
-
-                Object.keys(carregamentos).forEach(key => {
-                    const carregamento = carregamentos[key];
-                    if (carregamento.unidade === unidadeAtual) {
-                        const tempoDecorrido = Math.floor((new Date().getTime() - carregamento.inicio) / 60000);
-                        const tempoPausado = carregamento.pausas ? carregamento.pausas.reduce((total, pausa) => {
-                            return total + ((pausa.fim || new Date().getTime()) - pausa.inicio);
-                        }, 0) / 60000 : 0;
-                        const tempoEfetivo = tempoDecorrido - tempoPausado;
-
-                        const porcentagem = Math.min(100, Math.max(0, (tempoEfetivo / TEMPO_LIMITE_MINUTOS) * 100));
-
-                        let progressClass = 'bg-success';
-                        if (porcentagem > 75) progressClass = 'bg-warning';
-                        if (porcentagem >= 100) progressClass = 'bg-danger';
-
-                        const tempoRestante = TEMPO_LIMITE_MINUTOS - tempoEfetivo;
-                        const tempoRestanteTexto = tempoRestante >= 0 ?
-                            `${tempoRestante} min restantes` :
-                            `Estourou em ${Math.abs(tempoRestante)} min`;
-
-                        let pausaBadge = '';
-                        if (carregamento.pausado) {
-                            pausaBadge = '<span class="badge paused-badge">PAUSADO</span>';
-                        }
-
-                        dashboardHtml += `
-                            <div class="card mb-3 ${carregamento.pausado ? 'paused' : ''}">
-                                <div class="card-body">
-                                    <h6>DT: ${carregamento.placa || 'N/A'} ${pausaBadge}</h6>
-                                    <p>Doca: ${carregamento.doca || 'N/A'}</p>
-                                    <div class="progress progress-bar-tempo">
-                                        <div class="progress-bar ${progressClass}"
-                                             role="progressbar"
-                                             style="width: ${porcentagem}%"
-                                             aria-valuenow="${porcentagem}"
-                                             aria-valuemin="0"
-                                             aria-valuemax="100">
-                                        </div>
-                                    </div>
-                                    <small>Tempo: ${Math.floor(tempoEfetivo)} minutos (${tempoRestanteTexto})</small>
-                                    ${carregamento.armagens ? `<p class="mb-0"><small>Armagens: ${carregamento.armagens.join(', ')}</small></p>` : ''}
-                                </div>
-                            </div>
-                        `;
-
-                        if (carregamento.participantes) {
-                            Object.entries(carregamento.participantes)
-                                .filter(([id, p]) => !p.saida)
-                                .forEach(([id, p]) => {
-                                    funcionariosEmAcao[id] = (funcionariosEmAcao[id] || 0) + 1;
-                                });
-                        }
-                    }
-                });
-
-                document.getElementById('dashboardCarregamentos').innerHTML = dashboardHtml || '<p>Nenhum carregamento em andamento</p>';
-
-                const totalCarregamentos = Object.values(carregamentos).filter(c => c.unidade === unidadeAtual).length;
-                document.getElementById('totalCarregamentosHoje').textContent = totalCarregamentos;
-
-                const funcionariosEmAcaoIds = Object.keys(funcionariosEmAcao);
-                if (funcionariosEmAcaoIds.length > 0) {
-                    const promises = funcionariosEmAcaoIds.map(id => buscarFuncionario(id).then(f => ({ id, nome: f.nome || id })).catch(() => ({ id, nome: id })));
-                    Promise.all(promises).then(funcionariosComNome => {
-                        let funcionariosHtml = '';
-                        funcionariosComNome.forEach(func => {
-                            funcionariosHtml += `
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div>
-                                        <strong>${func.nome}</strong>
-                                        <small class="text-muted d-block">${func.id}</small>
-                                    </div>
-                                    <span class="badge bg-primary rounded-pill">${funcionariosEmAcao[func.id]} carreg.</span>
-                                </div>
-                            `;
-                        });
-                        document.getElementById('dashboardFuncionarios').innerHTML = funcionariosHtml;
-                    });
-                } else {
-                    document.getElementById('dashboardFuncionarios').innerHTML = '<p>Nenhum funcionário em ação no momento</p>';
+// Funções auxiliares
+function atualizarCardsCarregamento(carregamentos) {
+    let operacaoHtml = '';
+    
+    Object.entries(carregamentos).forEach(([key, carregamento]) => {
+        // Pula carregamentos de separação
+        if (carregamento.unidade === unidadeAtual && carregamento.tipoOperacao !== 'separacao') {
+            const { tempoDecorrido, tempoPausado, tempoEfetivo } = calcularTempos(carregamento);
+            const tempoClass = getClassTempo(tempoEfetivo);
+            const tempoRestanteTexto = getTextoRestante(tempoEfetivo);
+            
+            const participantesHtml = gerarHtmlParticipantes(carregamento, key);
+            
+            // Adiciona o motivo da pausa se estiver pausado
+            let pausaBadge = '';
+            if (carregamento.pausado && carregamento.pausas && carregamento.pausas.length > 0) {
+                const ultimaPausa = carregamento.pausas[carregamento.pausas.length - 1];
+                if (!ultimaPausa.fim) {
+                    pausaBadge = `<span class="badge paused-badge">PAUSADO (Motivo: ${ultimaPausa.motivo || 'Não especificado'})</span>`;
                 }
-            });
-
-            docasRef.on('value', snapshot => {
-            const docas = snapshot.val() || {};
-            const container = document.getElementById('docasContainer');
-            container.innerHTML = '';
-
-            // 1) monta array de docas de 1 a 11
-            const arr = [];
-            for (let i = 1; i <= 11; i++) {
-                arr.push({ num: i, info: docas[i] || { ocupada: false } });
             }
+            
+            operacaoHtml += `
+                <div class="card card-carregamento em-andamento mb-2 carregamento-${key} ${carregamento.pausado ? 'paused' : ''}">
+                    <div class="card-body">
+                        <h6 class="card-title">Carregamento: ${carregamento.placa || 'N/A'} ${pausaBadge}</h6>
+                        <p class="card-text">Doca: ${carregamento.doca || 'N/A'}</p>
+                        ${participantesHtml}
+                        <p class="card-text tempo-decorrido ${tempoClass}">
+                           Tempo: ${Math.floor(tempoEfetivo)} minutos (${tempoDecorrido} min total)<br>
+                           Tempo Restante (2:20h): ${tempoRestanteTexto}
+                        </p>
+                        <p class="card-text mb-0"><small>Início: ${new Date(carregamento.inicio).toLocaleTimeString()}</small></p>
+                        ${carregamento.armagens && carregamento.armagens.length > 0 ? 
+                          `<p class="card-text mb-0"><small>Armagens: ${carregamento.armagens.join(', ')}</small></p>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+    });
 
-            // 2) separa ocupadas e livres
-            const ocupadas = arr.filter(d => d.info.ocupada);
-            const livres   = arr.filter(d => !d.info.ocupada);
+    document.getElementById('carregamentosAndamento').innerHTML = operacaoHtml || 
+        '<div class="alert alert-info">Nenhum carregamento em andamento no momento</div>';
+    configurarBotoesRemoverFuncionario();
+}
 
-            // 3) concatena para exibir ocupadas primeiro
-            const ordenadas = [...ocupadas, ...livres];
 
-            // constantes de tempo
-            const LIMITE_MIN = 140;
-            const AMARELO    = 40;
-            const VERMELHO   = 20;
+function atualizarDashboardResumido(carregamentos) {
+    let dashboardHtml = '';
+    const funcionariosEmAcao = {};
 
-            // 4) renderiza cada doca
-            ordenadas.forEach(doca => {
-                const i            = doca.num;
-                const info         = doca.info;
-                const ocupadaClass = info.ocupada ? 'doca-ocupada' : '';
-                const statusText   = info.ocupada ? 'Ocupada 🚚💨' : 'Livre 🚛';
-                const statusClass  = info.ocupada ? 'text-danger' : 'text-success';
-                const placa        = info.placa || '';
-                const inicioMs     = info.inicio || 0;
-                const inicioStr    = inicioMs ? new Date(inicioMs).toLocaleTimeString() : '';
-                const tempoDec     = inicioMs ? Math.floor((Date.now() - inicioMs) / 60000) : 0;
+    Object.keys(carregamentos).forEach(key => {
+        const carregamento = carregamentos[key];
+        if (carregamento.unidade === unidadeAtual) {
+            const { tempoEfetivo } = calcularTempos(carregamento);
+            const porcentagem = Math.min(100, Math.max(0, (tempoEfetivo / TEMPO_LIMITE_MINUTOS) * 100));
+            const progressClass = getClassProgresso(porcentagem);
+            const tempoRestanteTexto = getTextoRestante(tempoEfetivo);
+            const pausaBadge = carregamento.pausado ? '<span class="badge paused-badge">PAUSADO</span>' : '';
 
-                // calcula restante
-                const restanteMin = LIMITE_MIN - tempoDec;
-                const sinal       = restanteMin < 0 ? '-' : '';
-                const absRest     = Math.abs(restanteMin);
-                const h           = Math.floor(absRest / 60);
-                const m           = absRest % 60;
-                const restanteStr = `${sinal}${h}h${m.toString().padStart(2,'0')}min`;
+            dashboardHtml += `
+                <div class="card mb-3 ${carregamento.pausado ? 'paused' : ''}">
+                    <div class="card-body">
+                        <h6>DT: ${carregamento.placa || 'N/A'} ${pausaBadge}</h6>
+                        <p>Doca: ${carregamento.doca || 'N/A'}</p>
+                        <div class="progress progress-bar-tempo">
+                            <div class="progress-bar ${progressClass}"
+                                 role="progressbar"
+                                 style="width: ${porcentagem}%"
+                                 aria-valuenow="${porcentagem}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                        <small>Tempo: ${Math.floor(tempoEfetivo)} minutos (${tempoRestanteTexto})</small>
+                        ${carregamento.armagens ? `<p class="mb-0"><small>Armagens: ${carregamento.armagens.join(', ')}</small></p>` : ''}
+                    </div>
+                </div>
+            `;
 
-                // escolhe cor da barra
-                let barraClass = 'bg-success';
-                if (restanteMin <= VERMELHO) barraClass = 'bg-danger';
-                else if (restanteMin <= AMARELO) barraClass = 'bg-warning';
+            // Contabiliza funcionários ativos
+            if (carregamento.participantes) {
+                Object.entries(carregamento.participantes)
+                    .filter(([id, p]) => !p.saida)
+                    .forEach(([id, p]) => {
+                        funcionariosEmAcao[id] = (funcionariosEmAcao[id] || 0) + 1;
+                    });
+            }
+        }
+    });
 
-                // calcula % preenchido
-                const pct = Math.min(100, (tempoDec / LIMITE_MIN) * 100);
+    document.getElementById('dashboardCarregamentos').innerHTML = dashboardHtml || '<p>Nenhum carregamento em andamento</p>';
+    document.getElementById('totalCarregamentosHoje').textContent = Object.values(carregamentos).filter(c => c.unidade === unidadeAtual).length;
+    
+    return funcionariosEmAcao;
+}
 
-                // injeta HTML
-                container.innerHTML += `
-<div class="col-md-4">
-    <div class="doca-container ${ocupadaClass} doca-${i}" data-inicio="${inicioMs}">
-        <div class="doca-header">Doca ${i}</div>
-        <p class="mb-1">
-            <strong>Status:</strong>
-            <span class="${statusClass}">${statusText}</span>
-        </p>
-        ${info.ocupada ? `
-            <p class="mb-1"><strong>Colaboradores:</strong></p>
-            <div class="carregadores-nomes">Carregando nomes...</div>
-            <p class="mb-1"><strong>DT:</strong> ${placa}</p>
-            <p class="mb-1"><strong>Início:</strong> ${inicioStr}</p>
-            <p class="mb-1"><strong>Tempo Decorrido:</strong> 
-                <span class="tempo-decorrido-numero">${tempoDec}</span> min
-            </p>
-            <p class="mb-1">
-                <strong>Tempo Restante:</strong> 
-                <span class="tempo-barra-${i}">${restanteStr}</span>
-            </p>
-            <div class="progress mb-2" style="height:20px">
-                <div id="barraDoca-${i}" class="progress-bar ${barraClass}" 
-                     role="progressbar" style="width:${pct}%" 
-                     aria-valuenow="${tempoDec}" 
-                     aria-valuemin="0" 
-                     aria-valuemax="${restanteStr}">
-                    <span class="tempo-barra-${i}"></span>
+function atualizarFuncionariosEmAcao(carregamentos) {
+    const funcionariosEmAcao = atualizarDashboardResumido(carregamentos);
+    const funcionariosEmAcaoIds = Object.keys(funcionariosEmAcao);
+
+    if (funcionariosEmAcaoIds.length > 0) {
+        const promises = funcionariosEmAcaoIds.map(id => 
+            buscarFuncionario(id)
+                .then(f => ({ id, nome: f.nome || id }))
+                .catch(() => ({ id, nome: id }))
+        );
+        
+        Promise.all(promises).then(funcionariosComNome => {
+            let funcionariosHtml = '';
+            funcionariosComNome.forEach(func => {
+                funcionariosHtml += `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <strong>${func.nome}</strong>
+                            <small class="text-muted d-block">${func.id}</small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">${funcionariosEmAcao[func.id]} carreg.</span>
+                    </div>
+                `;
+            });
+            document.getElementById('dashboardFuncionarios').innerHTML = funcionariosHtml;
+        });
+    } else {
+        document.getElementById('dashboardFuncionarios').innerHTML = '<p>Nenhum funcionário em ação no momento</p>';
+    }
+}
+
+function atualizarInterfaceDocas(docas) {
+    const container = document.getElementById('docasContainer');
+    container.innerHTML = '';
+
+    // Prepara array de docas (1 a 11)
+    const arr = Array.from({length: 11}, (_, i) => ({ 
+        num: i + 1, 
+        info: docas[i + 1] || { ocupada: false } 
+    }));
+
+    // Separa e ordena (ocupadas primeiro)
+    const ordenadas = [...arr.filter(d => d.info.ocupada), ...arr.filter(d => !d.info.ocupada)];
+
+    // Renderiza cada doca
+    ordenadas.forEach(doca => {
+        const { num: i, info } = doca;
+        const ocupadaClass = info.ocupada ? 'doca-ocupada' : '';
+        const statusText = info.ocupada ? 'Ocupada 🚚💨' : 'Livre 🚛';
+        const statusClass = info.ocupada ? 'text-danger' : 'text-success';
+        const placa = info.placa || '';
+        const inicioMs = info.inicio || 0;
+        const inicioStr = inicioMs ? new Date(inicioMs).toLocaleTimeString() : '';
+
+        // Renderização inicial
+        container.innerHTML += `
+            <div class="col-md-4">
+                <div class="doca-container ${ocupadaClass} doca-${i}" data-inicio="${inicioMs}">
+                    <div class="doca-header">Doca ${i}</div>
+                    <p class="mb-1">
+                        <strong>Status:</strong>
+                        <span class="${statusClass}">${statusText}</span>
+                    </p>
+                    ${info.ocupada ? `
+                        <p class="mb-1"><strong>Colaboradores:</strong></p>
+                        <div class="carregadores-nomes">Carregando nomes...</div>
+                        <p class="mb-1"><strong>DT:</strong> ${placa}</p>
+                        <p class="mb-1"><strong>Início:</strong> ${inicioStr}</p>
+                        <div class="tempo-info-doca-${i}">Calculando tempo...</div>
+                    ` : ''}
                 </div>
             </div>
-        ` : ''}
-    </div>
-</div>
-`;
-                
-                // 5) se estiver ocupada, busca os carregadores ativos e preenche
-                if (info.ocupada) {
-                carregamentosRef
-                    .orderByChild('doca')
-                    .equalTo(i.toString())
-                    .once('value', snapCar => {
-                    const dados = snapCar.val() || {};
-                    // encontra o carregamento não-finalizado
-                    const key = Object.keys(dados)
-                        .find(k => !dados[k].finalizado);
-                    if (!key) return;
-                    const participantes = dados[key].participantes || {};
-                    const nomes = Object.entries(participantes)
-                        .filter(([_, p]) => !p.saida)
-                        .map(([_, p]) => p.nome);
-                    // injeta nomes
-                    const divNomes = document
-                        .querySelector(`.doca-${i} .carregadores-nomes`);
-                    if (divNomes) divNomes.innerHTML = nomes.join('<br>');
-                    });
+        `;
+
+        // Se estiver ocupada, busca informações adicionais
+        if (info.ocupada) {
+            buscarCarregamentoDoca(i).then(carregamento => {
+                if (carregamento) {
+                    atualizarInterfaceDoca(i, carregamento, info);
+                    atualizarParticipantesDoca(i, carregamento);
                 }
             });
-            atualizarResumoDocas();
-            });
         }
+    });
+
+    atualizarResumoDocas();
+}
+
+async function buscarCarregamentoDoca(docaNum) {
+    const snapCar = await carregamentosRef
+        .orderByChild('doca')
+        .equalTo(docaNum.toString())
+        .once('value');
+    
+    const dados = snapCar.val() || {};
+    const key = Object.keys(dados).find(k => !dados[k].finalizado);
+    return key ? dados[key] : null;
+}
+
+function atualizarParticipantesDoca(docaNum, carregamento) {
+    const participantes = carregamento.participantes || {};
+    const nomes = Object.entries(participantes)
+        .filter(([_, p]) => !p.saida)
+        .map(([_, p]) => p.nome);
+    
+    const divNomes = document.querySelector(`.doca-${docaNum} .carregadores-nomes`);
+    if (divNomes) divNomes.innerHTML = nomes.join('<br>');
+}
+
+function atualizarInterfaceDoca(docaNum, carregamento, infoDoca) {
+    const { tempoDecorrido, tempoPausado, tempoEfetivo } = calcularTempos(carregamento);
+    const { restanteStr, pct, barraClass } = calcularProgresso(tempoEfetivo);
+    
+    // Adiciona o motivo da pausa se estiver pausado
+    let pausaBadge = '';
+    let motivoPausa = '';
+    if (carregamento.pausado && carregamento.pausas && carregamento.pausas.length > 0) {
+        // Encontra a última pausa não finalizada
+        const ultimaPausa = [...carregamento.pausas]
+            .reverse()
+            .find(p => !p.fim);
+        
+        if (ultimaPausa) {
+            motivoPausa = ultimaPausa.motivo || 'Não especificado';
+            pausaBadge = `<span class="badge paused-badge">PAUSADO (Motivo: ${motivoPausa})</span>`;
+        }
+    }
+
+    const tipoTexto = carregamento.tipoOperacao === 'separacao' ? 'Separação' : 'Carregamento';
+    const placaTexto = carregamento.tipoOperacao === 'separacao' ? 'SEPARAÇÃO' : carregamento.placa || 'N/A';
+
+    const tempoHtml = `
+        <p class="mb-1"><strong>Tipo:</strong> ${tipoTexto}</p>
+        <p class="mb-1"><strong>DT:</strong> ${placaTexto}</p>
+        <p class="mb-1"><strong>Tempo Efetivo:</strong> 
+            <span class="tempo-decorrido-numero">${tempoEfetivo}</span> min
+            (Total: ${tempoDecorrido} min)
+            ${pausaBadge}
+        </p>
+        ${motivoPausa ? `<p class="mb-1"><small>Motivo: ${motivoPausa}</small></p>` : ''}
+        <p class="mb-1">
+            <strong>Tempo Restante (2:20h):</strong> 
+            <span class="tempo-barra-${docaNum}">${formatarTempoRestante(TEMPO_LIMITE_MINUTOS - tempoEfetivo)}</span>
+        </p>
+        <div class="progress mb-2" style="height:20px">
+            <div class="progress-bar ${barraClass}" 
+                 style="width:${pct}%" 
+                 aria-valuenow="${tempoEfetivo}">
+            </div>
+        </div>
+    `;
+
+    const divTempo = document.querySelector(`.doca-${docaNum} .tempo-info-doca-${docaNum}`);
+    if (divTempo) divTempo.innerHTML = tempoHtml;
+
+    // Atualiza status para mostrar que está pausado
+    const statusSpan = document.querySelector(`.doca-${docaNum} span.text-danger`);
+    if (statusSpan) {
+        statusSpan.innerHTML = carregamento.pausado ? 'Pausado ⏸️' : 'Ocupada 🚚💨';
+    }
+
+    // Adiciona classe de pausa ao container da doca
+    const docaElement = document.querySelector(`.doca-${docaNum}`);
+    if (docaElement) {
+        if (carregamento.pausado) {
+            docaElement.classList.add('paused');
+        } else {
+            docaElement.classList.remove('paused');
+        }
+    }
+
+    // Atualiza participantes
+    if (carregamento.participantes) {
+        const participantesHtml = Object.entries(carregamento.participantes)
+            .filter(([_, p]) => !p.saida)
+            .map(([_, p]) => p.nome)
+            .join('<br>');
+        
+        const divParticipantes = document.querySelector(`.doca-${docaNum} .carregadores-nomes`);
+        if (divParticipantes) divParticipantes.innerHTML = participantesHtml || 'Nenhum colaborador ativo';
+    }
+}
+
+function formatarTempoRestante(minutos) {
+    if (minutos <= 0) {
+        const minutosAtraso = Math.abs(minutos);
+        return `Estourou em ${minutosAtraso} min`;
+    }
+    
+    const horas = Math.floor(minutos / 60);
+    const mins = minutos % 60;
+    return `${horas}h${mins.toString().padStart(2, '0')}min restantes`;
+}
+
+// Funções utilitárias
+function calcularTempos(carregamento) {
+    const agora = new Date().getTime();
+    const tempoDecorrido = Math.floor((agora - carregamento.inicio) / 60000);
+    
+    // Calcula tempo pausado (em minutos)
+    const tempoPausado = carregamento.pausas ? carregamento.pausas.reduce((total, pausa) => {
+        const fimPausa = pausa.fim || (carregamento.pausado ? agora : pausa.inicio);
+        return total + (fimPausa - pausa.inicio);
+    }, 0) / 60000 : 0;
+    
+    // Tempo efetivo é o tempo decorrido menos as pausas
+    const tempoEfetivo = Math.max(0, Math.floor(tempoDecorrido - tempoPausado));
+    
+    return { 
+        tempoDecorrido, 
+        tempoPausado: Math.floor(tempoPausado), 
+        tempoEfetivo 
+    };
+}
+
+function calcularProgresso(tempoEfetivo) {
+    const restanteMin = TEMPO_LIMITE_MINUTOS - tempoEfetivo;
+    const sinal = restanteMin < 0 ? '-' : '';
+    const absRest = Math.abs(restanteMin);
+    const h = Math.floor(absRest / 60);
+    const m = absRest % 60;
+    const restanteStr = `${sinal}${h}h${m.toString().padStart(2,'0')}min`;
+    
+    const pct = Math.min(100, (tempoEfetivo / TEMPO_LIMITE_MINUTOS) * 100);
+    
+    let barraClass = 'bg-success';
+    if (restanteMin <= VERMELHO) barraClass = 'bg-danger';
+    else if (restanteMin <= AMARELO) barraClass = 'bg-warning';
+    
+    return { restanteStr, pct, barraClass };
+}
+
+function getClassTempo(tempoEfetivo) {
+    const tempoRestante = TEMPO_LIMITE_MINUTOS - tempoEfetivo;
+    if (tempoRestante <= 20) return 'time-critical';  
+    if (tempoRestante <= 40) return 'time-warning';   
+    return 'time-normal';                             
+}
+
+function getClassProgresso(porcentagem) {
+    if (porcentagem >= 100) return 'bg-danger';
+    if (porcentagem > 75) return 'bg-warning';
+    return 'bg-success';
+}
+
+function getTextoRestante(tempoEfetivo) {
+    const tempoRestante = TEMPO_LIMITE_MINUTOS - tempoEfetivo;
+    return tempoRestante >= 0 
+        ? `${tempoRestante} ${tempoRestante === 1 ? 'minuto' : 'minutos'} restantes` 
+        : `Estourou em ${Math.abs(tempoRestante)} ${Math.abs(tempoRestante) === 1 ? 'minuto' : 'minutos'}`;
+}
+
+function gerarHtmlParticipantes(carregamento, key) {
+    const participantesAtivos = Object.entries(carregamento.participantes || {})
+        .filter(([id, p]) => !p.saida);
+    
+    if (participantesAtivos.length === 0) return '';
+    
+    let html = '<div class="mt-2"><strong>Colaboradores:</strong><ul class="list-unstyled mb-0 carregadores-lista-operacao">';
+    
+    participantesAtivos.forEach(([id, p]) => {
+        html += `
+            <li>
+                ${p.nome || id}
+                <button class="btn btn-outline-danger btn-sm btn-remove-funcionario"
+                        data-carregamento-key="${key}"
+                        data-funcionario-id="${id}"
+                        data-funcionario-nome="${p.nome || id}">
+                    <i class="bi bi-x"></i>
+                </button>
+            </li>
+        `;
+    });
+    
+    html += '</ul></div>';
+    return html;
+}
+
+function configurarBotoesRemoverFuncionario() {
+    document.querySelectorAll('.btn-remove-funcionario').forEach(btn => {
+        btn.removeEventListener('click', handleRemoveFuncionario);
+        btn.addEventListener('click', handleRemoveFuncionario);
+    });
+}
 
         function atualizarBarrasTempo() {
   const limiteMinutos = 140;

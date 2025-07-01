@@ -125,7 +125,6 @@
                     <select id="tipoOperacao" class="form-select">
                         <option value="carregamento">Carregamento</option>
                         <option value="separacao">Separação</option>
-                        <option value="descarga">Descarga</option>
                     </select>
                 </div>
                 
@@ -151,7 +150,7 @@
                 <!-- Campos específicos para CARREGAMENTO (inicialmente visíveis) -->
                 <div class="mb-3" id="placaContainer">
                     <label class="form-label">DT</label>
-                    <input type="text" class="form-control" id="placaCaminhao" placeholder="Placa do caminhão">
+                    <input type="text" class="form-control" id="placaCaminhao" placeholder="Ex: 12345">
                 </div>
                 
                 <div class="mb-3" id="tipoVeiculoContainer">
@@ -194,7 +193,7 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Toneladas Carregadas</label>
-                        <input type="number" class="form-control" id="toneladas" placeholder="Ex: 10.5" step="0.1" min="0">
+                        <input type="number" class="form-control" id="toneladas" placeholder="Ex: 10.5" step="0.1" min="0" max="9.9">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Observação:</label>
@@ -269,10 +268,24 @@
                                 <div class="mb-3">
                                     <label for="acaoPausar" class="form-label">Ação</label>
                                     <select class="form-select" id="acaoPausar">
-                                        <option value="pausar">Pausar (horário de almoço)</option>
-                                        <option value="retomar">Retomar (após almoço)</option>
-                                        <option value="pausar_chuva">Pausar (chuva)</option>
-                                        <option value="retomar_chuva">Retomar (após chuva)</option>
+                                        <option value="pausar_refeicao">Pausar (Refeição)</option>
+                                        <option value="retomar_refeicao">Retomar (Após Refeição)</option>
+                                        <option value="pausar_faturar">Pausar (Aguardando Faturar)</option>
+                                        <option value="retomar_faturar">Retomar (Após Faturar)</option>
+                                        <option value="pausar_treinamento">Pausar (Treinamento)</option>
+                                        <option value="retomar_treinamento">Retomar (Após Treinamento)</option>
+                                        <option value="pausar_sna">Pausar (SNA)</option>
+                                        <option value="retomar_sna">Retomar (Após SNA)</option>
+                                        <option value="pausar_prioridade">Pausar (Prioridade Operacional)</option>
+                                        <option value="retomar_prioridade">Retomar (Após Prioridade)</option>
+                                        <option value="pausar_limpeza">Pausar (Limpeza/Organização)</option>
+                                        <option value="retomar_limpeza">Retomar (Após Limpeza)</option>
+                                        <option value="pausar_ocorrencia">Pausar (Ocorrência)</option>
+                                        <option value="retomar_ocorrencia">Retomar (Após Ocorrência)</option>
+                                        <option value="pausar_tombamento">Pausar (Tombamento)</option>
+                                        <option value="retomar_tombamento">Retomar (Após Tombamento)</option>
+                                        <option value="pausar_chuva">Pausar (Chuva)</option>
+                                        <option value="retomar_chuva">Retomar (Após Chuva)</option>
                                     </select>
                                 </div>
                                 <button id="btnConfirmarPausar" class="btn btn-primary">Confirmar</button>
@@ -988,6 +1001,11 @@
             atualizarTemposContinuamente();
             iniciarAtualizacaoAutomatica();
 
+
+            carregamentosRef.orderByChild('finalizado').equalTo(false).on('value', (snapshot) => {
+                atualizarCarregamentosAndamento();
+            });
+
             // Configura o filtro do histórico para o mês/ano atual
             const hoje = new Date();
             const mesAtual = (hoje.getMonth() + 1).toString().padStart(2, '0');
@@ -1001,7 +1019,7 @@
                 if (operacaoAtual !== 'iniciar') return;
                 
                 const tipo = this.value;
-                const isCarregamento = tipo === 'carregamento' || tipo === 'descarga';
+                const isCarregamento = tipo === 'carregamento';
                 
                 document.getElementById('placaContainer').style.display = isCarregamento ? 'block' : 'none';
                 document.getElementById('tipoVeiculoContainer').style.display = isCarregamento ? 'block' : 'none';
@@ -1020,7 +1038,7 @@
                 
                 // Mostra campos conforme o tipo selecionado
                 const tipo = document.getElementById('tipoOperacao').value;
-                const isCarregamento = tipo === 'carregamento' || tipo === 'descarga';
+                const isCarregamento = tipo === 'carregamento';
 
                 // Campos específicos para carregamento
                 document.getElementById('placaContainer').style.display = isCarregamento ? 'block' : 'none';
@@ -1891,45 +1909,92 @@ function atualizarGraficoArmagens(carregamentos) {
 }
 
 function atualizarCarregamentosAndamento() {
-    carregamentosRef.orderByChild('finalizado').equalTo(false).on('value', snapshot => {
+    carregamentosRef.orderByChild('finalizado').equalTo(false).once('value', (snapshot) => {
         const carregamentos = snapshot.val() || {};
-        let html = '';
+        let operacaoHtml = '';
         
-        Object.entries(carregamentos).forEach(([key, c]) => {
-            if (c.unidade === unidadeAtual) {
-                const tempoDecorrido = Math.floor((Date.now() - c.inicio) / 60000);
-                const tempoRestante = Math.max(0, 140 - tempoDecorrido);
+        Object.entries(carregamentos).forEach(([key, carregamento]) => {
+            // Pula carregamentos de separação
+            if (carregamento.unidade === unidadeAtual && carregamento.tipoOperacao !== 'separacao') {
+                const { tempoDecorrido, tempoPausado, tempoEfetivo } = calcularTempos(carregamento);
+                const tempoClass = getClassTempo(tempoEfetivo);
+                const tempoRestanteTexto = getTextoRestante(tempoEfetivo);
                 
-                html += `
-                    <div class="carregamento-andamento">
-                        <div class="doca-placa">Doca ${c.doca || 'N/A'} - DT ${c.placa || 'N/A'}</div>
-                        <div class="tempo-info">
-                            <span class="tempo-decorrido">${tempoDecorrido} min</span>
-                            <span class="tempo-restante">${tempoRestante} min restantes</span>
-                        </div>
-                        <div class="progress">
-                            <div class="progress-bar" 
-                                 role="progressbar" 
-                                 style="width: ${Math.min(100, (tempoDecorrido / 140) * 100)}%" 
-                                 aria-valuenow="${tempoDecorrido}" 
-                                 aria-valuemin="0" 
-                                 aria-valuemax="140">
-                            </div>
-                        </div>
-                        <div class="participantes">
-                            ${Object.values(c.participantes || {})
-                                .filter(p => !p.saida)
-                                .map(p => p.nome || 'N/A')
-                                .join(', ')}
+                const participantesHtml = gerarHtmlParticipantes(carregamento, key);
+                
+                // Adiciona o motivo da pausa se estiver pausado
+                let pausaBadge = '';
+                let motivoPausa = '';
+                if (carregamento.pausado && carregamento.pausas && carregamento.pausas.length > 0) {
+                    // Encontra a última pausa não finalizada
+                    const ultimaPausa = [...carregamento.pausas]
+                        .reverse()
+                        .find(p => !p.fim);
+                    
+                    if (ultimaPausa) {
+                        motivoPausa = ultimaPausa.motivo || 'Não especificado';
+                        pausaBadge = `<span class="badge paused-badge">PAUSADO (Motivo: ${motivoPausa})</span>`;
+                    }
+                }
+                
+                operacaoHtml += `
+                    <div class="card card-carregamento em-andamento mb-2 carregamento-${key} ${carregamento.pausado ? 'paused' : ''}">
+                        <div class="card-body">
+                            <h6 class="card-title">Carregamento: ${carregamento.placa || 'N/A'} ${pausaBadge}</h6>
+                            <p class="card-text">Doca: ${carregamento.doca || 'N/A'}</p>
+                            ${participantesHtml}
+                            <p class="card-text tempo-decorrido ${tempoClass}">
+                               Tempo: ${Math.floor(tempoEfetivo)} minutos (${tempoDecorrido} min total)<br>
+                               Tempo Restante (2:20h): ${tempoRestanteTexto}
+                            </p>
+                            ${motivoPausa ? `<p class="card-text"><small></small></p>` : ''}
+                            <p class="card-text mb-0"><small>Início: ${new Date(carregamento.inicio).toLocaleTimeString()}</small></p>
+                            ${carregamento.armagens && carregamento.armagens.length > 0 ? 
+                              `<p class="card-text mb-0"><small>Armagens: ${carregamento.armagens.join(', ')}</small></p>` : ''}
                         </div>
                     </div>
                 `;
             }
         });
-        
-        document.getElementById('dashboardCarregamentos').innerHTML = html || 
-            '<div class="alert alert-info">Nenhum carregamento em andamento</div>';
+
+        document.getElementById('carregamentosAndamento').innerHTML = operacaoHtml || 
+            '<div class="alert alert-info">Nenhum carregamento em andamento no momento</div>';
+        configurarBotoesRemoverFuncionario();
     });
+}
+
+function calcularTempos(carregamento) {
+    try {
+        const agora = new Date().getTime();
+        const inicio = carregamento.inicio || agora;
+        const tempoDecorrido = Math.floor((agora - inicio) / 60000);
+        
+        // Calcula tempo pausado (em minutos)
+        let tempoPausado = 0;
+        if (carregamento.pausas && Array.isArray(carregamento.pausas)) {
+            tempoPausado = carregamento.pausas.reduce((total, pausa) => {
+                const inicioPausa = pausa.inicio || agora;
+                const fimPausa = pausa.fim || (carregamento.pausado ? agora : inicioPausa);
+                return total + (fimPausa - inicioPausa);
+            }, 0) / 60000;
+        }
+        
+        // Tempo efetivo é o tempo decorrido menos as pausas
+        const tempoEfetivo = Math.max(0, Math.floor(tempoDecorrido - tempoPausado));
+        
+        return { 
+            tempoDecorrido, 
+            tempoPausado: Math.floor(tempoPausado), 
+            tempoEfetivo 
+        };
+    } catch (error) {
+        console.error("Erro ao calcular tempos:", error);
+        return {
+            tempoDecorrido: 0,
+            tempoPausado: 0,
+            tempoEfetivo: 0
+        };
+    }
 }
 
 function formatarMinutosParaHoraMinuto(minutos) {
@@ -2806,7 +2871,6 @@ document.getElementById('dashboard2-tab')
        function finalizarCarregamento() {
     const funcionarioPrincipal = document.getElementById('funcionarioPrincipal').value.trim();
     
-    // Validação básica apenas para o funcionário principal
     if (!funcionarioPrincipal) {
         alert('Informe o funcionário principal!');
         return;
@@ -2816,111 +2880,111 @@ document.getElementById('dashboard2-tab')
     const toneladas = document.getElementById('toneladas').value.trim();
     const observacao = document.getElementById('Just').value.trim();
 
-    if (!mixMaterial) {
-        alert('Informe a quantidade de mix de material!');
+    // Validações básicas
+    if (!mixMaterial || isNaN(mixMaterial)) {
+        alert('Informe uma quantidade válida de mix de material!');
         return;
     }
 
-    if (!toneladas) {
-        alert('Informe as toneladas carregadas!');
-        return;
-    }
-
-    if (isNaN(mixMaterial) || isNaN(toneladas)) {
-        alert('Mix de material e toneladas devem ser valores numéricos!');
-        return;
-    }
-
-    // Busca carregamentos em andamento
     carregamentosRef.orderByChild('finalizado').equalTo(false).once('value', (snapshot) => {
         const carregamentos = snapshot.val() || {};
         let carregamentoEmAndamento = null;
         let carregamentoKey = null;
 
-        // Encontra o carregamento ativo para o funcionário principal
+        // Encontra o carregamento ativo
         Object.entries(carregamentos).forEach(([key, c]) => {
             if (c.unidade === unidadeAtual && c.participantes && c.participantes[funcionarioPrincipal] && !c.participantes[funcionarioPrincipal].saida) {
                 carregamentoEmAndamento = c;
                 carregamentoKey = key;
-                return false; // Para o loop quando encontrar
+                return false;
             }
         });
 
-        if (!carregamentoEmAndamento || !carregamentoKey) {
+        if (!carregamentoEmAndamento) {
             alert('Nenhuma operação em andamento encontrada para este funcionário!');
             return;
         }
 
-        // Verifica se há pelo menos um funcionário ativo no carregamento
-        const participantesAtivos = carregamentoEmAndamento.participantes ? 
-            Object.values(carregamentoEmAndamento.participantes).filter(p => !p.saida).length : 0;
-            
-        if (participantesAtivos === 0) {
-            alert('Não é possível finalizar um carregamento sem funcionários ativos! Adicione pelo menos um funcionário antes de finalizar.');
-            return;
-        }
+        const isSeparacao = carregamentoEmAndamento.tipoOperacao === 'separacao';
+        const docaNumero = carregamentoEmAndamento.doca;
 
-        const confirmMsg = `Finalizar ${carregamentoEmAndamento.tipoOperacao === 'separacao' ? 'separação' : 'carregamento'} na Doca ${carregamentoEmAndamento.doca || 'N/A'}?`;
-        
-        if (!confirm(confirmMsg)) {
-            return;
-        }
-
-        // Prepara os dados para atualização
+        // Prepara atualizações
         const timestampFim = new Date().getTime();
         const updates = {
             fim: timestampFim,
             finalizado: true,
             mixMaterial: parseInt(mixMaterial),
-            toneladas: parseFloat(toneladas),
             observacao: observacao || null
         };
 
-        // Atualiza todos os participantes para marcar saída
+        // Só atualiza toneladas se não for separação
+        if (!isSeparacao) {
+            if (!toneladas || isNaN(toneladas)) {
+                alert('Informe as toneladas carregadas!');
+                return;
+            }
+            updates.toneladas = parseFloat(toneladas);
+        }
+
+        // Marca saída dos participantes
         if (carregamentoEmAndamento.participantes) {
-            Object.entries(carregamentoEmAndamento.participantes).forEach(([id, participacao]) => {
-                if (!participacao.saida) {
-                    updates[`participantes/${id}/saida`] = timestampFim;
-                }
+            Object.entries(carregamentoEmAndamento.participantes).forEach(([id, p]) => {
+                if (!p.saida) updates[`participantes/${id}/saida`] = timestampFim;
             });
         }
 
-        // Atualiza no Firebase
         carregamentosRef.child(carregamentoKey).update(updates)
             .then(() => {
-                // Libera a doca se existir
-                if (carregamentoEmAndamento.doca) {
-                    docasRef.child(carregamentoEmAndamento.doca).update({
-                        ocupada: false,
-                        placa: '',
-                        inicio: null,
-                        tipoOperacao: null
-                    });
-                }
-
-                // Limpa o formulário
-                document.getElementById('formContainer').style.display = 'none';
-                document.querySelectorAll('#carregadoresContainer .funcionario-input').forEach(input => input.value = '');
+                // Limpa formulário
+                hideAllForms();
+                document.querySelectorAll('#carregadoresContainer .funcionario-input').forEach(i => i.value = '');
                 document.getElementById('mixMaterial').value = '';
                 document.getElementById('toneladas').value = '';
                 document.getElementById('Just').value = '';
                 
                 // Remove carregadores adicionais
-                const carregadoresContainer = document.getElementById('carregadoresContainer');
-                while (carregadoresContainer.children.length > 1) {
-                    carregadoresContainer.removeChild(carregadoresContainer.lastChild);
-                }
+                const container = document.getElementById('carregadoresContainer');
+                while (container.children.length > 1) container.removeChild(container.lastChild);
 
-                alert('Operação finalizada com sucesso!');
-                atualizarDashboardCompleto();
+                if (isSeparacao) {
+                    // Para separação: mantém a doca ocupada e não atualiza cards
+                    alert('Separação registrada com sucesso! A doca permanece ocupada.');
+                    
+                    // Atualiza apenas os dados do carregamento sem mexer no status da doca
+                    return docasRef.child(docaNumero).once('value').then((docaSnap) => {
+                        const doca = docaSnap.val() || {};
+                        return docasRef.child(docaNumero).update({
+                            placa: 'SEPARAÇÃO',
+                            tipoOperacao: 'separacao',
+                            // Mantém todos os outros valores originais
+                            ocupada: true,
+                            inicio: doca.inicio || Date.now()
+                        });
+                    });
+                } else {
+                    // Para carregamento normal: libera a doca
+                    alert('Carregamento finalizado com sucesso!');
+                    if (docaNumero) {
+                        return docasRef.child(docaNumero).update({
+                            ocupada: false,
+                            placa: '',
+                            inicio: null,
+                            tipoOperacao: null
+                        });
+                    }
+                }
+            })
+            .then(() => {
+                // Atualiza a interface conforme necessário
+                if (!isSeparacao) {
+                    atualizarCarregamentosAndamento();
+                    atualizarInterfaceDocas();
+                }
             })
             .catch(error => {
-                console.error('Erro ao finalizar operação:', error);
-                alert('Erro ao finalizar operação. Consulte o console para detalhes.');
+                console.error('Erro ao finalizar:', error);
+                alert(`Erro ao finalizar ${isSeparacao ? 'separação' : 'carregamento'}`);
             });
-    }, error => {
-        console.error('Erro ao buscar carregamentos:', error);
-        alert('Erro ao buscar carregamentos em andamento.');
     });
 }
         
@@ -2987,7 +3051,7 @@ document.getElementById('dashboard2-tab')
             // Atualiza o dashboard completo após finalizar
             atualizarDashboardCompleto();
 
-            alert(`${carregamento.tipoOperacao === 'carregamento' ? 'Carregamento' : 'Separação'}: 'descarga' finalizada com sucesso!`);
+            alert(`${carregamento.tipoOperacao === 'carregamento' ? 'Carregamento' : 'Separação'}:  finalizada com sucesso!`);
         })
         .catch(error => {
             console.error(`Erro ao finalizar ${carregamento.tipoOperacao}:`, error);
@@ -3032,72 +3096,113 @@ document.getElementById('dashboard2-tab')
         }
 
         // Pausa ou retoma um carregamento
-        function pausarRetomarCarregamento() {
-            const funcionarioId = document.getElementById('pausarFuncionarioId').value.trim();
-            const carregamentoKey = document.getElementById('carregamentoPausar').value;
-            const acao = document.getElementById('acaoPausar').value;
+       function pausarRetomarCarregamento() {
+    const funcionarioId = document.getElementById('pausarFuncionarioId').value.trim();
+    const carregamentoKey = document.getElementById('carregamentoPausar').value;
+    const acao = document.getElementById('acaoPausar').value;
 
-            if (!funcionarioId || !carregamentoKey) {
-                alert('Informe o funcionário e selecione o carregamento!');
+    if (!funcionarioId || !carregamentoKey) {
+        alert('Informe o funcionário e selecione o carregamento!');
+        return;
+    }
+
+    carregamentosRef.child(carregamentoKey).once('value', (snapshot) => {
+        const carregamento = snapshot.val() || {};
+
+        // Verificação mais robusta
+        if (!carregamento || carregamento.finalizado) {
+            alert('Carregamento selecionado inválido ou já finalizado.');
+            return;
+        }
+
+        // Verifica participantes de forma segura
+        if (!carregamento.participantes || !carregamento.participantes[funcionarioId] || 
+            (carregamento.participantes[funcionarioId].saida !== undefined && 
+             carregamento.participantes[funcionarioId].saida !== null)) {
+            alert('Este funcionário não está participando ativamente deste carregamento.');
+            return;
+        }
+
+        const updates = {};
+        const agora = new Date().getTime();
+
+        // Garante que o array de pausas exista
+        updates.pausas = carregamento.pausas || [];
+
+        // Mapeamento de ações para motivos
+        const motivoMap = {
+            'pausar_refeicao': 'Refeição',
+            'retomar_refeicao': 'Refeição',
+            'pausar_faturar': 'Aguardando Faturar',
+            'retomar_faturar': 'Aguardando Faturar',
+            'pausar_treinamento': 'Treinamento',
+            'retomar_treinamento': 'Treinamento',
+            'pausar_sna': 'SNA',
+            'retomar_sna': 'SNA',
+            'pausar_prioridade': 'Prioridade Operacional',
+            'retomar_prioridade': 'Prioridade Operacional',
+            'pausar_limpeza': 'Limpeza/Organização',
+            'retomar_limpeza': 'Limpeza/Organização',
+            'pausar_ocorrencia': 'Ocorrência',
+            'retomar_ocorrencia': 'Ocorrência',
+            'pausar_tombamento': 'Tombamento',
+            'retomar_tombamento': 'Tombamento',
+            'pausar_chuva': 'Chuva',
+            'retomar_chuva': 'Chuva'
+        };
+
+        if (acao.startsWith('pausar_')) {
+            if (carregamento.pausado) {
+                alert('Este carregamento já está pausado!');
                 return;
             }
-
-            carregamentosRef.child(carregamentoKey).once('value', (snapshot) => {
-                const carregamento = snapshot.val();
-
-                if (!carregamento || carregamento.finalizado) {
-                    alert('Carregamento selecionado inválido ou já finalizado.');
-                    return;
-                }
-
-                if (!carregamento.participantes || !carregamento.participantes[funcionarioId] || carregamento.participantes[funcionarioId].saida) {
-                    alert('Este funcionário não está participando ativamente deste carregamento.');
-                    return;
-                }
-
-                const updates = {};
-                const agora = new Date().getTime();
-
-                if (acao === 'pausar' || acao === 'pausar_chuva') {
-                    if (carregamento.pausado) {
-                        alert('Este carregamento já está pausado!');
-                        return;
-                    }
-                    
-                    updates.pausado = true;
-                    updates.pausas = carregamento.pausas || [];
-                    updates.pausas.push({
-                        inicio: agora,
-                        fim: null,
-                        motivo: acao === 'pausar' ? 'Horário de almoço' : 'Chuva'
-                    });
-                } else { // retomar ou retomar_chuva
-                    if (!carregamento.pausado) {
-                        alert('Este carregamento não está pausado!');
-                        return;
-                    }
-                    
-                    updates.pausado = false;
-                    updates.pausas = carregamento.pausas || [];
-                    const ultimaPausa = updates.pausas[updates.pausas.length - 1];
-                    if (ultimaPausa && !ultimaPausa.fim) {
-                        ultimaPausa.fim = agora;
-                    }
-                }
-
-                carregamentosRef.child(carregamentoKey).update(updates)
-                    .then(() => {
-                        alert(`Carregamento ${acao === 'pausar' || acao === 'pausar_chuva' ? 'pausado' : 'retomado'} com sucesso!`);
-                        hideAllForms();
-                        document.getElementById('pausarFuncionarioId').value = '';
-                        document.getElementById('carregamentoPausar').value = '';
-                    })
-                    .catch(error => {
-                        console.error("Erro ao pausar/retomar carregamento:", error);
-                        alert('Erro ao pausar/retomar carregamento.');
-                    });
+            
+            updates.pausado = true;
+            updates.pausas.push({
+                inicio: agora,
+                fim: null,
+                motivo: motivoMap[acao] || 'Outro motivo'
             });
+        } 
+        else if (acao.startsWith('retomar_')) {
+            if (!carregamento.pausado) {
+                alert('Este carregamento não está pausado!');
+                return;
+            }
+            
+            // Encontra a última pausa não finalizada
+            const ultimaPausa = [...updates.pausas]
+                .reverse()
+                .find(p => !p.fim);
+
+            if (ultimaPausa) {
+                ultimaPausa.fim = agora;
+            }
+
+            updates.pausado = false;
         }
+
+        // Atualiza no Firebase
+        carregamentosRef.child(carregamentoKey).update(updates)
+            .then(() => {
+                const motivo = motivoMap[acao] || '';
+                const tipoAcao = acao.startsWith('pausar_') ? 'pausado' : 'retomado';
+                alert(`Carregamento ${tipoAcao} (Motivo: ${motivo}) com sucesso!`);
+                
+                hideAllForms();
+                document.getElementById('pausarFuncionarioId').value = '';
+                document.getElementById('carregamentoPausar').value = '';
+                
+                // Força atualização imediata da interface
+                atualizarDocaEspecifica(carregamento.doca);
+                atualizarCarregamentosAndamento();
+            })
+            .catch(error => {
+                console.error("Erro ao pausar/retomar carregamento:", error);
+                alert(`Erro ao ${acao.startsWith('pausar_') ? 'pausar' : 'retomar'} carregamento: ${error.message}`);
+            });
+    });
+}
 
         // Adiciona um funcionário a um carregamento existente
         function addFuncionarioToCarregamento() {
@@ -3225,6 +3330,10 @@ function atualizarDocaEspecifica(numeroDoca) {
     // Busca os dados atualizados da doca
     docasRef.child(numeroDoca).once('value', (snapshot) => {
         const doca = snapshot.val();
+        const docaElement = document.querySelector(`.doca-${numeroDoca}`);
+        
+        if (!docaElement) return;
+
         if (doca && doca.ocupada) {
             // Busca o carregamento associado
             carregamentosRef
@@ -3233,12 +3342,26 @@ function atualizarDocaEspecifica(numeroDoca) {
                 .once('value', (snapCar) => {
                     const dados = snapCar.val() || {};
                     const key = Object.keys(dados).find(k => !dados[k].finalizado);
+                    
                     if (key) {
                         const carregamento = dados[key];
-                        // Atualiza apenas o card dessa doca
                         atualizarInterfaceDoca(numeroDoca, carregamento, doca);
+                    } else {
+                        // Se não encontrar carregamento ativo, mantém a doca como ocupada
+                        docaElement.innerHTML = `
+                            <div class="doca-header">Doca ${numeroDoca}</div>
+                            <p class="mb-1"><strong>Status:</strong> <span class="text-danger">Ocupada 🚚💨</span></p>
+                            <p>Carregando informações...</p>
+                        `;
                     }
                 });
+        } else {
+            // Doca livre
+            docaElement.innerHTML = `
+                <div class="doca-header">Doca ${numeroDoca}</div>
+                <p class="mb-1"><strong>Status:</strong> <span class="text-success">Livre 🚛</span></p>
+            `;
+            docaElement.classList.remove('paused');
         }
     });
 }
@@ -3249,22 +3372,27 @@ function atualizarCardsCarregamento(carregamentos) {
     let operacaoHtml = '';
     
     Object.entries(carregamentos).forEach(([key, carregamento]) => {
-        if (carregamento.unidade === unidadeAtual) {
+        // Pula carregamentos de separação
+        if (carregamento.unidade === unidadeAtual && carregamento.tipoOperacao !== 'separacao') {
             const { tempoDecorrido, tempoPausado, tempoEfetivo } = calcularTempos(carregamento);
             const tempoClass = getClassTempo(tempoEfetivo);
             const tempoRestanteTexto = getTextoRestante(tempoEfetivo);
             
             const participantesHtml = gerarHtmlParticipantes(carregamento, key);
-            const pausaBadge = carregamento.pausado ? '<span class="badge paused-badge">PAUSADO</span>' : '';
             
-            // Texto diferente para separação
-            const tipoTexto = carregamento.tipoOperacao === 'separacao' ? 'Separação' : 'Carregamento';
-            const placaTexto = carregamento.tipoOperacao === 'separacao' ? 'SEPARAÇÃO' : carregamento.placa || 'N/A';
-
+            // Adiciona o motivo da pausa se estiver pausado
+            let pausaBadge = '';
+            if (carregamento.pausado && carregamento.pausas && carregamento.pausas.length > 0) {
+                const ultimaPausa = carregamento.pausas[carregamento.pausas.length - 1];
+                if (!ultimaPausa.fim) {
+                    pausaBadge = `<span class="badge paused-badge">PAUSADO (Motivo: ${ultimaPausa.motivo || 'Não especificado'})</span>`;
+                }
+            }
+            
             operacaoHtml += `
                 <div class="card card-carregamento em-andamento mb-2 carregamento-${key} ${carregamento.pausado ? 'paused' : ''}">
                     <div class="card-body">
-                        <h6 class="card-title">${tipoTexto}: ${placaTexto} ${pausaBadge}</h6>
+                        <h6 class="card-title">Carregamento: ${carregamento.placa || 'N/A'} ${pausaBadge}</h6>
                         <p class="card-text">Doca: ${carregamento.doca || 'N/A'}</p>
                         ${participantesHtml}
                         <p class="card-text tempo-decorrido ${tempoClass}">
@@ -3280,9 +3408,11 @@ function atualizarCardsCarregamento(carregamentos) {
         }
     });
 
-    document.getElementById('carregamentosAndamento').innerHTML = operacaoHtml || '<p>Nenhuma operação em andamento no momento.</p>';
+    document.getElementById('carregamentosAndamento').innerHTML = operacaoHtml || 
+        '<div class="alert alert-info">Nenhum carregamento em andamento no momento</div>';
     configurarBotoesRemoverFuncionario();
 }
+
 
 function atualizarDashboardResumido(carregamentos) {
     let dashboardHtml = '';
@@ -3447,24 +3577,21 @@ function atualizarInterfaceDoca(docaNum, carregamento, infoDoca) {
     const { tempoDecorrido, tempoPausado, tempoEfetivo } = calcularTempos(carregamento);
     const { restanteStr, pct, barraClass } = calcularProgresso(tempoEfetivo);
     
-    const pausaBadge = carregamento.pausado ? '<span class="badge paused-badge">PAUSADO</span>' : '';
-    const tempoRestanteFormatado = formatarTempoRestante(TEMPO_LIMITE_MINUTOS - tempoEfetivo);
-
-    // Seleciona o elemento da doca
-    const docaElement = document.querySelector(`.doca-${docaNum}`);
-    
-    // Remove classes de tempo anteriores
-    docaElement.classList.remove('tempo-amarelo', 'tempo-vermelho');
-    
-    // Adiciona a classe apropriada baseada no tempo restante
-    const tempoRestante = TEMPO_LIMITE_MINUTOS - tempoEfetivo;
-    if (tempoRestante <= 20) {
-        docaElement.classList.add('tempo-vermelho');
-    } else if (tempoRestante <= 40) {
-        docaElement.classList.add('tempo-amarelo');
+    // Adiciona o motivo da pausa se estiver pausado
+    let pausaBadge = '';
+    let motivoPausa = '';
+    if (carregamento.pausado && carregamento.pausas && carregamento.pausas.length > 0) {
+        // Encontra a última pausa não finalizada
+        const ultimaPausa = [...carregamento.pausas]
+            .reverse()
+            .find(p => !p.fim);
+        
+        if (ultimaPausa) {
+            motivoPausa = ultimaPausa.motivo || 'Não especificado';
+            pausaBadge = `<span class="badge paused-badge">PAUSADO (Motivo: ${motivoPausa})</span>`;
+        }
     }
 
-    // Resto do código permanece o mesmo...
     const tipoTexto = carregamento.tipoOperacao === 'separacao' ? 'Separação' : 'Carregamento';
     const placaTexto = carregamento.tipoOperacao === 'separacao' ? 'SEPARAÇÃO' : carregamento.placa || 'N/A';
 
@@ -3476,9 +3603,10 @@ function atualizarInterfaceDoca(docaNum, carregamento, infoDoca) {
             (Total: ${tempoDecorrido} min)
             ${pausaBadge}
         </p>
+        ${motivoPausa ? `<p class="mb-1"><small>Motivo: ${motivoPausa}</small></p>` : ''}
         <p class="mb-1">
             <strong>Tempo Restante (2:20h):</strong> 
-            <span class="tempo-barra-${docaNum}">${tempoRestanteFormatado}</span>
+            <span class="tempo-barra-${docaNum}">${formatarTempoRestante(TEMPO_LIMITE_MINUTOS - tempoEfetivo)}</span>
         </p>
         <div class="progress mb-2" style="height:20px">
             <div class="progress-bar ${barraClass}" 
@@ -3491,11 +3619,20 @@ function atualizarInterfaceDoca(docaNum, carregamento, infoDoca) {
     const divTempo = document.querySelector(`.doca-${docaNum} .tempo-info-doca-${docaNum}`);
     if (divTempo) divTempo.innerHTML = tempoHtml;
 
-    // Atualiza status se estiver pausado
-    if (carregamento.pausado) {
-        const statusSpan = document.querySelector(`.doca-${docaNum} .text-danger`);
-        if (statusSpan) statusSpan.innerHTML = 'Pausado ⏸️';
-        docaElement.classList.add('paused');
+    // Atualiza status para mostrar que está pausado
+    const statusSpan = document.querySelector(`.doca-${docaNum} span.text-danger`);
+    if (statusSpan) {
+        statusSpan.innerHTML = carregamento.pausado ? 'Pausado ⏸️' : 'Ocupada 🚚💨';
+    }
+
+    // Adiciona classe de pausa ao container da doca
+    const docaElement = document.querySelector(`.doca-${docaNum}`);
+    if (docaElement) {
+        if (carregamento.pausado) {
+            docaElement.classList.add('paused');
+        } else {
+            docaElement.classList.remove('paused');
+        }
     }
 
     // Atualiza participantes
@@ -3509,6 +3646,7 @@ function atualizarInterfaceDoca(docaNum, carregamento, infoDoca) {
         if (divParticipantes) divParticipantes.innerHTML = participantesHtml || 'Nenhum colaborador ativo';
     }
 }
+
 function formatarTempoRestante(minutos) {
     if (minutos <= 0) {
         const minutosAtraso = Math.abs(minutos);

@@ -1117,6 +1117,8 @@
   background: #007bff;
   border-radius: 50%;
 }
+
+
 .thermometer-labels {
   position: absolute;
   bottom: 50px; left: calc(50% + 20px);
