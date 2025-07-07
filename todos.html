@@ -20,11 +20,11 @@
                 <h2 class="login-title">Painel de Controle</h2>
                 <p class="text-white">Acesso ao sistema de monitoramento</p>
             </div>
-            <div class="mb-3">
+            <div class="mb-3 d-none">
                 <label for="loginEmail" class="form-label">E-mail</label>
                 <input type="email" class="form-control" id="loginEmail" placeholder="Digite seu e-mail" value="teste@teste.com">
             </div>
-            <div class="mb-3">
+            <div class="mb-3 d-none">
                 <label for="loginPassword" class="form-label">Senha</label>
                 <input type="password" class="form-control" id="loginPassword" placeholder="Digite sua senha" value="123456">
             </div>
@@ -644,6 +644,7 @@
                     // Atualiza o peso total no card da unidade
                     document.getElementById(`${unit}-weight`).textContent = `${totalToneladas} Tons`;
 
+
                     // Busca status das docas
                     const docasSnapshot = await databaseRefs[unit].ref('docas').once('value');
                     const docas = docasSnapshot.val() || {};
@@ -841,11 +842,6 @@
                     <div class="tempo-info">
                         <span class="tempo-label"><i class="bi bi-clock-history me-1"></i>Tempo Total:</span>
                         <span class="tempo-value">${timeDetails.decorrido}</span>
-                    </div>
-                    
-                    <div class="tempo-info">
-                        <span class="tempo-label"><i class="bi bi-stopwatch me-1"></i>Tempo Efetivo:</span>
-                        <span class="tempo-value">${tempoEfetivoFormatado}</span>
                     </div>
                     
                     <div class="tempo-info">
@@ -1094,7 +1090,10 @@
                     ? 200 
                     : 0;
 
-                document.getElementById('unit-efficiency').textContent = `${Math.round(efficiency)}%`;
+                const efficiencyElement = document.getElementById('unit-efficiency');
+                const roundedEfficiency = Math.round(efficiency);
+                efficiencyElement.textContent = `${roundedEfficiency}%`;
+                efficiencyElement.className = roundedEfficiency >= 100 ? 'text-success' : 'text-danger';
                 
                 // Atualiza a barra de progresso do tempo
                 const timeProgress = 100 - efficiency;

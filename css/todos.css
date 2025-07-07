@@ -183,6 +183,14 @@ strong, b {
   overflow: hidden;
 }
 
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
 .card:hover {
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);

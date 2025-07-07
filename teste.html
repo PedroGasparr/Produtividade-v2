@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
-    <link rel="stylesheet" href="./css/teste.css">
+    <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
     <!-- Tela de Login/Seleção de Unidade -->
@@ -2788,7 +2788,8 @@ document.getElementById('dashboard2-tab')
         .then((snapshot) => {
             const docaStatus = snapshot.val();
 
-            if (docaStatus && docaStatus.ocupada) {
+            // Verifica se a doca está ocupada por um carregamento (permite separação mesmo com doca ocupada)
+            if (docaStatus && docaStatus.ocupada && tipoOperacao === 'carregamento') {
                 alert(`Doca ${doca} já está ocupada!`);
                 throw new Error('Doca ocupada');
             }
@@ -2918,7 +2919,20 @@ document.getElementById('dashboard2-tab')
             });
         }
 
+        // Atualiza no Firebase
         carregamentosRef.child(carregamentoKey).update(updates)
+            .then(() => {
+                if (!isSeparacao) {
+                    // Libera a doca apenas se for um carregamento
+                    return docasRef.child(docaNumero).update({
+                        ocupada: false,
+                        placa: '',
+                        inicio: null,
+                        tipoOperacao: null
+                    });
+                }
+                return Promise.resolve();
+            })
             .then(() => {
                 hideAllForms();
                 document.querySelectorAll('#carregadoresContainer .funcionario-input').forEach(i => i.value = '');
@@ -2929,24 +2943,16 @@ document.getElementById('dashboard2-tab')
                 const container = document.getElementById('carregadoresContainer');
                 while (container.children.length > 1) container.removeChild(container.lastChild);
 
-                if (isSeparacao) {
-                    alert('Separação registrada com sucesso!');
-                } else {
-                    return docasRef.child(docaNumero).update({
-                        ocupada: false,
-                        placa: '',
-                        inicio: null,
-                        tipoOperacao: null
-                    }).then(() => {
-                        alert('Carregamento finalizado com sucesso!');
-                    });
-                }
-            })
-            .then(() => {
-                atualizarCarregamentosAndamento();
+                // Força a atualização imediata da interface
                 if (!isSeparacao) {
-                    atualizarInterfaceDocas();
+                    // Atualiza a doca específica que foi liberada
+                    atualizarDocaEspecifica(docaNumero);
                 }
+                
+                // Atualiza todos os carregamentos em andamento
+                atualizarCarregamentosAndamento();
+                
+                alert(`${isSeparacao ? 'Separação' : 'Carregamento'} registrado com sucesso!`);
             })
             .catch(error => {
                 console.error('Erro ao finalizar:', error);
