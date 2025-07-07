@@ -1006,6 +1006,25 @@
                 atualizarCarregamentosAndamento();
             });
 
+            document.getElementById('toneladas').addEventListener('input', function(e) {            
+            // Limita a uma casa decimal
+            if (parts.length > 1) {
+                value = parts[0] + '.' + parts[1].slice(0, 1);
+            }
+            
+            // Limita o valor máximo
+            if (parseFloat(value) > 9.9) {
+                value = '9.9';
+            }
+            
+            // Limita o valor mínimo
+            if (value && parseFloat(value) < 0) {
+                value = '0';
+            }
+            
+            this.value = value;
+        });
+
             // Configura o filtro do histórico para o mês/ano atual
             const hoje = new Date();
             const mesAtual = (hoje.getMonth() + 1).toString().padStart(2, '0');
@@ -2905,12 +2924,15 @@ document.getElementById('dashboard2-tab')
             observacao: observacao || null
         };
 
-        if (!isSeparacao) {
-            if (!toneladas || isNaN(toneladas)) {
-                alert('Informe as toneladas carregadas!');
+       if (!isSeparacao) {
+            const toneladasValue = parseFloat(toneladas);
+            if (isNaN(toneladasValue) || toneladasValue < 0 || toneladasValue > 9.9) {
+                alert('Informe um valor válido para toneladas (entre 0 e 9.9)!');
                 return;
             }
-            updates.toneladas = parseFloat(toneladas);
+            
+            // Formata para ter exatamente uma casa decimal
+            updates.toneladas = toneladasValue.toFixed(1);
         }
 
         if (carregamentoEmAndamento.participantes) {

@@ -1006,6 +1006,25 @@
                 atualizarCarregamentosAndamento();
             });
 
+            document.getElementById('toneladas').addEventListener('input', function(e) {            
+            // Limita a uma casa decimal
+            if (parts.length > 1) {
+                value = parts[0] + '.' + parts[1].slice(0, 1);
+            }
+            
+            // Limita o valor máximo
+            if (parseFloat(value) > 9.9) {
+                value = '9.9';
+            }
+            
+            // Limita o valor mínimo
+            if (value && parseFloat(value) < 0) {
+                value = '0';
+            }
+            
+            this.value = value;
+        });
+
             // Configura o filtro do histórico para o mês/ano atual
             const hoje = new Date();
             const mesAtual = (hoje.getMonth() + 1).toString().padStart(2, '0');
@@ -2788,7 +2807,8 @@ document.getElementById('dashboard2-tab')
         .then((snapshot) => {
             const docaStatus = snapshot.val();
 
-            if (docaStatus && docaStatus.ocupada) {
+            // Verifica se a doca está ocupada por um carregamento (permite separação mesmo com doca ocupada)
+            if (docaStatus && docaStatus.ocupada && tipoOperacao === 'carregamento') {
                 alert(`Doca ${doca} já está ocupada!`);
                 throw new Error('Doca ocupada');
             }
@@ -2904,12 +2924,15 @@ document.getElementById('dashboard2-tab')
             observacao: observacao || null
         };
 
-        if (!isSeparacao) {
-            if (!toneladas || isNaN(toneladas)) {
-                alert('Informe as toneladas carregadas!');
+       if (!isSeparacao) {
+            const toneladasValue = parseFloat(toneladas);
+            if (isNaN(toneladasValue) || toneladasValue < 0 || toneladasValue > 9.9) {
+                alert('Informe um valor válido para toneladas (entre 0 e 9.9)!');
                 return;
             }
-            updates.toneladas = parseFloat(toneladas);
+            
+            // Formata para ter exatamente uma casa decimal
+            updates.toneladas = toneladasValue.toFixed(1);
         }
 
         if (carregamentoEmAndamento.participantes) {
@@ -2918,7 +2941,20 @@ document.getElementById('dashboard2-tab')
             });
         }
 
+        // Atualiza no Firebase
         carregamentosRef.child(carregamentoKey).update(updates)
+            .then(() => {
+                if (!isSeparacao) {
+                    // Libera a doca apenas se for um carregamento
+                    return docasRef.child(docaNumero).update({
+                        ocupada: false,
+                        placa: '',
+                        inicio: null,
+                        tipoOperacao: null
+                    });
+                }
+                return Promise.resolve();
+            })
             .then(() => {
                 hideAllForms();
                 document.querySelectorAll('#carregadoresContainer .funcionario-input').forEach(i => i.value = '');
@@ -2929,24 +2965,16 @@ document.getElementById('dashboard2-tab')
                 const container = document.getElementById('carregadoresContainer');
                 while (container.children.length > 1) container.removeChild(container.lastChild);
 
-                if (isSeparacao) {
-                    alert('Separação registrada com sucesso!');
-                } else {
-                    return docasRef.child(docaNumero).update({
-                        ocupada: false,
-                        placa: '',
-                        inicio: null,
-                        tipoOperacao: null
-                    }).then(() => {
-                        alert('Carregamento finalizado com sucesso!');
-                    });
-                }
-            })
-            .then(() => {
-                atualizarCarregamentosAndamento();
+                // Força a atualização imediata da interface
                 if (!isSeparacao) {
-                    atualizarInterfaceDocas();
+                    // Atualiza a doca específica que foi liberada
+                    atualizarDocaEspecifica(docaNumero);
                 }
+                
+                // Atualiza todos os carregamentos em andamento
+                atualizarCarregamentosAndamento();
+                
+                alert(`${isSeparacao ? 'Separação' : 'Carregamento'} registrado com sucesso!`);
             })
             .catch(error => {
                 console.error('Erro ao finalizar:', error);
