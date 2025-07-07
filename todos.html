@@ -509,7 +509,7 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 class="card-subtitle mb-2 text-muted">Carregamentos Hoje</h6>
+                                    <h6 class="card-subtitle mb-2 text-muted">Finalizados Hoje:</h6>
                                     <h3 class="mb-0" id="quick-today">0</h3>
                                 </div>
                                 <div class="bg-success bg-opacity-10 p-3 rounded">
@@ -592,7 +592,7 @@
                             <div class="unit-stats">
                                 <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
                                     <span class="stat-label d-flex align-items-center">
-                                        <i class="bi bi-truck me-2"></i>Carregamentos hoje:
+                                        <i class="bi bi-truck me-2"></i>Finalizados hoje:
                                     </span>
                                     <span class="stat-value" id="unit-today">0</span>
                                 </div>
@@ -848,6 +848,21 @@
             isInitialized = true;
         }
 
+        
+
+        function setupDocaListeners(unit) {
+    databaseRefs[unit].ref('docas').on('value', (snapshot) => {
+        const docas = snapshot.val() || {};
+        let ocupadas = 0;
+        
+        for (const key in docas) {
+            if (docas[key] && docas[key].ocupada) ocupadas++;
+        }
+        
+        document.getElementById(`${unit}-docks`).textContent = `${ocupadas}/11`;
+    });
+}
+
         // Função para formatar minutos em horas:minutos
         function formatMinutesToTime(minutes) {
             if (isNaN(minutes)) return '0h00min';
@@ -925,7 +940,7 @@
                         <div class="unit-stats mt-3">
                             <div class="d-flex justify-content-between mb-2">
                                 <span class="stat-label">
-                                    <i class="bi bi-calendar-day me-1"></i>Hoje:
+                                    <i class="bi bi-calendar-day me-1"></i>Veiculos Finalizados:
                                 </span>
                                 <span class="stat-value" id="${unit}-today">0</span>
                             </div>
@@ -940,6 +955,12 @@
                                     <i class="bi bi-clock me-1"></i>Tempo:
                                 </span>
                                 <span class="stat-value" id="${unit}-time">0h00min</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="stat-label">
+                                    <i class="bi bi-bag me-1"></i>Peso Total:
+                                </span>
+                                <span class="stat-value" id="${unit}-weight">0 Tons</span>
                             </div>
                         </div>
                     </div>
@@ -961,71 +982,98 @@
         }
 
         // Atualiza os dados de uma unidade específica
-        async function updateUnitData(unit) {
-            if (!databaseRefs[unit]) return;
+            async function updateUnitData(unit) {
+                if (!databaseRefs[unit]) return;
 
-            try {
-                const hoje = new Date();
-                const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
-                const fimDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59).getTime();
+                try {
+                    const hoje = new Date();
+                    const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
+                    const fimDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59).getTime();
 
-                // Busca carregamentos do dia
-                const carregamentosSnapshot = await databaseRefs[unit].ref('carregamentos')
-                    .orderByChild('inicio')
-                    .startAt(inicioDia)
-                    .endAt(fimDia)
-                    .once('value');
-                
-                const carregamentos = carregamentosSnapshot.val() || {};
-                const finalizados = Object.values(carregamentos).filter(c => c.finalizado).length;
-                document.getElementById(`${unit}-today`).textContent = finalizados;
-                
-                // Calcula tempo médio e carregamentos que excederam o tempo
-                let tempoTotal = 0;
-                let count = 0;
-                let exceededCount = 0;
-                
-                Object.values(carregamentos).forEach(c => {
-                    if (c.finalizado && c.inicio && c.fim) {
-                        const tempoMin = (c.fim - c.inicio) / 60000;
-                        tempoTotal += tempoMin;
-                        count++;
+                    // Busca carregamentos do dia
+                    const carregamentosSnapshot = await databaseRefs[unit].ref('carregamentos')
+                        .orderByChild('inicio')
+                        .startAt(inicioDia)
+                        .endAt(fimDia)
+                        .once('value');
+                    
+                    const carregamentos = carregamentosSnapshot.val() || {};
+                    const finalizados = Object.values(carregamentos).filter(c => c.finalizado).length;
+                    document.getElementById(`${unit}-today`).textContent = finalizados;
+                    
+                    // Calcula tempo médio e carregamentos que excederam o tempo
+                    let tempoTotal = 0;
+                    let count = 0;
+                    let exceededCount = 0;
+                    let totalToneladas = 0;
+                    
+                    Object.values(carregamentos).forEach(c => {
+                        if (c.finalizado && c.inicio && c.fim) {
+                            const tempoMin = (c.fim - c.inicio) / 60000;
+                            tempoTotal += tempoMin;
+                            count++;
+                            
+                            if (tempoMin > 140) {
+                                exceededCount++;
+                            }
+                        }
                         
-                        if (tempoMin > 140) {
-                            exceededCount++;
+                        // Soma as toneladas de todos os carregamentos
+                        if (c.toneladas) {
+                            totalToneladas += c.toneladas;
+                        }
+                    });
+                    
+                    const tempoMedio = count > 0 ? tempoTotal / count : 0;
+                    document.getElementById(`${unit}-time`).textContent = formatMinutesToTime(tempoMedio);
+
+                    // Atualiza o peso total no card da unidade
+                    document.getElementById(`${unit}-weight`).textContent = `${totalToneladas} Tons`;
+
+                    // Busca status das docas
+                    const docasSnapshot = await databaseRefs[unit].ref('docas').once('value');
+                    const docas = docasSnapshot.val() || {};
+                    
+                    // Busca carregamentos ativos (não finalizados)
+                    const carregamentosAtivosSnapshot = await databaseRefs[unit].ref('carregamentos')
+                        .orderByChild('finalizado')
+                        .equalTo(false)
+                        .once('value');
+                    
+                    const carregamentosAtivos = carregamentosAtivosSnapshot.val() || {};
+                    
+                    // Conta docas ocupadas
+                    let ocupadas = 0;
+                    for (const key in docas) {
+                        if (docas[key] && docas[key].ocupada) {
+                            ocupadas++;
                         }
                     }
-                });
-                
-                const tempoMedio = count > 0 ? tempoTotal / count : 0;
-                document.getElementById(`${unit}-time`).textContent = formatMinutesToTime(tempoMedio);
+                    
+                    // Verifica se há carregamentos ativos sem doca ocupada (atualiza se necessário)
+                    for (const carregamentoId in carregamentosAtivos) {
+                        const carregamento = carregamentosAtivos[carregamentoId];
+                        if (carregamento.doca && !docas[carregamento.doca]?.ocupada) {
+                            // Atualiza o status da doca no Firebase
+                            await databaseRefs[unit].ref(`docas/${carregamento.doca}`).update({
+                                ocupada: true
+                            });
+                            ocupadas++;
+                        }
+                    }
 
-                // Atualiza contagem de excedidos
-                document.getElementById(`${unit}-exceeded`).textContent = exceededCount;
-                document.getElementById(`${unit}-exceeded-percent`).textContent = 
-                    finalizados > 0 ? `${Math.round((exceededCount / finalizados) * 100)}%` : '0%';
-
-                // Busca status das docas
-                const docasSnapshot = await databaseRefs[unit].ref('docas').once('value');
-                const docas = docasSnapshot.val() || {};
-                let ocupadas = 0;
-
-                for (const key in docas) {
-                    if (docas[key] && docas[key].ocupada) ocupadas++;
+                    document.getElementById(`${unit}-docks`).textContent = `${ocupadas}/11`;
+                    
+                    // Atualiza o horário da última atualização
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                    document.querySelector(`.unit-card[data-unit="${unit}"] .card-footer small`).textContent = 
+                        `Última atualização: ${timeString}`;
+                    
+                } catch (error) {
+                    console.error(`Erro ao atualizar dados da unidade ${unit}:`, error);
                 }
-
-                document.getElementById(`${unit}-docks`).textContent = `${ocupadas}/11`;
-                
-                // Atualiza o horário da última atualização
-                const now = new Date();
-                const timeString = now.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-                document.querySelector(`.unit-card[data-unit="${unit}"] .card-footer small`).textContent = 
-                    `Última atualização: ${timeString}`;
-                
-            } catch (error) {
-                console.error(`Erro ao atualizar dados da unidade ${unit}:`, error);
             }
-        }
 
         // Atualiza os dados de todas as unidades
         async function updateAllUnitsData() {
@@ -1339,7 +1387,7 @@
                                 <thead>
                                     <tr>
                                         <th>Doca</th>
-                                        <th>Placa</th>
+                                        <th>Dt</th>
                                         <th>Tempo</th>
                                         <th>Tipo</th>
                                         <th>Finalizado</th>
@@ -1425,8 +1473,13 @@
                 document.getElementById('unit-time').textContent = formattedTime;
                 document.getElementById('quick-time').textContent = formattedTime;
                 
-                // Calcula eficiência (quanto mais próximo de 140min, pior)
-                const efficiency = tempoMedio > 0 ? Math.max(0, Math.min(100, 100 - ((tempoMedio / 140) * 100))) : 0;
+
+                const efficiency = tempoMedio >= 1 && tempoMedio <= 280
+                ? Math.round((-200 / 279) * (tempoMedio - 1) + 200)
+                : tempoMedio < 1 
+                    ? 200 
+                    : 0;
+
                 document.getElementById('unit-efficiency').textContent = `${Math.round(efficiency)}%`;
                 
                 // Atualiza a barra de progresso do tempo
@@ -1543,6 +1596,8 @@
                 });
             });
         }
+
+        
 
         // Função para comparar unidades estilo "placar de futebol"
         async function compareUnits(unit1, unit2) {

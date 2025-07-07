@@ -378,7 +378,6 @@
   
   .doca-ocupada {
     border-left: 4px solid var(--success-color);
-    animation: pulse 2s infinite;
     border-color: var(--success-color);
   }
   
@@ -398,10 +397,6 @@
   /* Carregamentos em andamento */
   .card-carregamento {
     border-left: 4px solid var(--success-color);
-  }
-  
-  .card-carregamento.em-andamento {
-    animation: pulseSuccess 2s infinite;
   }
   
   @keyframes pulseSuccess {
@@ -838,13 +833,73 @@
 }
 
 .doca-ocupada.tempo-amarelo {
-    background-color: #fff599;
+    background-color: #920000;
     animation: pulse 3s infinite;
 }
 
 .doca-ocupada.tempo-vermelho {
     background-color: #ff6b6b;
     animation: pulse 0.8s infinite;
+}
+
+/* Estilos base das docas */
+.doca {
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+  transition: all 0.3s ease;
+}
+
+.doca-ocupada {
+  background-color: #acf8c3; /* Verde claro padrão */
+}
+
+/* Estados de tempo */
+.doca-normal {
+  background-color: #acf8c3; /* Verde claro */
+}
+
+.doca-alerta {
+  background-color: #fff599; /* Amarelo */
+  animation: pulse 2s infinite;
+}
+
+.doca-critico {
+  background-color: #ff6b6b; /* Vermelho */
+  animation: pulse 0.8s infinite;
+}
+
+/* Barra de progresso */
+.progress {
+  height: 20px;
+  margin-top: 5px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+}
+
+.progress-bar {
+  transition: width 0.6s ease;
+}
+
+/* Animações */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* Classes de cor do tempo (para compatibilidade) */
+.tempo-verde {
+  background-color: #acf8c3 !important;
+}
+
+.tempo-amarelo {
+  background-color: #fff599 !important;
+}
+
+.tempo-vermelho {
+  background-color: #ff6b6b !important;
 }
           .card-carregamento.time-warning { background-color: #fff3cd; }
           .card-carregamento.time-critical { background-color: #ff5361; }
@@ -1133,6 +1188,13 @@
 
 }
 #dashboard2-tab {
+    display: none;
+  }
+  #dashboard{
+    display: none;
+  }
+
+  #dashboard-tab {
     display: none;
   }
   #dashboard{

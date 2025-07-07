@@ -18,5 +18,7 @@ const firebaseConfig = {
         window.funcionariosRef = window.database.ref('funcionarios');
         window.carregamentosRef = window.database.ref('carregamentos');
         window.docasRef = window.database.ref('docas');
+        window.separacoesRef = window.database.ref('separacoes');
+        window.separacoesDocasRef = window.database.ref('separacoes-docas');
         window.unidadesRef = window.database.ref('unidades');
         window.metasRef = window.database.ref('metas');
