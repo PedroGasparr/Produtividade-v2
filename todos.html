@@ -596,7 +596,7 @@
         }
 
         // Atualiza os dados de uma unidade específica
-            async function updateUnitData(unit) {
+           async function updateUnitData(unit) {
                 if (!databaseRefs[unit]) return;
 
                 try {
@@ -632,18 +632,16 @@
                             }
                         }
                         
-                        // Soma as toneladas de todos os carregamentos
-                        if (c.toneladas) {
-                            totalToneladas += c.toneladas;
-                        }
+                        // Soma correta das toneladas (convertendo para número)
+                        const toneladas = parseFloat(c.toneladas) || 0;
+                        totalToneladas += toneladas;
                     });
                     
                     const tempoMedio = count > 0 ? tempoTotal / count : 0;
                     document.getElementById(`${unit}-time`).textContent = formatMinutesToTime(tempoMedio);
 
-                    // Atualiza o peso total no card da unidade
-                    document.getElementById(`${unit}-weight`).textContent = `${totalToneladas} Tons`;
-
+                    // Atualiza o peso total no card da unidade (formatado corretamente)
+                    document.getElementById(`${unit}-weight`).textContent = `${totalToneladas.toFixed(1)} Tons`;
 
                     // Busca status das docas
                     const docasSnapshot = await databaseRefs[unit].ref('docas').once('value');
@@ -669,7 +667,6 @@
                     for (const carregamentoId in carregamentosAtivos) {
                         const carregamento = carregamentosAtivos[carregamentoId];
                         if (carregamento.doca && !docas[carregamento.doca]?.ocupada) {
-                            // Atualiza o status da doca no Firebase
                             await databaseRefs[unit].ref(`docas/${carregamento.doca}`).update({
                                 ocupada: true
                             });
@@ -739,14 +736,16 @@
             dataUpdateInterval = setInterval(() => updateUnitDashboard(unit), 30000);
         }
 
-        // Mostra detalhes de uma doca ocupada
         function showDocaDetails(docaNum, docaData, carregamentoData) {
-            if (!docaData.ocupada) return '';
-            
+            // Verifica se a doca está realmente ocupada e se há um carregamento válido
+            if (!docaData.ocupada || !carregamentoData || carregamentoData.finalizado) {
+                return ''; // Não mostra nada se o carregamento estiver finalizado
+            }
+
             // Verifica se o carregamento está pausado
             const isPaused = carregamentoData?.pausado || false;
             const pausaAtiva = isPaused && carregamentoData.pausas && 
-                               carregamentoData.pausas.some(p => !p.fim);
+                            carregamentoData.pausas.some(p => !p.fim);
             
             // Calcula tempo de pausa ativa
             let tempoPausaAtiva = '0min';
@@ -827,7 +826,7 @@
                     
                     ${carregamentoData?.placa ? `
                     <div class="tempo-info">
-                        <span class="tempo-label"><i class="bi bi-upc-scan me-1"></i>Dt:</span>
+                        <span class="tempo-label"><i class="bi bi-upc-scan me-1"></i>Placa:</span>
                         <span class="tempo-value">${carregamentoData.placa}</span>
                     </div>
                     ` : ''}
@@ -856,8 +855,8 @@
                         </div>
                         <div class="progress">
                             <div class="progress-bar ${isPaused ? 'bg-warning' : timeDetails.exceeded ? 'bg-danger' : 'bg-primary'}" 
-                                 role="progressbar" 
-                                 style="width: ${timeDetails.progress}%">
+                                role="progressbar" 
+                                style="width: ${timeDetails.progress}%">
                             </div>
                         </div>
                     </div>
@@ -888,11 +887,11 @@
                     ` : ''}
                     
                     ${carregamentoData?.toneladas !== undefined ? `
-                    <div class="tempo-info">
-                        <span class="tempo-label"><i class="bi bi-speedometer2 me-1"></i>Toneladas:</span>
-                        <span class="tempo-value">${carregamentoData.toneladas}</span>
-                    </div>
-                    ` : ''}
+                        <div class="tempo-info">
+                            <span class="tempo-label"><i class="bi bi-speedometer2 me-1"></i>Toneladas:</span>
+                            <span class="tempo-value">${formatToneladas(carregamentoData.toneladas)}</span>
+                        </div>
+                        ` : ''}
                 </div>
             `;
         }
@@ -921,7 +920,7 @@
                 const tiposOperacao = {};
 
                 carregamentosArray.forEach(c => {
-                    totalToneladas += c.toneladas || 0;
+                    totalToneladas += parseFloat(c.toneladas) || 0;
                     totalMixMaterial += c.mixMaterial || 0;
                     
                     const tipo = c.tipoOperacao || 'desconhecido';
@@ -1214,216 +1213,240 @@
 
         // Função para comparar unidades estilo "placar de futebol"
         async function compareUnits(unit1, unit2) {
-            // Busca dados das duas unidades
-            async function getUnitStats(unit) {
-                if (!databaseRefs[unit]) return null;
-                const hoje = new Date();
-                const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
-                const fimDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59).getTime();
+    // Busca dados das duas unidades
+    async function getUnitStats(unit) {
+        if (!databaseRefs[unit]) return null;
+        const hoje = new Date();
+        const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
+        const fimDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59).getTime();
 
-                // Carregamentos do dia
-                const carregamentosSnap = await databaseRefs[unit].ref('carregamentos')
-                    .orderByChild('inicio')
-                    .startAt(inicioDia)
-                    .endAt(fimDia)
-                    .once('value');
-                const carregamentos = carregamentosSnap.val() || {};
-                const carregamentosArr = Object.values(carregamentos);
+        // Carregamentos do dia
+        const carregamentosSnap = await databaseRefs[unit].ref('carregamentos')
+            .orderByChild('inicio')
+            .startAt(inicioDia)
+            .endAt(fimDia)
+            .once('value');
+        const carregamentos = carregamentosSnap.val() || {};
+        const carregamentosArr = Object.values(carregamentos);
 
-                // Tempo médio
-                let tempoTotal = 0, count = 0, exceeded = 0, totalToneladas = 0, totalMix = 0;
-                carregamentosArr.forEach(c => {
-                    if (c.finalizado && c.inicio && c.fim) {
-                        const tempoMin = (c.fim - c.inicio) / 60000;
-                        tempoTotal += tempoMin;
-                        count++;
-                        if (tempoMin > 140) exceeded++;
-                    }
-                    totalToneladas += c.toneladas || 0;
-                    totalMix += c.mixMaterial || 0;
-                });
-                const tempoMedio = count > 0 ? tempoTotal / count : 0;
-                const percentExceeded = count > 0 ? Math.round((exceeded / count) * 100) : 0;
-                
-                // Docas ocupadas
-                const docasSnap = await databaseRefs[unit].ref('docas').once('value');
-                const docas = docasSnap.val() || {};
-                let ocupadas = 0;
-                for (const key in docas) {
-                    if (docas[key] && docas[key].ocupada) ocupadas++;
-                }
-                
-                return {
-                    nome: unitsConfig[unit].name,
-                    carregamentos: count,
-                    tempoMedio,
-                    tempoMedioFmt: formatMinutesToTime(tempoMedio),
-                    excedidos: exceeded,
-                    percentExceeded,
-                    docasOcupadas: ocupadas,
-                    toneladas: totalToneladas,
-                    mixMaterial: carregamentosArr.length > 0 ? Math.round(totalMix / carregamentosArr.length) : 0
-                };
+        // Tempo médio
+        let tempoTotal = 0, count = 0, exceeded = 0, totalToneladas = 0, totalMix = 0;
+        carregamentosArr.forEach(c => {
+            if (c.finalizado && c.inicio && c.fim) {
+                const tempoMin = (c.fim - c.inicio) / 60000;
+                tempoTotal += tempoMin;
+                count++;
+                if (tempoMin > 140) exceeded++;
             }
+            // Soma correta das toneladas (convertendo para número)
+            totalToneladas += parseFloat(c.toneladas) || 0;
+            totalMix += parseFloat(c.mixMaterial) || 0;
+        });
+        const tempoMedio = count > 0 ? tempoTotal / count : 0;
+        const percentExceeded = count > 0 ? Math.round((exceeded / count) * 100) : 0;
+        
+        // Docas ocupadas
+        const docasSnap = await databaseRefs[unit].ref('docas').once('value');
+        const docas = docasSnap.val() || {};
+        let ocupadas = 0;
+        for (const key in docas) {
+            if (docas[key] && docas[key].ocupada) ocupadas++;
+        }
+        
+        return {
+            nome: unitsConfig[unit].name,
+            carregamentos: count,
+            tempoMedio,
+            tempoMedioFmt: formatMinutesToTime(tempoMedio),
+            excedidos: exceeded,
+            percentExceeded,
+            docasOcupadas: ocupadas,
+            toneladas: totalToneladas.toFixed(1), // Formata com 1 casa decimal
+            mixMaterial: carregamentosArr.length > 0 ? Math.round(totalMix / carregamentosArr.length) : 0
+        };
+    }
 
-            // Mostra a comparação na tela
-            function showCompare(stats1, stats2) {
-                // Remove comparação anterior se existir
-                let old = document.getElementById('compareContainer');
-                if (old) old.remove();
+    // Mostra a comparação na tela
+    function showCompare(stats1, stats2) {
+        // Remove comparação anterior se existir
+        let old = document.getElementById('compareContainer');
+        if (old) old.remove();
 
-                // Cria container
-                const compareDiv = document.createElement('div');
-                compareDiv.id = 'compareContainer';
-                compareDiv.className = 'compare-container animate-fadeIn';
+        // Cria container
+        const compareDiv = document.createElement('div');
+        compareDiv.id = 'compareContainer';
+        compareDiv.className = 'compare-container animate-fadeIn';
 
-                // Função auxiliar para determinar qual valor é melhor
-                function getComparisonClass(value1, value2, lowerIsBetter = false) {
-                    if (value1 === value2) return 'equal-value';
-                    if (lowerIsBetter) {
-                        return value1 < value2 ? 'better-value' : 'worse-value';
-                    } else {
-                        return value1 > value2 ? 'better-value' : 'worse-value';
-                    }
-                }
-
-                compareDiv.innerHTML = `
-                    <div class="compare-header">
-                        <div class="compare-unit">
-                            <h5>${stats1.nome}</h5>
-                        </div>
-                        <div class="compare-unit">
-                            <h5>${stats2.nome}</h5>
-                        </div>
-                    </div>
-                    
-                    <div class="compare-metric">
-                        <div class="compare-metric-label">
-                            <i class="bi bi-calendar-day"></i> Carregamentos Hoje
-                        </div>
-                        <div class="compare-metric-value ${getComparisonClass(stats1.carregamentos, stats2.carregamentos)}">
-                            ${stats1.carregamentos}
-                        </div>
-                        <div class="compare-metric-value ${getComparisonClass(stats2.carregamentos, stats1.carregamentos)}">
-                            ${stats2.carregamentos}
-                        </div>
-                    </div>
-                    
-                    <div class="compare-metric">
-                        <div class="compare-metric-label">
-                            <i class="bi bi-clock"></i> Tempo Médio
-                        </div>
-                        <div class="compare-metric-value ${getComparisonClass(stats1.tempoMedio, stats2.tempoMedio, true)}">
-                            ${stats1.tempoMedioFmt}
-                        </div>
-                        <div class="compare-metric-value ${getComparisonClass(stats2.tempoMedio, stats1.tempoMedio, true)}">
-                            ${stats2.tempoMedioFmt}
-                        </div>
-                    </div>
-                    
-                    <div class="compare-metric">
-                        <div class="compare-metric-label">
-                            <i class="bi bi-exclamation-triangle"></i> Excedidos (%)
-                        </div>
-                        <div class="compare-metric-value ${getComparisonClass(stats1.percentExceeded, stats2.percentExceeded, true)}">
-                            ${stats1.percentExceeded}%
-                        </div>
-                        <div class="compare-metric-value ${getComparisonClass(stats2.percentExceeded, stats1.percentExceeded, true)}">
-                            ${stats2.percentExceeded}%
-                        </div>
-                    </div>
-                    
-                    <div class="compare-metric">
-                        <div class="compare-metric-label">
-                            <i class="bi bi-door-closed"></i> Docas Ocupadas
-                        </div>
-                        <div class="compare-metric-value ${getComparisonClass(stats1.docasOcupadas, stats2.docasOcupadas)}">
-                            ${stats1.docasOcupadas}
-                        </div>
-                        <div class="compare-metric-value ${getComparisonClass(stats2.docasOcupadas, stats1.docasOcupadas)}">
-                            ${stats2.docasOcupadas}
-                        </div>
-                    </div>
-                    
-                    <div class="compare-metric">
-                        <div class="compare-metric-label">
-                            <i class="bi bi-speedometer2"></i> Toneladas
-                        </div>
-                        <div class="compare-metric-value ${getComparisonClass(stats1.toneladas, stats2.toneladas)}">
-                            ${stats1.toneladas}
-                        </div>
-                        <div class="compare-metric-value ${getComparisonClass(stats2.toneladas, stats1.toneladas)}">
-                            ${stats2.toneladas}
-                        </div>
-                    </div>
-                    
-                    <div class="compare-metric">
-                        <div class="compare-metric-label">
-                            <i class="bi bi-boxes"></i> Mix de Material
-                        </div>
-                        <div class="compare-metric-value ${getComparisonClass(stats1.mixMaterial, stats2.mixMaterial)}">
-                            ${stats1.mixMaterial}
-                        </div>
-                        <div class="compare-metric-value ${getComparisonClass(stats2.mixMaterial, stats1.mixMaterial)}">
-                            ${stats2.mixMaterial}
-                        </div>
-                    </div>
-                    
-                    <div class="text-end mt-3">
-                        <button class="btn btn-outline-secondary btn-sm" id="btnCloseCompare">
-                            <i class="bi bi-x"></i> Fechar Comparação
-                        </button>
-                    </div>
-                `;
-                
-                // Insere no dashboard
-                dom.dashboardContainer.appendChild(compareDiv);
-
-                // Botão fechar
-                document.getElementById('btnCloseCompare').onclick = () => {
-                    compareDiv.remove();
-                };
-                
-                // Scroll até a comparação
-                compareDiv.scrollIntoView({ behavior: 'smooth' });
-            }
-
-            // Mostra loader enquanto busca
-            let old = document.getElementById('compareContainer');
-            if (old) old.remove();
-            
-            const loaderDiv = document.createElement('div');
-            loaderDiv.id = 'compareContainer';
-            loaderDiv.className = 'compare-container text-center';
-            loaderDiv.innerHTML = `
-                <div class="loader mx-auto"></div>
-                <p>Carregando comparação...</p>
-            `;
-            
-            dom.dashboardContainer.appendChild(loaderDiv);
-
-            // Busca e mostra
-            try {
-                const [stats1, stats2] = await Promise.all([
-                    getUnitStats(unit1),
-                    getUnitStats(unit2)
-                ]);
-                
-                if (stats1 && stats2) {
-                    showCompare(stats1, stats2);
-                } else {
-                    throw new Error('Erro ao carregar dados das unidades');
-                }
-            } catch (error) {
-                console.error('Erro ao comparar unidades:', error);
-                loaderDiv.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        Erro ao comparar unidades. Tente novamente mais tarde.
-                    </div>
-                `;
+        // Função auxiliar para determinar qual valor é melhor
+        function getComparisonClass(value1, value2, lowerIsBetter = false) {
+            if (value1 === value2) return 'equal-value';
+            if (lowerIsBetter) {
+                return value1 < value2 ? 'better-value' : 'worse-value';
+            } else {
+                return value1 > value2 ? 'better-value' : 'worse-value';
             }
         }
+
+        compareDiv.innerHTML = `
+            <div class="compare-header">
+                <div class="compare-unit">
+                    <h5>${stats1.nome}</h5>
+                </div>
+                <div class="compare-unit">
+                    <h5>${stats2.nome}</h5>
+                </div>
+            </div>
+            
+            <div class="compare-metric">
+                <div class="compare-metric-label">
+                    <i class="bi bi-calendar-day"></i> Veiculos Finalizados Hoje
+                </div>
+                <div class="compare-metric-value ${getComparisonClass(stats1.carregamentos, stats2.carregamentos)}">
+                    ${stats1.carregamentos}
+                </div>
+                <div class="compare-metric-value ${getComparisonClass(stats2.carregamentos, stats1.carregamentos)}">
+                    ${stats2.carregamentos}
+                </div>
+            </div>
+            
+            <div class="compare-metric">
+                <div class="compare-metric-label">
+                    <i class="bi bi-clock"></i> Tempo Médio
+                </div>
+                <div class="compare-metric-value ${getComparisonClass(stats1.tempoMedio, stats2.tempoMedio, true)}">
+                    ${stats1.tempoMedioFmt}
+                </div>
+                <div class="compare-metric-value ${getComparisonClass(stats2.tempoMedio, stats1.tempoMedio, true)}">
+                    ${stats2.tempoMedioFmt}
+                </div>
+            </div>
+            
+            <div class="compare-metric">
+                <div class="compare-metric-label">
+                    <i class="bi bi-exclamation-triangle"></i> Excedidos (%)
+                </div>
+                <div class="compare-metric-value ${getComparisonClass(stats1.percentExceeded, stats2.percentExceeded, true)}">
+                    ${stats1.percentExceeded}%
+                </div>
+                <div class="compare-metric-value ${getComparisonClass(stats2.percentExceeded, stats1.percentExceeded, true)}">
+                    ${stats2.percentExceeded}%
+                </div>
+            </div>
+            
+            <div class="compare-metric">
+                <div class="compare-metric-label">
+                    <i class="bi bi-door-closed"></i> Docas Ocupadas
+                </div>
+                <div class="compare-metric-value ${getComparisonClass(stats1.docasOcupadas, stats2.docasOcupadas)}">
+                    ${stats1.docasOcupadas}
+                </div>
+                <div class="compare-metric-value ${getComparisonClass(stats2.docasOcupadas, stats1.docasOcupadas)}">
+                    ${stats2.docasOcupadas}
+                </div>
+            </div>
+            
+            <div class="compare-metric">
+                <div class="compare-metric-label">
+                    <i class="bi bi-speedometer2"></i> Toneladas
+                </div>
+                <div class="compare-metric-value ${getComparisonClass(parseFloat(stats1.toneladas), parseFloat(stats2.toneladas))}">
+                    ${stats1.toneladas} Tons
+                </div>
+                <div class="compare-metric-value ${getComparisonClass(parseFloat(stats2.toneladas), parseFloat(stats1.toneladas))}">
+                    ${stats2.toneladas} Tons
+                </div>
+            </div>
+            
+            <div class="compare-metric">
+                <div class="compare-metric-label">
+                    <i class="bi bi-boxes"></i> Mix de Material
+                </div>
+                <div class="compare-metric-value ${getComparisonClass(stats1.mixMaterial, stats2.mixMaterial)}">
+                    ${stats1.mixMaterial}
+                </div>
+                <div class="compare-metric-value ${getComparisonClass(stats2.mixMaterial, stats1.mixMaterial)}">
+                    ${stats2.mixMaterial}
+                </div>
+            </div>
+            
+            <div class="text-end mt-3">
+                <button class="btn btn-outline-secondary btn-sm" id="btnCloseCompare">
+                    <i class="bi bi-x"></i> Fechar Comparação
+                </button>
+            </div>
+        `;
+        
+        // Insere no dashboard
+        dom.dashboardContainer.appendChild(compareDiv);
+
+        // Botão fechar
+        document.getElementById('btnCloseCompare').onclick = () => {
+            compareDiv.remove();
+        };
+        
+        // Scroll até a comparação
+        compareDiv.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Mostra loader enquanto busca
+    let old = document.getElementById('compareContainer');
+    if (old) old.remove();
+    
+    const loaderDiv = document.createElement('div');
+    loaderDiv.id = 'compareContainer';
+    loaderDiv.className = 'compare-container text-center';
+    loaderDiv.innerHTML = `
+        <div class="loader mx-auto"></div>
+        <p>Carregando comparação...</p>
+    `;
+    
+    dom.dashboardContainer.appendChild(loaderDiv);
+
+    // Busca e mostra
+    try {
+        const [stats1, stats2] = await Promise.all([
+            getUnitStats(unit1),
+            getUnitStats(unit2)
+        ]);
+        
+        if (stats1 && stats2) {
+            showCompare(stats1, stats2);
+        } else {
+            throw new Error('Erro ao carregar dados das unidades');
+        }
+    } catch (error) {
+        console.error('Erro ao comparar unidades:', error);
+        loaderDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Erro ao comparar unidades. Tente novamente mais tarde.
+            </div>
+        `;
+    }
+}
+
+
+function formatToneladas(value) {
+    // Se for string, remove caracteres não numéricos e pontos extras
+    if (typeof value === 'string') {
+        // Remove tudo que não for número ou ponto decimal
+        value = value.replace(/[^\d.]/g, '');
+        
+        // Se houver múltiplos pontos, mantém apenas o primeiro
+        const parts = value.split('.');
+        if (parts.length > 1) {
+            value = parts[0] + '.' + parts.slice(1).join('');
+        }
+    }
+    
+    // Converte para número
+    const numberValue = parseFloat(value) || 0;
+    
+    // Formata com 1 casa decimal e adiciona "Tons"
+    return `${numberValue.toFixed(1)} Tons`;
+}
+
+            
 
         // Event Listeners
         function setupEventListeners() {
