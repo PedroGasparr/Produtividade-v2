@@ -22,26 +22,26 @@
   --warning-600: #f57c00;
   --warning-500: #ff9800;
 
-  /* Escala de cinza com alto contraste */
-  --gray-900: #212121;
-  --gray-800: #424242;
-  --gray-700: #616161;
-  --gray-600: #757575;
-  --gray-500: #9e9e9e;
-  --gray-400: #bdbdbd;
-  --gray-300: #e0e0e0;
-  --gray-200: #eeeeee;
-  --gray-100: #f5f5f5;
-  --gray-50: #fafafa;
-  --white: #ffffff;
+  /* Escala de cinza com alto contraste (ajustada para tema escuro) */
+  --gray-900: #f5f5f5;  /* Texto primário */
+  --gray-800: #e0e0e0;  /* Texto secundário */
+  --gray-700: #bdbdbd;  /* Texto terciário */
+  --gray-600: #9e9e9e;
+  --gray-500: #757575;
+  --gray-400: #616161;
+  --gray-300: #424242;
+  --gray-200: #333333;
+  --gray-100: #2d2d2d;
+  --gray-50: #252525;
+  --white: #121212;     /* Fundo principal */
 
-  /* Cores semânticas */
+  /* Cores semânticas (tema escuro fixo) */
   --text-primary: var(--gray-900);
-  --text-secondary: var(--gray-700);
-  --text-tertiary: var(--gray-600);
+  --text-secondary: var(--gray-800);
+  --text-tertiary: var(--gray-700);
   --bg-primary: var(--white);
   --bg-secondary: var(--gray-50);
-  --border-color: var(--gray-300);
+  --border-color: var(--gray-200);
 
   /* Tipografia */
   --font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
@@ -69,10 +69,10 @@
   --border-radius-pill: 999px;
 
   /* Sombras */
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12);
-  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.16);
-  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.1);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.7);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.5);
 
   /* Tamanhos de fonte (base 16px) */
   --text-xs: 0.75rem;   /* 12px */
@@ -111,6 +111,7 @@
 html {
   font-size: 16px;
   scroll-behavior: smooth;
+  color-scheme: dark; /* Força o navegador a usar o tema escuro para elementos nativos */
 }
 
 body {
@@ -146,14 +147,14 @@ p {
 }
 
 a {
-  color: var(--primary-700);
+  color: var(--primary-400);
   text-decoration: none;
   font-weight: var(--font-weight-medium);
   transition: color 0.2s ease;
 }
 
 a:hover {
-  color: var(--primary-900);
+  color: var(--primary-300);
   text-decoration: underline;
 }
 
@@ -175,7 +176,7 @@ strong, b {
 /* ===== COMPONENTES COMUNS ===== */
 /* Cards */
 .card {
-  background-color: var(--bg-primary);
+  background-color: var(--bg-secondary);
   border-radius: var(--border-radius-md);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
@@ -184,11 +185,11 @@ strong, b {
 }
 
 .text-success {
-    color: #28a745 !important;
+    color: var(--success-500) !important;
 }
 
 .text-danger {
-    color: #dc3545 !important;
+    color: var(--danger-500) !important;
 }
 
 .card:hover {
@@ -199,77 +200,40 @@ strong, b {
 .card-header {
   padding: var(--space-md);
   border-bottom: 1px solid var(--border-color);
-  background-color: var(--bg-secondary);
-  color: #ffffff;
+  background-color: var(--gray-200);
+  color: var(--text-primary);
 }
 
 .card-body {
   padding: var(--space-md);
+  background-color: var(--bg-secondary);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+.card-footer {
+  padding: var(--space-md);
+  border-top: 1px solid var(--border-color);
+  background-color: var(--gray-200);
+}
 
 /* Estilos para múltiplas operações na mesma doca */
 .doca-multiple-container {
-    border: 1px solid #2d3748;
+    border: 1px solid var(--gray-300);
     border-radius: 10px;
     margin-bottom: 20px;
     overflow: hidden;
-    background: #1a202c;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    background: var(--gray-100);
+    box-shadow: var(--shadow-md);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .doca-multiple-container:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-lg);
 }
 
 .doca-operation {
     padding: 18px 20px;
-    border-bottom: 1px solid #2d3748;
+    border-bottom: 1px solid var(--gray-300);
     transition: background-color 0.2s ease;
 }
 
@@ -278,29 +242,30 @@ strong, b {
 }
 
 .doca-operation:hover {
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: rgba(255, 255, 255, 0.05);
 }
 
 /* Cores para diferentes tipos de operação */
 .doca-operation.separacao {
-    background-color: rgba(16, 185, 129, 0.08);
-    border-left: 4px solid #10b981;
+    background-color: rgba(16, 185, 129, 0.15);
+    border-left: 4px solid var(--success-500);
 }
 
 .doca-operation.carregamento {
-    background-color: rgba(59, 130, 246, 0.08);
-    border-left: 4px solid #3b82f6;
+    background-color: rgba(59, 130, 246, 0.15);
+    border-left: 4px solid var(--primary-500);
 }
 
 .doca-operation.descarregamento {
-    background-color: rgba(234, 179, 8, 0.08);
-    border-left: 4px solid #eab308;
+    background-color: rgba(234, 179, 8, 0.15);
+    border-left: 4px solid var(--warning-500);
 }
 
 /* Estilos para os detalhes da operação */
 .operation-details {
     font-size: 0.92rem;
     line-height: 1.6;
+    color: var(--text-primary);
 }
 
 .operation-header {
@@ -314,7 +279,7 @@ strong, b {
 
 .operation-type {
     font-weight: 600;
-    color: #fff;
+    color: var(--text-primary);
     font-size: 1.05rem;
     letter-spacing: 0.5px;
     text-transform: uppercase;
@@ -329,7 +294,7 @@ strong, b {
 }
 
 .exceeded {
-    background-color: #ef4444;
+    background-color: var(--danger-500);
     color: white;
 }
 
@@ -341,7 +306,7 @@ strong, b {
 }
 
 .info-label {
-    color: #a0aec0;
+    color: var(--gray-600);
     display: flex;
     align-items: center;
     gap: 6px;
@@ -354,7 +319,7 @@ strong, b {
 
 .info-value {
     font-weight: 500;
-    color: #e2e8f0;
+    color: var(--text-primary);
     text-align: right;
     max-width: 60%;
     word-break: break-word;
@@ -370,19 +335,19 @@ strong, b {
     justify-content: space-between;
     margin-bottom: 6px;
     font-size: 0.85rem;
-    color: #a0aec0;
+    color: var(--gray-600);
 }
 
 .progress-bar {
     height: 6px;
-    background-color: #2d3748;
+    background-color: var(--gray-300);
     border-radius: 3px;
     overflow: hidden;
 }
 
 .progress-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, #3b82f6, #6366f1);
+    background: linear-gradient(90deg, var(--primary-500), var(--primary-400));
     border-radius: 3px;
     transition: width 0.5s ease;
 }
@@ -407,20 +372,20 @@ strong, b {
 
 /* Estilo específico para o motivo de erro */
 .error-reason {
-    background-color: rgba(239, 68, 68, 0.1);
+    background-color: rgba(239, 68, 68, 0.15);
     padding: 8px 12px;
     border-radius: 6px;
     margin: 8px 0;
-    border-left: 3px solid #ef4444;
+    border-left: 3px solid var(--danger-500);
 }
 
 .error-reason .operation-label {
-    color: #ef4444;
+    color: var(--danger-500);
     font-weight: 600;
 }
 
 .error-reason .operation-value {
-    color: #fca5a5;
+    color: var(--danger-300);
     font-weight: 500;
 }
 
@@ -430,42 +395,8 @@ strong, b {
 }
 
 .descarga .progress-bar-fill {
-    background: linear-gradient(90deg, #eab308, #f59e0b);
+    background: linear-gradient(90deg, var(--warning-500), var(--warning-400));
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-.card-footer {
-  padding: var(--space-md);
-  border-top: 1px solid var(--border-color);
-  background-color: var(--bg-secondary);
-}
-
-
 
 /* Botões */
 .btn {
@@ -497,61 +428,61 @@ strong, b {
 
 .btn-primary {
   background-color: var(--primary-600);
-  color: var(--white);
+  color: var(--gray-900);
 }
 
 .btn-primary:hover {
-  background-color: var(--primary-700);
-  border-color: var(--primary-800);
+  background-color: var(--primary-500);
+  border-color: var(--primary-400);
 }
 
 .btn-outline-primary {
   background-color: transparent;
-  color: var(--primary-600);
-  border-color: var(--primary-600);
+  color: var(--primary-400);
+  border-color: var(--primary-400);
 }
 
 .btn-outline-primary:hover {
   background-color: var(--primary-600);
-  color: var(--white);
+  color: var(--gray-900);
 }
 
 .btn-danger {
   background-color: var(--danger-600);
-  color: var(--white);
+  color: var(--gray-900);
 }
 
 .btn-danger:hover {
-  background-color: var(--danger-700);
+  background-color: var(--danger-500);
 }
 
 .btn-outline-danger {
   background-color: transparent;
-  color: var(--danger-600);
-  border-color: var(--danger-600);
+  color: var(--danger-500);
+  border-color: var(--danger-500);
 }
 
 .btn-outline-danger:hover {
   background-color: var(--danger-600);
-  color: var(--white);
+  color: var(--gray-900);
 }
 
 .btn-success {
   background-color: var(--success-600);
-  color: var(--white);
+  color: var(--gray-900);
 }
 
 .btn-success:hover {
-  background-color: var(--success-700);
+  background-color: var(--success-500);
 }
 
 .btn-warning {
   background-color: var(--warning-600);
-  color: var(--white);
+  color: var(--gray-900);
 }
 
 .btn-warning:hover {
-  background-color: var(--warning-700);
+  background-color: var(--warning-500);
 }
 
 /* Badges */
@@ -566,8 +497,8 @@ strong, b {
 }
 
 .badge-primary {
-  background-color: var(--primary-100);
-  color: var(--primary-800);
+  background-color: var(--primary-200);
+  color: var(--primary-900);
 }
 
 .badge-success {
@@ -594,9 +525,9 @@ strong, b {
 }
 
 .alert-danger {
-  background-color: var(--danger-100);
-  color: var(--danger-700);
-  border-color: var(--danger-300);
+  background-color: rgba(198, 40, 40, 0.2);
+  color: var(--danger-300);
+  border-color: rgba(198, 40, 40, 0.4);
 }
 
 /* Formulários */
@@ -615,7 +546,7 @@ strong, b {
   border-radius: var(--border-radius-md);
   font-size: var(--text-md);
   transition: all 0.2s ease;
-  background-color: var(--bg-primary);
+  background-color: var(--gray-100);
   color: var(--text-primary);
 }
 
@@ -631,9 +562,9 @@ strong, b {
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-md);
   font-size: var(--text-md);
-  background-color: var(--bg-primary);
+  background-color: var(--gray-100);
   color: var(--text-primary);
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23616161' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23bdbdbd' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
   background-repeat: no-repeat;
   background-position: right var(--space-sm) center;
   background-size: 16px 12px;
@@ -649,7 +580,7 @@ strong, b {
 .progress {
   height: 8px;
   border-radius: var(--border-radius-pill);
-  background-color: var(--gray-200);
+  background-color: var(--gray-300);
   overflow: hidden;
 }
 
@@ -673,7 +604,7 @@ strong, b {
 
 /* Loader */
 .loader {
-  border: 4px solid var(--gray-200);
+  border: 4px solid var(--gray-300);
   border-top: 4px solid var(--primary-600);
   border-radius: 50%;
   width: 30px;
@@ -693,7 +624,7 @@ strong, b {
   max-width: 440px;
   margin: auto;
   padding: var(--space-xl);
-  background-color: var(--bg-primary);
+  background-color: var(--bg-secondary);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-lg);
   border: 1px solid var(--border-color);
@@ -702,13 +633,13 @@ strong, b {
 
 .login-logo {
   font-size: 3.5rem;
-  color: var(--primary-600);
+  color: var(--primary-500);
   text-align: center;
   margin-bottom: var(--space-lg);
 }
 
 .login-title {
-  color: var(--primary-700);
+  color: var(--primary-400);
   font-weight: var(--font-weight-semibold);
   text-align: center;
   margin-bottom: var(--space-md);
@@ -725,7 +656,7 @@ strong, b {
 
 .header {
   background: linear-gradient(135deg, var(--primary-600), var(--primary-800));
-  color: var(--white);
+  color: var(--gray-900);
   padding: var(--space-lg);
   border-radius: var(--border-radius-md);
   margin-bottom: var(--space-lg);
@@ -736,7 +667,7 @@ strong, b {
 }
 
 .header h1, .header h2, .header h3 {
-  color: var(--white);
+  color: var(--gray-900);
   margin-bottom: 0;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
@@ -769,7 +700,7 @@ strong, b {
 
 .unit-card .card-title {
   font-weight: var(--font-weight-semibold);
-  color: var(--primary-700);
+  color: var(--primary-400);
 }
 
 .unit-card .card-subtitle {
@@ -792,7 +723,7 @@ strong, b {
 
 /* Docas */
 .doca-details {
-  background-color: var(--bg-primary);
+  background-color: var(--bg-secondary);
   border-radius: var(--border-radius-md);
   padding: var(--space-lg);
   margin-bottom: var(--space-md);
@@ -803,7 +734,7 @@ strong, b {
 .doca-title {
   font-size: var(--text-xl);
   font-weight: var(--font-weight-semibold);
-  color: var(--primary-700);
+  color: var(--primary-400);
   margin-bottom: var(--space-md);
 }
 
@@ -818,21 +749,21 @@ strong, b {
 }
 
 .doca-status.ocupada {
-  background-color: rgba(198, 40, 40, 0.1);
-  color: var(--danger-600);
-  border-color: rgba(198, 40, 40, 0.3);
+  background-color: rgba(198, 40, 40, 0.2);
+  color: var(--danger-300);
+  border-color: rgba(198, 40, 40, 0.4);
 }
 
 .doca-status.pausada {
-  background-color: rgba(255, 140, 0, 0.1);
-  color: var(--warning-600);
-  border-color: rgba(255, 140, 0, 0.3);
+  background-color: rgba(255, 140, 0, 0.2);
+  color: var(--warning-300);
+  border-color: rgba(255, 140, 0, 0.4);
 }
 
 .doca-status.livre {
-  background-color: rgba(46, 125, 50, 0.1);
-  color: var(--success-600);
-  border-color: rgba(46, 125, 50, 0.3);
+  background-color: rgba(46, 125, 50, 0.2);
+  color: var(--success-300);
+  border-color: rgba(46, 125, 50, 0.4);
 }
 
 /* Tempo e progresso */
@@ -887,7 +818,7 @@ strong, b {
 
 .pausa-duracao {
   font-weight: var(--font-weight-medium);
-  color: var(--primary-600);
+  color: var(--primary-400);
 }
 
 .pausa-total {
@@ -899,7 +830,7 @@ strong, b {
 
 .colaborador {
   padding: var(--space-sm);
-  background-color: var(--bg-secondary);
+  background-color: var(--gray-100);
   border-radius: var(--border-radius-sm);
   margin-bottom: var(--space-sm);
   display: flex;
@@ -914,7 +845,7 @@ strong, b {
   align-items: center;
   padding: var(--space-sm);
   margin-bottom: var(--space-sm);
-  background-color: var(--bg-secondary);
+  background-color: var(--gray-100);
   border-radius: var(--border-radius-sm);
 }
 
@@ -952,7 +883,7 @@ strong, b {
 
 .exceeded-badge {
   background-color: var(--danger-600);
-  color: var(--white);
+  color: var(--gray-900);
 }
 
 .small-card {
@@ -1000,7 +931,7 @@ strong, b {
   width: 48%;
   text-align: center;
   padding: var(--space-md);
-  background-color: var(--bg-primary);
+  background-color: var(--gray-100);
   border-radius: var(--border-radius-sm);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
@@ -1011,7 +942,7 @@ strong, b {
   justify-content: space-between;
   margin: var(--space-sm) 0;
   padding: var(--space-md);
-  background-color: var(--bg-primary);
+  background-color: var(--gray-100);
   border-radius: var(--border-radius-sm);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-color);
@@ -1036,17 +967,17 @@ strong, b {
 }
 
 .better-value {
-  color: var(--success-600);
+  color: var(--success-500);
   font-weight: var(--font-weight-bold);
 }
 
 .worse-value {
-  color: var(--danger-600);
+  color: var(--danger-500);
   font-weight: var(--font-weight-bold);
 }
 
 .equal-value {
-  color: var(--warning-600);
+  color: var(--warning-500);
   font-weight: var(--font-weight-bold);
 }
 
@@ -1056,7 +987,7 @@ strong, b {
   bottom: 20px;
   right: 20px;
   background-color: var(--primary-600);
-  color: var(--white);
+  color: var(--gray-900);
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--border-radius-pill);
   font-size: var(--text-sm);
@@ -1168,74 +1099,6 @@ strong, b {
   
   .doca-title {
     font-size: var(--text-xxl);
-  }
-}
-
-/* ===== MODOS DE COR ===== */
-/* Modo escuro */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text-primary: #f5f5f5;
-    --text-secondary: #e0e0e0;
-    --text-tertiary: #bdbdbd;
-    --bg-primary: #121212;
-    --bg-secondary: #1e1e1e;
-    --border-color: #333333;
-  }
-  
-  .card, .doca-details, .login-container {
-    border-color: #444444;
-  }
-  
-  .form-control, .form-select {
-    background-color: #2d2d2d;
-    border-color: #555555;
-    color: var(--text-primary);
-  }
-  
-  .progress {
-    background-color: #333333;
-  }
-  
-  .alert-danger {
-    background-color: rgba(198, 40, 40, 0.2);
-    border-color: rgba(198, 40, 40, 0.4);
-  }
-}
-
-/* Modo alto contraste */
-@media (prefers-contrast: more) {
-  :root {
-    --primary-600: #0044cc;
-    --primary-800: #002299;
-    --danger-600: #cc0000;
-    --success-600: #006400;
-    --warning-600: #ff8c00;
-    --text-primary: #000000;
-    --bg-primary: #ffffff;
-    --border-color: #000000;
-  }
-  
-  body {
-    -webkit-font-smoothing: auto;
-    -moz-osx-font-smoothing: auto;
-  }
-  
-  .card, .doca-details {
-    border: 2px solid var(--border-color);
-  }
-  
-  .btn {
-    border: 2px solid currentColor;
-  }
-  
-  .form-control, .form-select {
-    border: 2px solid var(--border-color);
-  }
-  
-  .status-indicator {
-    width: 16px;
-    height: 16px;
   }
 }
 
