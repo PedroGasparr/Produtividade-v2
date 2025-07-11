@@ -207,6 +207,258 @@ strong, b {
   padding: var(--space-md);
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Estilos para múltiplas operações na mesma doca */
+.doca-multiple-container {
+    border: 1px solid #2d3748;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    overflow: hidden;
+    background: #1a202c;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.doca-multiple-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.doca-operation {
+    padding: 18px 20px;
+    border-bottom: 1px solid #2d3748;
+    transition: background-color 0.2s ease;
+}
+
+.doca-operation:last-child {
+    border-bottom: none;
+}
+
+.doca-operation:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Cores para diferentes tipos de operação */
+.doca-operation.separacao {
+    background-color: rgba(16, 185, 129, 0.08);
+    border-left: 4px solid #10b981;
+}
+
+.doca-operation.carregamento {
+    background-color: rgba(59, 130, 246, 0.08);
+    border-left: 4px solid #3b82f6;
+}
+
+.doca-operation.descarregamento {
+    background-color: rgba(234, 179, 8, 0.08);
+    border-left: 4px solid #eab308;
+}
+
+/* Estilos para os detalhes da operação */
+.operation-details {
+    font-size: 0.92rem;
+    line-height: 1.6;
+}
+
+.operation-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.operation-type {
+    font-weight: 600;
+    color: #fff;
+    font-size: 1.05rem;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.operation-status {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.exceeded {
+    background-color: #ef4444;
+    color: white;
+}
+
+.info-line {
+    display: flex;
+    justify-content: space-between;
+    margin: 8px 0;
+    align-items: center;
+}
+
+.info-label {
+    color: #a0aec0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.88rem;
+}
+
+.info-label i {
+    font-size: 0.95rem;
+}
+
+.info-value {
+    font-weight: 500;
+    color: #e2e8f0;
+    text-align: right;
+    max-width: 60%;
+    word-break: break-word;
+}
+
+/* Progress bar styles */
+.progress-container {
+    margin: 15px 0;
+}
+
+.progress-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+    color: #a0aec0;
+}
+
+.progress-bar {
+    height: 6px;
+    background-color: #2d3748;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #6366f1);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .doca-operation {
+        padding: 15px;
+    }
+    
+    .info-line {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+    }
+    
+    .info-value {
+        text-align: left;
+        max-width: 100%;
+    }
+}
+
+/* Estilo específico para o motivo de erro */
+.error-reason {
+    background-color: rgba(239, 68, 68, 0.1);
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin: 8px 0;
+    border-left: 3px solid #ef4444;
+}
+
+.error-reason .operation-label {
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.error-reason .operation-value {
+    color: #fca5a5;
+    font-weight: 500;
+}
+
+/* Estilo específico para operações de descarregamento */
+.descarga .operation-header {
+    border-bottom: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.descarga .progress-bar-fill {
+    background: linear-gradient(90deg, #eab308, #f59e0b);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 .card-footer {
   padding: var(--space-md);
   border-top: 1px solid var(--border-color);
