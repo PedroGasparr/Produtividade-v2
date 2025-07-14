@@ -1138,6 +1138,7 @@
                 document.getElementById('tipoVeiculoContainer').style.display = 'none';
                 document.getElementById('armagensContainer').style.display = 'none';
                 document.getElementById('btnAddCarregador').style.display = 'none';
+                document.getElementById('tipoOperacao').style.display = 'none';
                 
                 // Mantém visível apenas os campos comuns necessários
                 document.getElementById('docaNumero').closest('.mb-3').style.display = 'none'; // Oculta doca no finalizar
@@ -2928,6 +2929,13 @@ document.getElementById('dashboard2-tab')
             const toneladas = document.getElementById('toneladas').value.trim();
             const observacao = document.getElementById('Just').value.trim();
 
+            // Validação das toneladas (agora obrigatório para todos os tipos)
+            const toneladasValue = parseFloat(toneladas);
+            if (isNaN(toneladasValue) || toneladasValue < 0 || toneladasValue > 9.9) {
+                alert('Informe um valor válido para toneladas (entre 0 e 9.9)!');
+                return;
+            }
+
             carregamentosRef.orderByChild('finalizado').equalTo(false).once('value', (snapshot) => {
                 const carregamentos = snapshot.val() || {};
                 let carregamentoEmAndamento = null;
@@ -2960,23 +2968,18 @@ document.getElementById('dashboard2-tab')
                 const updates = {
                     fim: timestampFim,
                     finalizado: true,
-                    observacao: observacao || null
+                    observacao: observacao || null,
+                    // Agora sempre salva as toneladas, independente do tipo de operação
+                    toneladas: toneladasValue.toFixed(1)
                 };
 
-                // Só adiciona mix e toneladas se for carregamento
+                // Só adiciona mix se for carregamento (opcional para outros tipos)
                 if (!isSeparacao && !isDescarregamento) {
                     if (!mixMaterial || isNaN(mixMaterial)) {
                         alert('Informe uma quantidade válida de mix de material!');
                         return;
                     }
                     updates.mixMaterial = parseInt(mixMaterial);
-                    
-                    const toneladasValue = parseFloat(toneladas);
-                    if (isNaN(toneladasValue) || toneladasValue < 0 || toneladasValue > 9.9) {
-                        alert('Informe um valor válido para toneladas (entre 0 e 9.9)!');
-                        return;
-                    }
-                    updates.toneladas = toneladasValue.toFixed(1);
                 }
 
                 if (carregamentoEmAndamento.participantes) {
@@ -3017,6 +3020,63 @@ document.getElementById('dashboard2-tab')
                         alert(`Erro ao finalizar ${isSeparacao ? 'separação' : isDescarregamento ? 'descarregamento' : 'carregamento'}`);
                     });
             });
+        }
+
+        // Função auxiliar para finalizar no Firebase (atualizada)
+        function finalizarCarregamentoFirebase(key, carregamento, mixMaterial, toneladas) {
+            const timestampFim = new Date().getTime();
+            const Justificativa = document.getElementById('Just').value;
+            const updates = {
+                fim: timestampFim,
+                finalizado: true,
+                Justificativa: Justificativa,
+                // Agora sempre salva toneladas
+                toneladas: parseFloat(toneladas)
+            };
+
+            // Só atualiza mix se for carregamento
+            if (carregamento.tipoOperacao === 'carregamento') {
+                updates.mixMaterial = parseInt(mixMaterial);
+            }
+
+            if (carregamento.participantes) {
+                Object.entries(carregamento.participantes).forEach(([id, participacao]) => {
+                    if (!participacao.saida) {
+                        updates[`participantes/${id}/saida`] = timestampFim;
+                    }
+                });
+            }
+
+            carregamentosRef.child(key).update(updates)
+                .then(() => {
+                    if (carregamento.doca) {
+                        docasRef.child(carregamento.doca).update({
+                            ocupada: false,
+                            placa: '',
+                            inicio: null,
+                            tipoOperacao: null
+                        });
+                    }
+
+                    document.getElementById('formContainer').style.display = 'none';
+                    document.querySelectorAll('#carregadoresContainer .funcionario-input').forEach(input => input.value = '');
+                    document.getElementById('mixMaterial').value = '';
+                    document.getElementById('toneladas').value = '';
+                    const carregadoresContainer = document.getElementById('carregadoresContainer');
+                    while (carregadoresContainer.children.length > 1) {
+                        carregadoresContainer.removeChild(carregadoresContainer.lastChild);
+                    }
+
+                    // Atualiza o dashboard completo após finalizar
+                    atualizarDashboardCompleto();
+
+                    alert(`${carregamento.tipoOperacao === 'carregamento' ? 'Carregamento' : 
+                        carregamento.tipoOperacao === 'separacao' ? 'Separação' : 'Descarregamento'} finalizado com sucesso!`);
+                })
+                .catch(error => {
+                    console.error(`Erro ao finalizar ${carregamento.tipoOperacao}:`, error);
+                    alert(`Erro ao finalizar ${carregamento.tipoOperacao}.`);
+                });
         }
         
         document.getElementById('dashboard-tab').addEventListener('hide.bs.tab', function() {
