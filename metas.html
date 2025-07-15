@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editor de Carregamentos e Diário</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/metas.css">
     <style>
         body {
             padding: 20px;
@@ -45,6 +46,19 @@
         }
         .diario-entry:last-child {
             border-bottom: none;
+        }
+        .carregamento-item {
+            cursor: pointer;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .carregamento-item:hover {
+            background-color: #f0f0f0;
+        }
+        #carregamentosList {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 15px;
         }
     </style>
 </head>
@@ -106,6 +120,8 @@
                             </div>
                         </div>
                         
+                        <div id="carregamentosList" style="display: none;"></div>
+                        
                         <div id="resultContainer" style="display: none;">
                             <div class="mb-3">
                                 <label class="form-label">Unidade:</label>
@@ -120,6 +136,16 @@
                             <div class="mb-3">
                                 <label class="form-label">Tipo de Veículo:</label>
                                 <input type="text" class="form-control" id="tipoVeiculo" disabled>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Doca:</label>
+                                <input type="text" class="form-control" id="doca" disabled>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Data/Hora Início:</label>
+                                <input type="text" class="form-control" id="dataHoraInicio" disabled>
                             </div>
                             
                             <div class="mb-3">
@@ -207,6 +233,7 @@
         let carregamentoKey = null;
         let database = null;
         let auth = null;
+        let carregamentosEncontrados = [];
 
         // Função para carregar scripts dinamicamente
         function loadScript(src) {
@@ -301,44 +328,36 @@
             const loadingElement = document.getElementById('loading');
             const resultContainer = document.getElementById('resultContainer');
             const noResultsElement = document.getElementById('noResults');
+            const carregamentosList = document.getElementById('carregamentosList');
 
             loadingElement.style.display = 'block';
             resultContainer.style.display = 'none';
             noResultsElement.style.display = 'none';
+            carregamentosList.style.display = 'none';
+            carregamentosList.innerHTML = '';
 
             database.ref('carregamentos')
                 .orderByChild('placa')
                 .equalTo(dtNormalizada)
-                .limitToFirst(1)
                 .once('value')
                 .then(snapshot => {
                     if (snapshot.exists()) {
-                        const [key] = Object.keys(snapshot.val());
-                        carregamentoAtual = snapshot.val()[key];
-                        carregamentoKey = key;
+                        carregamentosEncontrados = [];
+                        snapshot.forEach(childSnapshot => {
+                            const carregamento = childSnapshot.val();
+                            carregamento.key = childSnapshot.key;
+                            carregamentosEncontrados.push(carregamento);
+                        });
 
-                        // Preenche os campos do formulário
-                        document.getElementById('unidadeCarregamento').value = 
-                            window.unidadeAtual.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                        document.getElementById('tipoOperacao').value = carregamentoAtual.tipoOperacao || 'N/A';
-                        document.getElementById('tipoVeiculo').value = carregamentoAtual.tipoVeiculo || 'N/A';
-                        document.getElementById('placa').value = carregamentoAtual.placa || '';
-                        document.getElementById('toneladas').value = carregamentoAtual.toneladas || '';
-
-                        // Calcula status
-                        let status = 'Finalizado';
-                        if (!carregamentoAtual.finalizado) {
-                            status = carregamentoAtual.pausado ? 'Pausado' : 'Em andamento';
+                        if (carregamentosEncontrados.length === 1) {
+                            // Se houver apenas um carregamento, mostra diretamente
+                            exibirCarregamento(carregamentosEncontrados[0], carregamentosEncontrados[0].key);
+                        } else if (carregamentosEncontrados.length > 1) {
+                            // Se houver múltiplos carregamentos, mostra a lista para seleção
+                            mostrarListaCarregamentos(carregamentosEncontrados);
+                        } else {
+                            noResultsElement.style.display = 'block';
                         }
-                        document.getElementById('status').value = status;
-
-                        // Calcula tempo total
-                        document.getElementById('tempoTotal').value = calcularTempoTotal(
-                            carregamentoAtual.inicio, 
-                            carregamentoAtual.fim
-                        );
-
-                        resultContainer.style.display = 'block';
                     } else {
                         noResultsElement.style.display = 'block';
                     }
@@ -350,6 +369,84 @@
                 .finally(() => {
                     loadingElement.style.display = 'none';
                 });
+        }
+        
+        function mostrarListaCarregamentos(carregamentos) {
+            const carregamentosList = document.getElementById('carregamentosList');
+            carregamentosList.style.display = 'block';
+            
+            let html = '<h5>Selecione o carregamento:</h5>';
+            html += '<div class="list-group">';
+            
+            carregamentos.forEach((carregamento, index) => {
+                const status = carregamento.finalizado ? 'Finalizado' : 
+                              carregamento.pausado ? 'Pausado' : 'Em andamento';
+                const tempoTotal = calcularTempoTotal(carregamento.inicio, carregamento.fim);
+                const dataInicio = formatarData(carregamento.inicio);
+                
+                html += `
+                <div class="carregamento-item list-group-item list-group-item-action" 
+                     data-index="${index}" 
+                     onclick="selecionarCarregamento(${index})">
+                    <div class="d-flex justify-content-between">
+                        <strong>${carregamento.placa}</strong>
+                        <span class="badge bg-${status === 'Finalizado' ? 'success' : 
+                                           status === 'Pausado' ? 'warning' : 'primary'}">
+                            ${status}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <small>Doca: ${carregamento.doca || 'N/A'}</small>
+                        <small>Início: ${dataInicio}</small>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <small>Tipo: ${carregamento.tipoVeiculo || 'N/A'}</small>
+                        <small>Tempo: ${tempoTotal}</small>
+                    </div>
+                </div>
+                `;
+            });
+            
+            html += '</div>';
+            carregamentosList.innerHTML = html;
+        }
+        
+        function selecionarCarregamento(index) {
+            const carregamento = carregamentosEncontrados[index];
+            exibirCarregamento(carregamento, carregamento.key);
+            document.getElementById('carregamentosList').style.display = 'none';
+        }
+        
+        function exibirCarregamento(carregamento, key) {
+            carregamentoAtual = carregamento;
+            carregamentoKey = key;
+            
+            const resultContainer = document.getElementById('resultContainer');
+            
+            // Preenche os campos do formulário
+            document.getElementById('unidadeCarregamento').value = 
+                window.unidadeAtual.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            document.getElementById('tipoOperacao').value = carregamentoAtual.tipoOperacao || 'N/A';
+            document.getElementById('tipoVeiculo').value = carregamentoAtual.tipoVeiculo || 'N/A';
+            document.getElementById('doca').value = carregamentoAtual.doca || 'N/A';
+            document.getElementById('dataHoraInicio').value = formatarData(carregamentoAtual.inicio);
+            document.getElementById('placa').value = carregamentoAtual.placa || '';
+            document.getElementById('toneladas').value = carregamentoAtual.toneladas || '';
+
+            // Calcula status
+            let status = 'Finalizado';
+            if (!carregamentoAtual.finalizado) {
+                status = carregamentoAtual.pausado ? 'Pausado' : 'Em andamento';
+            }
+            document.getElementById('status').value = status;
+
+            // Calcula tempo total
+            document.getElementById('tempoTotal').value = calcularTempoTotal(
+                carregamentoAtual.inicio, 
+                carregamentoAtual.fim
+            );
+
+            resultContainer.style.display = 'block';
         }
         
         function salvarAlteracoes() {
