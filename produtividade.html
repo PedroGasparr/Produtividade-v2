@@ -1098,6 +1098,7 @@
                 document.getElementById('formContainer').style.display = 'block';
                 document.getElementById('formTitle').textContent = 'Iniciar Operação';
                 document.getElementById('btnConfirmar').textContent = 'Iniciar';
+                document.getElementById('tipoOperacao').style.display = 'block';
                 
                 // Mostra campos conforme o tipo selecionado
                 const tipo = document.getElementById('tipoOperacao').value;
@@ -1142,7 +1143,7 @@
                 
                 // Mantém visível apenas os campos comuns necessários
                 document.getElementById('docaNumero').closest('.mb-3').style.display = 'none'; // Oculta doca no finalizar
-                document.getElementById('tipoOperacao').closest('.mb-3').style.display = 'none'; // Mantém tipo operação visível
+                // document.getElementById('tipoOperacao').closest('.mb-3').style.display = 'none'; // Mantém tipo operação visível
                 
                 // Limpa os inputs
                 document.querySelectorAll('#carregadoresContainer .funcionario-input').forEach(input => input.value = '');
