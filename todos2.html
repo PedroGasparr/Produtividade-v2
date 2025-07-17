@@ -1071,142 +1071,376 @@
 
         // Atualiza o dashboard da unidade específica
         async function updateUnitDashboard(unit) {
-            if (!databaseRefs[unit]) return;
+    if (!databaseRefs[unit]) {
+        console.error(`Firebase connection not initialized for unit: ${unit}`);
+        return;
+    }
 
-            try {
-                // Mostra indicador de atualização
-                dom.autoUpdateIndicator.classList.remove('d-none');
-                
-                const hoje = new Date();
-                const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
-                const fimDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59).getTime();
+    try {
+        // Show update indicator
+        dom.autoUpdateIndicator.classList.remove('d-none');
+        
+        const hoje = new Date();
+        const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
+        const fimDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59).getTime();
 
-                // 1. Busca carregamentos do dia (para estatísticas)
-                const carregamentosDiaSnapshot = await databaseRefs[unit].ref('carregamentos')
-                    .orderByChild('inicio')
-                    .startAt(inicioDia)
-                    .endAt(fimDia)
-                    .once('value');
-                    
-                const carregamentosDia = carregamentosDiaSnapshot.val() || {};
-                const carregamentosDiaArray = Object.values(carregamentosDia);
-                const finalizados = carregamentosDiaArray.filter(c => c.finalizado).length;
-                
-                // Atualiza estatísticas do dia
-                document.getElementById('unit-today').textContent = finalizados;
-                document.getElementById('quick-today').textContent = finalizados;
-                document.getElementById('todayProgress').style.width = `${Math.min(100, (finalizados / 20) * 100)}%`;
+        // 1. Get today's shipments (for statistics)
+        const carregamentosDiaSnapshot = await databaseRefs[unit].ref('carregamentos')
+            .orderByChild('inicio')
+            .startAt(inicioDia)
+            .endAt(fimDia)
+            .once('value');
+            
+        const carregamentosDia = carregamentosDiaSnapshot.val() || {};
+        const carregamentosDiaArray = Object.values(carregamentosDia);
+        const finalizados = carregamentosDiaArray.filter(c => c.finalizado).length;
+        
+        // Update day statistics
+        document.getElementById('unit-today').textContent = finalizados;
+        document.getElementById('quick-today').textContent = finalizados;
+        document.getElementById('todayProgress').style.width = `${Math.min(100, (finalizados / 20) * 100)}%`;
 
-                // 2. Busca TODAS as operações ativas (não finalizadas)
-                const carregamentosAtivosSnapshot = await databaseRefs[unit].ref('carregamentos')
-                    .orderByChild('finalizado')
-                    .equalTo(false)
-                    .once('value');
-                    
-                const carregamentosAtivos = carregamentosAtivosSnapshot.val() || {};
-                
-                // Agrupa operações por doca
-                const operacoesPorDoca = {};
-                
-                Object.keys(carregamentosAtivos).forEach(key => {
-                    const operacao = carregamentosAtivos[key];
-                    if (operacao.doca) {
-                        if (!operacoesPorDoca[operacao.doca]) {
-                            operacoesPorDoca[operacao.doca] = [];
-                        }
-                        operacoesPorDoca[operacao.doca].push(operacao);
-                    }
-                });
-
-                // 3. Busca status das docas
-                const docasSnapshot = await databaseRefs[unit].ref('docas').once('value');
-                const docas = docasSnapshot.val() || {};
-                
-                // 4. Atualiza docas no banco para refletir ocupação real
-                const docasOcupadas = new Set();
-                
-                Object.keys(operacoesPorDoca).forEach(docaNum => {
-                    docasOcupadas.add(docaNum);
-                    // Garante que a doca está marcada como ocupada no banco
-                    if (!docas[docaNum]?.ocupada) {
-                        databaseRefs[unit].ref(`docas/${docaNum}`).update({
-                            ocupada: true
-                        });
-                    }
-                });
-
-                // 5. Atualiza contagem de docas ocupadas
-                const totalOcupadas = docasOcupadas.size;
-                document.getElementById('unit-docks').textContent = `${totalOcupadas}/11`;
-                document.getElementById('quick-occupied').textContent = totalOcupadas;
-                dom.occupiedBadge.textContent = totalOcupadas;
-                document.getElementById('occupiedProgress').style.width = `${Math.round((totalOcupadas / 11) * 100)}%`;
-
-                // 6. Limpa container de docas ocupadas
-                dom.occupiedDocksContainer.innerHTML = '';
-
-                // 7. Processa cada doca ocupada
-                for (const docaNum in operacoesPorDoca) {
-                    const operacoes = operacoesPorDoca[docaNum];
-                    
-                    // Cria um container para a doca
-                    const docaContainer = document.createElement('div');
-                    docaContainer.className = 'doca-multiple-container';
-                    
-                    // Adiciona cada operação da doca
-                    operacoes.forEach(operacao => {
-                        const docaElement = document.createElement('div');
-                        docaElement.className = `doca-operation ${operacao.tipoOperacao}`;
-                        docaElement.innerHTML = showOperationDetails(docaNum, operacao);
-                        docaContainer.appendChild(docaElement);
-                    });
-                    
-                    dom.occupiedDocksContainer.appendChild(docaContainer);
+        // 2. Get ALL active operations (not finished)
+        const carregamentosAtivosSnapshot = await databaseRefs[unit].ref('carregamentos')
+            .orderByChild('finalizado')
+            .equalTo(false)
+            .once('value');
+            
+        const carregamentosAtivos = carregamentosAtivosSnapshot.val() || {};
+        
+        // Group operations by dock
+        const operacoesPorDoca = {};
+        
+        Object.keys(carregamentosAtivos).forEach(key => {
+            const operacao = carregamentosAtivos[key];
+            if (operacao.doca) {
+                if (!operacoesPorDoca[operacao.doca]) {
+                    operacoesPorDoca[operacao.doca] = [];
                 }
-
-                // 8. Atualiza tempo médio e eficiência
-                let tempoTotal = 0;
-                let count = 0;
-                
-                carregamentosDiaArray.forEach(c => {
-                    if (c.finalizado && c.inicio && c.fim) {
-                        tempoTotal += (c.fim - c.inicio) / 60000;
-                        count++;
-                    }
-                });
-                
-                const tempoMedio = count > 0 ? tempoTotal / count : 0;
-                const formattedTime = formatMinutesToTime(tempoMedio);
-                
-                document.getElementById('unit-time').textContent = formattedTime;
-                document.getElementById('quick-time').textContent = formattedTime;
-                
-                const efficiency = tempoMedio >= 1 && tempoMedio <= 280
-                    ? Math.round((-200 / 279) * (tempoMedio - 1) + 200)
-                    : tempoMedio < 1 ? 200 : 0;
-
-                const efficiencyElement = document.getElementById('unit-efficiency');
-                efficiencyElement.textContent = `${efficiency}%`;
-                efficiencyElement.className = efficiency >= 100 ? 'text-success' : 'text-danger';
-                document.getElementById('timeProgress').style.width = `${100 - efficiency}%`;
-
-                // 9. Atualiza dados de operação e materiais
-                await updateOperationData(unit);
-                
-                // 10. Atualiza lista de carregamentos que excederam o tempo
-                await updateExceededList(unit);
-                
-                // Atualiza o tempo da última atualização
-                lastUpdateTime = new Date();
-                
-            } catch (error) {
-                console.error(`Erro ao atualizar dashboard da unidade ${unit}:`, error);
-            } finally {
-                setTimeout(() => {
-                    dom.autoUpdateIndicator.classList.add('d-none');
-                }, 1000);
+                operacoesPorDoca[operacao.doca].push(operacao);
             }
+        });
+
+        // 3. Get dock status
+        const docasSnapshot = await databaseRefs[unit].ref('docas').once('value');
+        const docas = docasSnapshot.val() || {};
+        
+        // 4. Update dock status in database to reflect real occupancy
+        const docasOcupadas = new Set();
+        
+        Object.keys(operacoesPorDoca).forEach(docaNum => {
+            docasOcupadas.add(docaNum);
+            // Ensure the dock is marked as occupied in the database
+            if (!docas[docaNum]?.ocupada) {
+                databaseRefs[unit].ref(`docas/${docaNum}`).update({
+                    ocupada: true
+                });
+            }
+        });
+
+        // 5. Update occupied docks count
+        const totalOcupadas = docasOcupadas.size;
+        document.getElementById('unit-docks').textContent = `${totalOcupadas}/11`;
+        document.getElementById('quick-occupied').textContent = totalOcupadas;
+        dom.occupiedBadge.textContent = totalOcupadas;
+        document.getElementById('occupiedProgress').style.width = `${Math.round((totalOcupadas / 11) * 100)}%`;
+
+        // 6. Clear occupied docks container
+        dom.occupiedDocksContainer.innerHTML = '';
+
+        // 7. Process each occupied dock
+        for (const docaNum in operacoesPorDoca) {
+            const operacoes = operacoesPorDoca[docaNum];
+            
+            // Create container for dock
+            const docaContainer = document.createElement('div');
+            docaContainer.className = 'doca-multiple-container';
+            
+            // Add each operation for this dock
+            operacoes.forEach(operacao => {
+                const docaElement = document.createElement('div');
+                docaElement.className = `doca-operation ${operacao.tipoOperacao}`;
+                docaElement.innerHTML = showOperationDetails(docaNum, operacao);
+                docaContainer.appendChild(docaElement);
+            });
+            
+            dom.occupiedDocksContainer.appendChild(docaContainer);
         }
+
+        // 8. Update average time and efficiency
+        let tempoTotal = 0;
+        let count = 0;
+        
+        carregamentosDiaArray.forEach(c => {
+            if (c.finalizado && c.inicio && c.fim) {
+                tempoTotal += (c.fim - c.inicio) / 60000;
+                count++;
+            }
+        });
+        
+        const tempoMedio = count > 0 ? tempoTotal / count : 0;
+        const formattedTime = formatMinutesToTime(tempoMedio);
+        
+        document.getElementById('unit-time').textContent = formattedTime;
+        document.getElementById('quick-time').textContent = formattedTime;
+        
+        const efficiency = tempoMedio >= 1 && tempoMedio <= 280
+            ? Math.round((-200 / 279) * (tempoMedio - 1) + 200)
+            : tempoMedio < 1 ? 200 : 0;
+
+        const efficiencyElement = document.getElementById('unit-efficiency');
+        efficiencyElement.textContent = `${efficiency}%`;
+        efficiencyElement.className = efficiency >= 100 ? 'text-success' : 'text-danger';
+        document.getElementById('timeProgress').style.width = `${100 - efficiency}%`;
+
+        // 9. Update operation and materials data
+        await updateOperationData(unit);
+        
+        // 10. Update list of shipments that exceeded time
+        await updateExceededList(unit);
+
+        // 11. Update dock status display
+        updateDockStatusDisplay(unit, docas, carregamentosAtivos);
+        
+        // Update last update time
+        lastUpdateTime = new Date();
+        
+    } catch (error) {
+        console.error(`Error updating dashboard for unit ${unit}:`, error);
+        document.getElementById('unit-docas-status').innerHTML = `
+            <div class="alert alert-danger text-center py-3">
+                <i class="bi bi-exclamation-octagon"></i>
+                Error loading dock status. Please try again later.
+            </div>
+        `;
+    } finally {
+        setTimeout(() => {
+            dom.autoUpdateIndicator.classList.add('d-none');
+        }, 1000);
+    }
+}
+
+// New helper function for dock status display
+function updateDockStatusDisplay(unit, docas, carregamentosAtivos) {
+    let htmlDocas = '<div class="docas-grid">';
+    
+    // Create dock cards for all docks (1-11)
+    for (let i = 1; i <= 11; i++) {
+        const docaNum = i.toString();
+        const doca = docas[docaNum] || { ocupada: false };
+        const isOcupada = doca.ocupada || false;
+        const carregamento = Object.values(carregamentosAtivos).find(c => c.doca === docaNum);
+
+        htmlDocas += `
+            <div class="doca-card ${isOcupada ? 'ocupada' : 'livre'}">
+                <div class="doca-header">
+                    <i class="bi bi-door-${isOcupada ? 'closed' : 'open'}"></i>
+                    <span>Doca ${docaNum}</span>
+                </div>
+                <div class="doca-status">
+                    ${isOcupada ? 
+                        `<span class="badge bg-danger">Ocupada</span>` : 
+                        `<span class="badge bg-success">Livre</span>`
+                    }
+                </div>
+                ${isOcupada && carregamento ? `
+                    <div class="doca-info">
+                        <small>Placa: ${carregamento.placa || 'N/A'}</small>
+                        ${carregamento.inicio ? `<small>Início: ${formatTimestamp(carregamento.inicio)}</small>` : ''}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    htmlDocas += '</div>';
+    document.getElementById('unit-docas-status').innerHTML = htmlDocas;
+}async function updateUnitDashboard(unit) {
+    if (!databaseRefs[unit]) {
+        console.error(`Firebase connection not initialized for unit: ${unit}`);
+        return;
+    }
+
+    try {
+        // Show update indicator
+        dom.autoUpdateIndicator.classList.remove('d-none');
+        
+        const hoje = new Date();
+        const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
+        const fimDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59).getTime();
+
+        // 1. Get today's shipments (for statistics)
+        const carregamentosDiaSnapshot = await databaseRefs[unit].ref('carregamentos')
+            .orderByChild('inicio')
+            .startAt(inicioDia)
+            .endAt(fimDia)
+            .once('value');
+            
+        const carregamentosDia = carregamentosDiaSnapshot.val() || {};
+        const carregamentosDiaArray = Object.values(carregamentosDia);
+        const finalizados = carregamentosDiaArray.filter(c => c.finalizado).length;
+        
+        // Update day statistics
+        document.getElementById('unit-today').textContent = finalizados;
+        document.getElementById('quick-today').textContent = finalizados;
+        document.getElementById('todayProgress').style.width = `${Math.min(100, (finalizados / 20) * 100)}%`;
+
+        // 2. Get ALL active operations (not finished)
+        const carregamentosAtivosSnapshot = await databaseRefs[unit].ref('carregamentos')
+            .orderByChild('finalizado')
+            .equalTo(false)
+            .once('value');
+            
+        const carregamentosAtivos = carregamentosAtivosSnapshot.val() || {};
+        
+        // Group operations by dock
+        const operacoesPorDoca = {};
+        
+        Object.keys(carregamentosAtivos).forEach(key => {
+            const operacao = carregamentosAtivos[key];
+            if (operacao.doca) {
+                if (!operacoesPorDoca[operacao.doca]) {
+                    operacoesPorDoca[operacao.doca] = [];
+                }
+                operacoesPorDoca[operacao.doca].push(operacao);
+            }
+        });
+
+        // 3. Get dock status
+        const docasSnapshot = await databaseRefs[unit].ref('docas').once('value');
+        const docas = docasSnapshot.val() || {};
+        
+        // 4. Update dock status in database to reflect real occupancy
+        const docasOcupadas = new Set();
+        
+        Object.keys(operacoesPorDoca).forEach(docaNum => {
+            docasOcupadas.add(docaNum);
+            // Ensure the dock is marked as occupied in the database
+            if (!docas[docaNum]?.ocupada) {
+                databaseRefs[unit].ref(`docas/${docaNum}`).update({
+                    ocupada: true
+                });
+            }
+        });
+
+        // 5. Update occupied docks count
+        const totalOcupadas = docasOcupadas.size;
+        document.getElementById('unit-docks').textContent = `${totalOcupadas}/11`;
+        document.getElementById('quick-occupied').textContent = totalOcupadas;
+        dom.occupiedBadge.textContent = totalOcupadas;
+        document.getElementById('occupiedProgress').style.width = `${Math.round((totalOcupadas / 11) * 100)}%`;
+
+        // 6. Clear occupied docks container
+        dom.occupiedDocksContainer.innerHTML = '';
+
+        // 7. Process each occupied dock
+        for (const docaNum in operacoesPorDoca) {
+            const operacoes = operacoesPorDoca[docaNum];
+            
+            // Create container for dock
+            const docaContainer = document.createElement('div');
+            docaContainer.className = 'doca-multiple-container';
+            
+            // Add each operation for this dock
+            operacoes.forEach(operacao => {
+                const docaElement = document.createElement('div');
+                docaElement.className = `doca-operation ${operacao.tipoOperacao}`;
+                docaElement.innerHTML = showOperationDetails(docaNum, operacao);
+                docaContainer.appendChild(docaElement);
+            });
+            
+            dom.occupiedDocksContainer.appendChild(docaContainer);
+        }
+
+        // 8. Update average time and efficiency
+        let tempoTotal = 0;
+        let count = 0;
+        
+        carregamentosDiaArray.forEach(c => {
+            if (c.finalizado && c.inicio && c.fim) {
+                tempoTotal += (c.fim - c.inicio) / 60000;
+                count++;
+            }
+        });
+        
+        const tempoMedio = count > 0 ? tempoTotal / count : 0;
+        const formattedTime = formatMinutesToTime(tempoMedio);
+        
+        document.getElementById('unit-time').textContent = formattedTime;
+        document.getElementById('quick-time').textContent = formattedTime;
+        
+        const efficiency = tempoMedio >= 1 && tempoMedio <= 280
+            ? Math.round((-200 / 279) * (tempoMedio - 1) + 200)
+            : tempoMedio < 1 ? 200 : 0;
+
+        const efficiencyElement = document.getElementById('unit-efficiency');
+        efficiencyElement.textContent = `${efficiency}%`;
+        efficiencyElement.className = efficiency >= 100 ? 'text-success' : 'text-danger';
+        document.getElementById('timeProgress').style.width = `${100 - efficiency}%`;
+
+        // 9. Update operation and materials data
+        await updateOperationData(unit);
+        
+        // 10. Update list of shipments that exceeded time
+        await updateExceededList(unit);
+
+        // 11. Update dock status display
+        updateDockStatusDisplay(unit, docas, carregamentosAtivos);
+        
+        // Update last update time
+        lastUpdateTime = new Date();
+        
+    } catch (error) {
+        console.error(`Error updating dashboard for unit ${unit}:`, error);
+        document.getElementById('unit-docas-status').innerHTML = `
+            <div class="alert alert-danger text-center py-3">
+                <i class="bi bi-exclamation-octagon"></i>
+                Error loading dock status. Please try again later.
+            </div>
+        `;
+    } finally {
+        setTimeout(() => {
+            dom.autoUpdateIndicator.classList.add('d-none');
+        }, 1000);
+    }
+}
+
+// New helper function for dock status display
+function updateDockStatusDisplay(unit, docas, carregamentosAtivos) {
+    let htmlDocas = '<div class="docas-grid">';
+    
+    // Create dock cards for all docks (1-11)
+    for (let i = 1; i <= 11; i++) {
+        const docaNum = i.toString();
+        const doca = docas[docaNum] || { ocupada: false };
+        const isOcupada = doca.ocupada || false;
+        const carregamento = Object.values(carregamentosAtivos).find(c => c.doca === docaNum);
+
+        htmlDocas += `
+            <div class="doca-card ${isOcupada ? 'ocupada' : 'livre'}">
+                <div class="doca-header">
+                    <i class="bi bi-door-${isOcupada ? 'closed' : 'open'}"></i>
+                    <span>Doca ${docaNum}</span>
+                </div>
+                <div class="doca-status">
+                    ${isOcupada ? 
+                        `<span class="badge bg-danger">Ocupada</span>` : 
+                        `<span class="badge bg-success">Livre</span>`
+                    }
+                </div>
+                ${isOcupada && carregamento ? `
+                    <div class="doca-info">
+                        <small>Placa: ${carregamento.placa || 'N/A'}</small>
+                        ${carregamento.inicio ? `<small>Início: ${formatTimestamp(carregamento.inicio)}</small>` : ''}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    htmlDocas += '</div>';
+    document.getElementById('unit-docas-status').innerHTML = htmlDocas;
+}
 
         // Função auxiliar para mostrar detalhes de uma operação específica
         function showOperationDetails(docaNum, operacao) {
