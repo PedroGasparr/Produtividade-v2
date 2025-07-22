@@ -1,4 +1,15 @@
 /* Container principal das docas */
+:root{
+    --primary-color: #16174e;
+    --secondary-color: #3d3d3d;
+    --light-color: #f8f9fa;
+    --secondary-light-color: #818181;
+    --dark-color: #212529;
+    --info-color: #17a2b8;
+    --warning-color: #ffc107;
+}
+
+
 .docas-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -100,3 +111,132 @@
         padding: 10px;
     }
 }
+
+
+/* Estilos adicionais para o calendário e histórico */
+        .date-picker-container {
+            position: relative;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        
+        .date-picker-btn {
+            background-color: transparent;
+            border: 1px solid  rgba(0, 0, 255, 0);
+            color: var(--light-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        
+        .date-picker-btn:hover {
+            background-color: rgba(119, 119, 119, 0.486);
+        }
+        
+        .date-picker-btn i {
+            margin-right: 5px;
+        }
+        
+        .historical-data-container {
+            margin-top: 20px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            display: none;
+        }
+        
+        .historical-data-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .historical-unit-card {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .historical-unit-card:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .historical-unit-details {
+            display: none;
+            margin-top: 15px;
+            padding: 15px;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+        }
+        
+        .historical-shipment-item {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 10px;
+        }
+        
+        .historical-shipment-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .shipment-pauses {
+            margin-top: 10px;
+            padding-left: 15px;
+            border-left: 2px solid var(--warning-color);
+        }
+        
+        .pause-item {
+            margin-bottom: 8px;
+        }
+        
+        .back-to-history {
+            cursor: pointer;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        
+        .flatpickr-calendar {
+            background-color: var(--secondary-color);
+            color: var(--light-color);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .flatpickr-day {
+            color: var(--light-color);
+        }
+        
+        .flatpickr-day:hover {
+            background-color: var(--primary-color);
+        }
+        
+        .flatpickr-day.selected {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .flatpickr-day.today {
+            border-color: var(--info-color);
+        }
+        
+        .flatpickr-months .flatpickr-month {
+            color: var(--secondary-light-color);
+        }
+        
+        .flatpickr-weekdays {
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+        
+        .flatpickr-weekday {
+            color: var(--light-color) ;
+        }
