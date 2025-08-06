@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atualizador de TMPs - Todas as Unidades</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .log {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #333;
+            color: #fff;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #555;
+        }
+        .last-update {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .next-update {
+            font-style: italic;
+        }
+        .unit-data {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        .unit-name {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+        .data-row {
+            display: flex;
+            margin-bottom: 5px;
+        }
+        .data-label {
+            width: 150px;
+            font-weight: bold;
+        }
+        .data-value {
+            flex-grow: 1;
+        }
+        .controls {
+            margin: 20px 0;
+            text-align: center;
+        }
+        button {
+            padding: 8px 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        .error {
+            color: #e74c3c;
+        }
+        .warning {
+            color: #f39c12;
+        }
+        .success {
+            color: #2ecc71;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Atualizador de TMPs - Todas as Unidades</h1>
+        <p>Este sistema coleta dados de todas as unidades e salva os TMPs formatados no Firebase Realtime Database a cada 20 minutos.</p>
+        
+        <div class="controls">
+            <button id="startBtn">Iniciar Serviço</button>
+            <button id="stopBtn" disabled>Parar Serviço</button>
+            <button id="updateNowBtn">Atualizar Agora</button>
+        </div>
+        
+        <div class="status">
+            <h3>Status do Serviço</h3>
+            <p id="serviceStatus">Serviço não iniciado</p>
+            <p class="last-update">Última atualização: <span id="lastUpdate">Nunca</span></p>
+            <p class="next-update">Próxima atualização: <span id="nextUpdate">-</span></p>
+        </div>
+        
+        <div id="unitsDataContainer">
+            <!-- Os dados das unidades serão inseridos aqui dinamicamente -->
+        </div>
+        
+        <div class="log">
+            <h3>Log de Atividades</h3>
+            <div id="activityLog"></div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração dos bancos de dados das unidades
+        const unitsConfig = {
+            cd_cariacica: {
+                name: "CD Cariacica",
+                type: "Centro de Distribuição",
+                metaToneladas: 150,
+                firebaseConfig: {
+                    apiKey: "AIzaSyBAH_sO68BD_vt9J40Hf8rdgLTNQEuEEBc",
+                    authDomain: "produtividade-bc.firebaseapp.com",
+                    databaseURL: "https://produtividade-bc-default-rtdb.firebaseio.com",
+                    projectId: "produtividade-bc",
+                    storageBucket: "produtividade-bc.appspot.com",
+                    messagingSenderId: "665932698083",
+                    appId: "1:665932698083:web:1c807c6b1571e3024bd0d6",
+                    measurementId: "G-608P3H613B"
+                }
+            },
+            fabrica_belem: {
+                name: "Fábrica Belém",
+                type: "Unidade de Produção",
+                metaToneladas: 115,
+                firebaseConfig: {
+                    apiKey: "AIzaSyDZWkYdfV2Qy6Nhi9wUkmtkr-NjeWioLRA",
+                    authDomain: "produtividade-bc-belem.firebaseapp.com",
+                    databaseURL: "https://produtividade-bc-belem-default-rtdb.firebaseio.com",
+                    projectId: "produtividade-bc-belem",
+                    storageBucket: "produtividade-bc-belem.firebasestorage.app",
+                    messagingSenderId: "798674110784",
+                    appId: "1:798674110784:web:10988b89bd1ff5d9f652a5",
+                    measurementId: "G-GF1C65E0MK"
+                }
+            },
+            fabrica_maracanau: {
+                name: "Fábrica Maracanau",
+                type: "Unidade de Produção",
+                metaToneladas: 130,
+                firebaseConfig: {
+                    apiKey: "AIzaSyD7Qbw6l9O_R2WIj6kr7AvGUFYk2WBfclA",
+                    authDomain: "produtividade-bc-maracanau.firebaseapp.com",
+                    databaseURL: "https://produtividade-bc-maracanau-default-rtdb.firebaseio.com",
+                    projectId: "produtividade-bc-maracanau",
+                    storageBucket: "produtividade-bc-maracanau.firebasestorage.app",
+                    messagingSenderId: "615712010394",
+                    appId: "1:615712010394:web:e483c645d7c69aa92b6f23",
+                    measurementId: "G-LHM2NDR1YT"
+                }
+            },
+            fabrica_imperatriz: {
+                name: "Fábrica Imperatriz",
+                type: "Unidade de Produção",
+                metaToneladas: 200,
+                firebaseConfig: {
+                    apiKey: "AIzaSyCZxLrGt4BvU4GOhD5I4LqxyFYm1hpJwLk",
+                    authDomain: "produtividade-bc-imperatriz.firebaseapp.com",
+                    databaseURL: "https://produtividade-bc-imperatriz-default-rtdb.firebaseio.com",
+                    projectId: "produtividade-bc-imperatriz",
+                    storageBucket: "produtividade-bc-imperatriz.firebasestorage.app",
+                    messagingSenderId: "1065541326945",
+                    appId: "1:1065541326945:web:7096abb2900b6547e1f220",
+                    measurementId: "G-8R9M8RETYJ"
+                }
+            },
+            fabrica_Mogi_Das_Cruzes: {
+                name: "Fábrica Mogi das Cruzes",
+                type: "Unidade de Produção",
+                metaToneladas: 50,
+                firebaseConfig: {
+                    apiKey: "AIzaSyCuA2lYrKEAzqePDEFyfDp9L4Mh2chH8jk",
+                    authDomain: "produtividade-bc-mogi-cruzes.firebaseapp.com",
+                    databaseURL: "https://produtividade-bc-mogi-cruzes-default-rtdb.firebaseio.com",
+                    projectId: "produtividade-bc-mogi-cruzes",
+                    storageBucket: "produtividade-bc-mogi-cruzes.firebasestorage.app",
+                    messagingSenderId: "867117239625",
+                    appId: "1:867117239625:web:463314856226302e585e98",
+                    measurementId: "G-CQ3LQ1SM0M"
+                }
+            },
+            fabrica_Aracruz: {
+                name: "Fábrica Aracruz",
+                type: "Unidade de Produção",
+                metaToneladas: 75,
+                firebaseConfig: {
+                    apiKey: "AIzaSyCybArOCPgqBDE-9PjachpOkf74cKdLC2g",
+                    databaseURL: "https://produtividade-pa-aracruz-default-rtdb.firebaseio.com",
+                    projectId: "produtividade-pa-aracruz",
+                    storageBucket: "produtividade-pa-aracruz.firebasestorage.app",
+                    messagingSenderId: "251537438254",
+                    appId: "1:251537438254:web:347f69ff527b1a271a91bf",
+                    measurementId: "G-YX90QS9HZC"
+                }
+            },
+            teste: {
+                name: "Ambiente de Teste",
+                type: "Para Desenvolvimento",
+                metaToneladas: 30,
+                firebaseConfig: {
+                    apiKey: "AIzaSyBro6tzlgNqVzfHnsPTVNIfQi4eKH7H7GM",
+                    authDomain: "produtividade-bc-teste.firebaseapp.com",
+                    databaseURL: "https://produtividade-bc-teste-default-rtdb.firebaseio.com",
+                    projectId: "produtividade-bc-teste",
+                    storageBucket: "produtividade-bc-teste.firebasestorage.app",
+                    messagingSenderId: "505577175861",
+                    appId: "1:505577175861:web:0c31c493f6f22beec0ea7c",
+                    measurementId: "G-TFZDQGTYX6"
+                }
+            }
+        };
+
+        // Configuração do Firebase principal (onde os TMPs serão salvos)
+        const mainFirebaseConfig = {
+            apiKey: "AIzaSyAnV6B3hEf15Pu5GkLAZoCQ5ttI21gf0CY",
+            authDomain: "pbi-sla.firebaseapp.com",
+            databaseURL: "https://pbi-sla-default-rtdb.firebaseio.com",
+            projectId: "pbi-sla",
+            storageBucket: "pbi-sla.firebasestorage.app",
+            messagingSenderId: "746016053250",
+            appId: "1:746016053250:web:767ee9dc0e9213231baf1b",
+            measurementId: "G-JCBMH8VHED"
+        };
+
+        // Inicializa o Firebase principal
+        const mainApp = firebase.initializeApp(mainFirebaseConfig, "mainApp");
+        const mainDatabase = firebase.database(mainApp);
+
+        // Variáveis de controle
+        let updateInterval;
+        const updateIntervalMinutes = 20;
+        let isRunning = false;
+        let databaseRefs = {};
+        let lastFormattedData = {};
+
+        // Elementos DOM
+        const serviceStatus = document.getElementById('serviceStatus');
+        const lastUpdate = document.getElementById('lastUpdate');
+        const nextUpdate = document.getElementById('nextUpdate');
+        const activityLog = document.getElementById('activityLog');
+        const unitsDataContainer = document.getElementById('unitsDataContainer');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const updateNowBtn = document.getElementById('updateNowBtn');
+
+        // Função para adicionar entrada no log
+        function addLogEntry(message, type = 'info') {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('pt-BR');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.textContent = `[${timeString}] ${message}`;
+            activityLog.appendChild(logEntry);
+            activityLog.scrollTop = activityLog.scrollHeight;
+        }
+
+        // Função para formatar minutos em horas:minutos
+        function formatMinutesToTime(minutes) {
+            if (isNaN(minutes)) return '0h00min';
+            const hours = Math.floor(minutes / 60);
+            const mins = Math.floor(minutes % 60);
+            return `${hours}h${mins.toString().padStart(2, '0')}min`;
+        }
+
+        // Função para calcular o mix médio dos carregamentos
+        function calculateMixMedio(carregamentosArray) {
+            let totalMix = 0;
+            let count = 0;
+            
+            carregamentosArray.forEach(c => {
+                if (c.mixMaterial !== undefined && c.mixMaterial !== null) {
+                    totalMix += parseFloat(c.mixMaterial) || 0;
+                    count++;
+                }
+            });
+            
+            return count > 0 ? (totalMix / count).toFixed(1) : "N/A";
+        }
+
+        // Função para inicializar conexões com todos os bancos de dados
+        async function initializeDatabaseConnections() {
+            addLogEntry("Inicializando conexões com os bancos de dados...");
+            
+            try {
+                for (const unit in unitsConfig) {
+                    try {
+                        const app = firebase.initializeApp(unitsConfig[unit].firebaseConfig, unit);
+                        databaseRefs[unit] = firebase.database(app);
+                        addLogEntry(`Conexão estabelecida com ${unitsConfig[unit].name}`, 'success');
+                    } catch (error) {
+                        addLogEntry(`Erro ao conectar com ${unitsConfig[unit].name}: ${error.message}`, 'error');
+                    }
+                }
+                return true;
+            } catch (error) {
+                addLogEntry(`Erro ao inicializar conexões: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // Função para coletar dados de uma unidade específica
+        async function collectUnitData(unit) {
+            if (!databaseRefs[unit]) {
+                addLogEntry(`Conexão não disponível para ${unitsConfig[unit].name}`, 'error');
+                return null;
+            }
+
+            try {
+                addLogEntry(`Coletando dados de ${unitsConfig[unit].name}...`, 'info');
+                
+                const hoje = new Date();
+                const inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).getTime();
+                const fimDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59).getTime();
+
+                // Busca carregamentos do dia
+                const carregamentosSnapshot = await databaseRefs[unit].ref('carregamentos')
+                    .orderByChild('inicio')
+                    .startAt(inicioDia)
+                    .endAt(fimDia)
+                    .once('value');
+                
+                const carregamentos = carregamentosSnapshot.val() || {};
+                const carregamentosArray = Object.values(carregamentos);
+                const finalizados = carregamentosArray.filter(c => c.finalizado).length;
+                
+                // Calcula tempo médio e carregamentos que excederam o tempo
+                let tempoTotal = 0;
+                let count = 0;
+                let exceededCount = 0;
+                let totalToneladas = 0;
+                
+                carregamentosArray.forEach(c => {
+                    if (c.finalizado && c.inicio && c.fim) {
+                        const tempoMin = (c.fim - c.inicio) / 60000;
+                        tempoTotal += tempoMin;
+                        count++;
+                        
+                        if (tempoMin > 140) {
+                            exceededCount++;
+                        }
+                    }
+                    
+                    // Soma correta das toneladas (convertendo para número)
+                    const toneladas = parseFloat(c.toneladas) || 0;
+                    totalToneladas += toneladas;
+                });
+                
+                const tempoMedio = count > 0 ? tempoTotal / count : 0;
+                
+                // Calcula mix médio
+                const mixMedio = calculateMixMedio(carregamentosArray);
+                
+                // Busca status das docas
+                const docasSnapshot = await databaseRefs[unit].ref('docas').once('value');
+                const docas = docasSnapshot.val() || {};
+                let ocupadas = 0;
+                
+                for (const key in docas) {
+                    if (docas[key] && docas[key].ocupada) ocupadas++;
+                }
+                
+                // Retorna os dados formatados
+                const result = {
+                    nome: unitsConfig[unit].name,
+                    tempoMedio: formatMinutesToTime(tempoMedio),
+                    docasOcupadas: ocupadas,
+                    totalDocas: 11,
+                    finalizadosHoje: finalizados,
+                    excedidos: exceededCount,
+                    toneladas: totalToneladas.toFixed(1),
+                    metaToneladas: unitsConfig[unit].metaToneladas,
+                    percentualMeta: (totalToneladas / unitsConfig[unit].metaToneladas * 100).toFixed(1),
+                    mixMedio: mixMedio,
+                    atualizadoEm: new Date().toISOString()
+                };
+                
+                addLogEntry(`Dados coletados de ${unitsConfig[unit].name}: ${JSON.stringify(result)}`, 'success');
+                return result;
+                
+            } catch (error) {
+                addLogEntry(`Erro ao coletar dados de ${unitsConfig[unit].name}: ${error.message}`, 'error');
+                return null;
+            }
+        }
+
+        // Função para formatar e salvar todos os TMPs
+        async function formatAndSaveTMPs() {
+            addLogEntry("Iniciando formatação e salvamento dos TMPs...", 'info');
+            
+            try {
+                const allData = {};
+                const promises = [];
+                
+                // Coleta dados de todas as unidades em paralelo
+                for (const unit in unitsConfig) {
+                    promises.push(
+                        collectUnitData(unit).then(data => {
+                            if (data) {
+                                allData[unit] = data;
+                                updateUnitDisplay(unit, data);
+                            }
+                        })
+                    );
+                }
+                
+                await Promise.all(promises);
+                
+                // Salva no banco de dados principal
+                await mainDatabase.ref('unidades').set(allData);
+                
+                lastFormattedData = allData;
+                const now = new Date();
+                lastUpdate.textContent = now.toLocaleString('pt-BR');
+                
+                // Calcula próxima atualização
+                const nextUpdateTime = new Date(now.getTime() + updateIntervalMinutes * 60000);
+                nextUpdate.textContent = nextUpdateTime.toLocaleTimeString('pt-BR');
+                
+                addLogEntry("Dados de todas as unidades foram salvos com sucesso!", 'success');
+                return true;
+                
+            } catch (error) {
+                addLogEntry(`Erro ao formatar e salvar TMPs: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // Função para atualizar a exibição dos dados de uma unidade
+        function updateUnitDisplay(unit, data) {
+            let unitElement = document.getElementById(`unit-${unit}`);
+            
+            if (!unitElement) {
+                unitElement = document.createElement('div');
+                unitElement.className = 'unit-data';
+                unitElement.id = `unit-${unit}`;
+                unitsDataContainer.appendChild(unitElement);
+            }
+            
+            unitElement.innerHTML = `
+                <div class="unit-name">${data.nome}</div>
+                <div class="data-row">
+                    <div class="data-label">Tempo Médio:</div>
+                    <div class="data-value">${data.tempoMedio}</div>
+                </div>
+                <div class="data-row">
+                    <div class="data-label">Docas Ocupadas:</div>
+                    <div class="data-value">${data.docasOcupadas}/${data.totalDocas}</div>
+                </div>
+                <div class="data-row">
+                    <div class="data-label">Finalizados Hoje:</div>
+                    <div class="data-value">${data.finalizadosHoje}</div>
+                </div>
+                <div class="data-row">
+                    <div class="data-label">Excedidos:</div>
+                    <div class="data-value">${data.excedidos}</div>
+                </div>
+                <div class="data-row">
+                    <div class="data-label">Toneladas:</div>
+                    <div class="data-value">${data.toneladas}/${data.metaToneladas} (${data.percentualMeta}%)</div>
+                </div>
+                <div class="data-row">
+                    <div class="data-label">Mix Médio:</div>
+                    <div class="data-value">${data.mixMedio}</div>
+                </div>
+                <div class="data-row">
+                    <div class="data-label">Atualizado em:</div>
+                    <div class="data-value">${new Date(data.atualizadoEm).toLocaleString('pt-BR')}</div>
+                </div>
+            `;
+        }
+
+        // Função para iniciar o serviço de atualização periódica
+        function startService() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            serviceStatus.textContent = "Serviço em execução";
+            serviceStatus.className = "success";
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            
+            // Executa imediatamente a primeira atualização
+            formatAndSaveTMPs();
+            
+            // Configura o intervalo para atualizações periódicas
+            updateInterval = setInterval(formatAndSaveTMPs, updateIntervalMinutes * 60000);
+            
+            addLogEntry("Serviço de atualização automática iniciado", 'success');
+        }
+
+        // Função para parar o serviço
+        function stopService() {
+            if (!isRunning) return;
+            
+            isRunning = false;
+            clearInterval(updateInterval);
+            serviceStatus.textContent = "Serviço parado";
+            serviceStatus.className = "";
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            
+            addLogEntry("Serviço de atualização automática parado", 'info');
+        }
+
+        // Event Listeners
+        startBtn.addEventListener('click', startService);
+        stopBtn.addEventListener('click', stopService);
+        updateNowBtn.addEventListener('click', () => {
+            addLogEntry("Atualização manual solicitada", 'info');
+            formatAndSaveTMPs();
+        });
+
+        // Inicialização
+        async function initialize() {
+            addLogEntry("Sistema inicializando...", 'info');
+            const connectionsOk = await initializeDatabaseConnections();
+            
+            if (connectionsOk) {
+                addLogEntry("Todas as conexões foram inicializadas", 'success');
+                serviceStatus.textContent = "Pronto para iniciar";
+            } else {
+                addLogEntry("Algumas conexões falharam - verifique o log", 'error');
+                serviceStatus.textContent = "Problemas nas conexões";
+                serviceStatus.className = "error";
+            }
+        }
+
+        // Inicia quando o DOM estiver carregado
+        document.addEventListener('DOMContentLoaded', initialize);
+    </script>
+</body>
+</html>
