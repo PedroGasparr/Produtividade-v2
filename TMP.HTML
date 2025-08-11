@@ -9,7 +9,7 @@
     <style>
         body {
             font-family: 'Arial', sans-serif;
-            max-width: 1000px;
+            max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
             background-color: #f5f5f5;
@@ -64,13 +64,14 @@
             font-weight: bold;
             color: #2c3e50;
             margin-bottom: 10px;
+            font-size: 1.2em;
         }
         .data-row {
             display: flex;
             margin-bottom: 5px;
         }
         .data-label {
-            width: 150px;
+            width: 200px;
             font-weight: bold;
         }
         .data-value {
@@ -105,12 +106,37 @@
         .success {
             color: #2ecc71;
         }
+        .pauses-section {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #eef;
+            border-radius: 5px;
+        }
+        .pause-reason {
+            margin-left: 20px;
+            font-size: 0.9em;
+        }
+        .progress-bar {
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin-top: 5px;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            background-color: #4CAF50;
+            text-align: center;
+            line-height: 20px;
+            color: white;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Atualizador de TMPs - Todas as Unidades</h1>
-        <p>Este sistema coleta dados de todas as unidades e salva os TMPs formatados no Firebase Realtime Database a cada 20 minutos.</p>
+        <p>Este sistema coleta dados de todas as unidades e salva os TMPs formatados no Firebase Realtime Database.</p>
         
         <div class="controls">
             <button id="startBtn">Iniciar Serviço</button>
@@ -311,6 +337,76 @@
             return count > 0 ? (totalMix / count).toFixed(1) : "N/A";
         }
 
+        // Função para calcular estatísticas de pausas a partir dos carregamentos
+        async function calculatePauseStats(unit) {
+            try {
+                addLogEntry(`Calculando estatísticas de pausas para ${unitsConfig[unit].name}...`, 'info');
+                
+                // Busca todos os carregamentos da unidade
+                const carregamentosSnapshot = await databaseRefs[unit].ref('carregamentos').once('value');
+                const carregamentos = carregamentosSnapshot.val() || {};
+                
+                let totalPauseTime = 0;
+                let totalPauses = 0;
+                const pausesByReason = {};
+                
+                // Processa cada carregamento e suas pausas
+                Object.values(carregamentos).forEach(carregamento => {
+                    if (carregamento.pausas && Array.isArray(carregamento.pausas)) {
+                        carregamento.pausas.forEach(pausa => {
+                            if (pausa.inicio && pausa.fim) {
+                                const pauseTime = (pausa.fim - pausa.inicio) / 60000; // em minutos
+                                totalPauseTime += pauseTime;
+                                totalPauses++;
+                                
+                                // Agrupa por motivo
+                                const reason = pausa.motivo || 'Sem motivo';
+                                if (!pausesByReason[reason]) {
+                                    pausesByReason[reason] = {
+                                        totalTime: 0,
+                                        count: 0
+                                    };
+                                }
+                                pausesByReason[reason].totalTime += pauseTime;
+                                pausesByReason[reason].count++;
+                            }
+                        });
+                    }
+                });
+                
+                // Calcula médias
+                const averagePause = totalPauses > 0 ? totalPauseTime / totalPauses : 0;
+                
+                // Ordena os motivos por tempo total (do maior para o menor)
+                const sortedReasons = Object.entries(pausesByReason)
+                    .sort((a, b) => b[1].totalTime - a[1].totalTime)
+                    .map(([reason, data]) => ({
+                        reason,
+                        averageTime: data.totalTime / data.count,
+                        count: data.count,
+                        totalTime: data.totalTime
+                    }));
+                
+                addLogEntry(`Estatísticas de pausas calculadas para ${unitsConfig[unit].name}`, 'success');
+                
+                return {
+                    averagePause: formatMinutesToTime(averagePause),
+                    totalPauses: totalPauses,
+                    totalPauseTime: formatMinutesToTime(totalPauseTime),
+                    pausesByReason: sortedReasons
+                };
+                
+            } catch (error) {
+                addLogEntry(`Erro ao calcular estatísticas de pausas para ${unitsConfig[unit].name}: ${error.message}`, 'error');
+                return {
+                    averagePause: "N/A",
+                    totalPauses: 0,
+                    totalPauseTime: "0h00min",
+                    pausesByReason: []
+                };
+            }
+        }
+
         // Função para inicializar conexões com todos os bancos de dados
         async function initializeDatabaseConnections() {
             addLogEntry("Inicializando conexões com os bancos de dados...");
@@ -362,6 +458,7 @@
                 let count = 0;
                 let exceededCount = 0;
                 let totalToneladas = 0;
+                let totalPauseTimeToday = 0;
                 
                 carregamentosArray.forEach(c => {
                     if (c.finalizado && c.inicio && c.fim) {
@@ -372,6 +469,15 @@
                         if (tempoMin > 140) {
                             exceededCount++;
                         }
+                    }
+                    
+                    // Calcula tempo de pausa para carregamentos do dia
+                    if (c.pausas && Array.isArray(c.pausas)) {
+                        c.pausas.forEach(p => {
+                            if (p.inicio && p.fim) {
+                                totalPauseTimeToday += (p.fim - p.inicio) / 60000;
+                            }
+                        });
                     }
                     
                     // Soma correta das toneladas (convertendo para número)
@@ -393,6 +499,9 @@
                     if (docas[key] && docas[key].ocupada) ocupadas++;
                 }
                 
+                // Calcula estatísticas de pausas (de todos os carregamentos)
+                const pauseStats = await calculatePauseStats(unit);
+                
                 // Retorna os dados formatados
                 const result = {
                     nome: unitsConfig[unit].name,
@@ -405,10 +514,12 @@
                     metaToneladas: unitsConfig[unit].metaToneladas,
                     percentualMeta: (totalToneladas / unitsConfig[unit].metaToneladas * 100).toFixed(1),
                     mixMedio: mixMedio,
+                    pauseStats: pauseStats,
+                    pausasHoje: formatMinutesToTime(totalPauseTimeToday),
                     atualizadoEm: new Date().toISOString()
                 };
                 
-                addLogEntry(`Dados coletados de ${unitsConfig[unit].name}: ${JSON.stringify(result)}`, 'success');
+                addLogEntry(`Dados coletados de ${unitsConfig[unit].name}`, 'success');
                 return result;
                 
             } catch (error) {
@@ -430,8 +541,32 @@
                     promises.push(
                         collectUnitData(unit).then(data => {
                             if (data) {
-                                allData[unit] = data;
-                                updateUnitDisplay(unit, data);
+                                // Achata a estrutura dos dados para ficar tudo no nível principal
+                                const flatData = {
+                                    nome: data.nome,
+                                    tempoMedio: data.tempoMedio,
+                                    docasOcupadas: data.docasOcupadas,
+                                    totalDocas: data.totalDocas,
+                                    finalizadosHoje: data.finalizadosHoje,
+                                    excedidos: data.excedidos,
+                                    toneladas: data.toneladas,
+                                    metaToneladas: data.metaToneladas,
+                                    percentualMeta: data.percentualMeta,
+                                    mixMedio: data.mixMedio,
+                                    pausasHoje: data.pausasHoje,
+                                    atualizadoEm: data.atualizadoEm,
+                                    // Dados de pausas no nível principal
+                                    mediaGeralPausas: data.pauseStats.averagePause,
+                                    totalPausas: data.pauseStats.totalPauses,
+                                    tempoTotalPausas: data.pauseStats.totalPauseTime,
+                                    // Motivos de pausa como string formatada
+                                    motivosPausa: data.pauseStats.pausesByReason.map(r => 
+                                        `${r.reason}: ${formatMinutesToTime(r.averageTime)} (${r.count}x)`
+                                    ).join(' | ')
+                                };
+                                
+                                allData[unit] = flatData;
+                                updateUnitDisplay(unit, flatData);
                             }
                         })
                     );
@@ -439,7 +574,7 @@
                 
                 await Promise.all(promises);
                 
-                // Salva no banco de dados principal
+                // Salva no banco de dados principal com estrutura plana
                 await mainDatabase.ref('unidades').set(allData);
                 
                 lastFormattedData = allData;
@@ -459,7 +594,7 @@
             }
         }
 
-        // Função para atualizar a exibição dos dados de uma unidade
+        // Função para atualizar a exibição dos dados de uma unidade (ajustada para estrutura plana)
         function updateUnitDisplay(unit, data) {
             let unitElement = document.getElementById(`unit-${unit}`);
             
@@ -469,6 +604,21 @@
                 unitElement.id = `unit-${unit}`;
                 unitsDataContainer.appendChild(unitElement);
             }
+            
+            // Barra de progresso para a meta de toneladas
+            const progressPercent = Math.min(100, parseFloat(data.percentualMeta));
+            const progressBarHTML = `
+                <div class="progress-bar">
+                    <div class="progress" style="width: ${progressPercent}%">${data.percentualMeta}%</div>
+                </div>
+            `;
+            
+            // HTML para motivos de pausa
+            const motivosPausaHTML = data.motivosPausa ? 
+                `<div class="data-row">
+                    <div class="data-label">Motivos de Pausa:</div>
+                    <div class="data-value">${data.motivosPausa}</div>
+                </div>` : '';
             
             unitElement.innerHTML = `
                 <div class="unit-name">${data.nome}</div>
@@ -490,12 +640,26 @@
                 </div>
                 <div class="data-row">
                     <div class="data-label">Toneladas:</div>
-                    <div class="data-value">${data.toneladas}/${data.metaToneladas} (${data.percentualMeta}%)</div>
+                    <div class="data-value">${data.toneladas}/${data.metaToneladas}</div>
                 </div>
+                ${progressBarHTML}
                 <div class="data-row">
                     <div class="data-label">Mix Médio:</div>
                     <div class="data-value">${data.mixMedio}</div>
                 </div>
+                <div class="data-row">
+                    <div class="data-label">Pausas Hoje:</div>
+                    <div class="data-value">${data.pausasHoje}</div>
+                </div>
+                <div class="data-row">
+                    <div class="data-label">Média Geral Pausas:</div>
+                    <div class="data-value">${data.mediaGeralPausas} (${data.totalPausas} pausas)</div>
+                </div>
+                <div class="data-row">
+                    <div class="data-label">Tempo Total Pausas:</div>
+                    <div class="data-value">${data.tempoTotalPausas}</div>
+                </div>
+                ${motivosPausaHTML}
                 <div class="data-row">
                     <div class="data-label">Atualizado em:</div>
                     <div class="data-value">${new Date(data.atualizadoEm).toLocaleString('pt-BR')}</div>
