@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atualizador de TMPs - Todas as Unidades</title>
+    <title>Atualizador de TMPs e DTs - Todas as Unidades</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
     <style>
@@ -131,12 +131,30 @@
             color: white;
             font-size: 12px;
         }
+        .dt-list {
+            margin-top: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 5px;
+            background-color: #f0f0f0;
+        }
+        .dt-item {
+            margin: 3px 0;
+            padding: 3px;
+            border-bottom: 1px solid #ccc;
+        }
+        .dt-details {
+            font-size: 0.9em;
+            color: #555;
+            margin-left: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Atualizador de TMPs - Todas as Unidades</h1>
-        <p>Este sistema coleta dados de todas as unidades e salva os TMPs formatados no Firebase Realtime Database.</p>
+        <h1>Atualizador de TMPs e DTs - Todas as Unidades</h1>
+        <p>Este sistema coleta dados de todas as unidades, salva os TMPs formatados e as DTs/placas dos últimos 5 dias no Firebase.</p>
         
         <div class="controls">
             <button id="startBtn">Iniciar Serviço</button>
@@ -337,6 +355,84 @@
             return count > 0 ? (totalMix / count).toFixed(1) : "N/A";
         }
 
+        // Função para calcular o tempo de carregamento sem as pausas
+        function calculateTempoSemPausas(carregamento) {
+            if (!carregamento.inicio || !carregamento.fim) return 0;
+            
+            let tempoTotal = (carregamento.fim - carregamento.inicio) / 60000; // em minutos
+            
+            if (carregamento.pausas && Array.isArray(carregamento.pausas)) {
+                carregamento.pausas.forEach(pausa => {
+                    if (pausa.inicio && pausa.fim) {
+                        tempoTotal -= (pausa.fim - pausa.inicio) / 60000;
+                    }
+                });
+            }
+            
+            return tempoTotal > 0 ? tempoTotal : 0;
+        }
+
+        // Função para coletar DTs/placas dos últimos 5 dias com tempo de carregamento e data
+        async function collectRecentDTs(unit) {
+            try {
+                addLogEntry(`Coletando DTs/placas dos últimos 5 dias para ${unitsConfig[unit].name}...`, 'info');
+                
+                const hoje = new Date();
+                const cincoDiasAtras = new Date();
+                cincoDiasAtras.setDate(hoje.getDate() - 5);
+                const inicioPeriodo = new Date(cincoDiasAtras.getFullYear(), cincoDiasAtras.getMonth(), cincoDiasAtras.getDate()).getTime();
+                const fimPeriodo = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 23, 59, 59).getTime();
+
+                // Busca carregamentos dos últimos 5 dias
+                const carregamentosSnapshot = await databaseRefs[unit].ref('carregamentos')
+                    .orderByChild('inicio')
+                    .startAt(inicioPeriodo)
+                    .endAt(fimPeriodo)
+                    .once('value');
+                
+                const carregamentos = carregamentosSnapshot.val() || {};
+                const carregamentosArray = Object.values(carregamentos);
+                
+                // Objeto para armazenar as DTs/placas com detalhes
+                const dtsPlacasDetails = [];
+                
+                carregamentosArray.forEach(c => {
+                    if (c.finalizado) {
+                        const tempoSemPausas = calculateTempoSemPausas(c);
+                        const dataCarregamento = c.inicio ? new Date(c.inicio).toLocaleDateString('pt-BR') : 'Data desconhecida';
+                        
+                        if (c.dt) {
+                            dtsPlacasDetails.push({
+                                identificador: c.dt.trim(),
+                                tipo: 'DT',
+                                tempoSemPausas: formatMinutesToTime(tempoSemPausas),
+                                data: dataCarregamento
+                            });
+                        }
+                        
+                        if (c.placa) {
+                            dtsPlacasDetails.push({
+                                identificador: c.placa.trim(),
+                                tipo: 'Placa',
+                                tempoSemPausas: formatMinutesToTime(tempoSemPausas),
+                                data: dataCarregamento
+                            });
+                        }
+                    }
+                });
+                
+                // Filtra valores vazios
+                const filteredDetails = dtsPlacasDetails.filter(item => item.identificador !== '');
+                
+                addLogEntry(`Encontradas ${filteredDetails.length} DTs/placas para ${unitsConfig[unit].name}`, 'success');
+                return filteredDetails;
+                
+            } catch (error) {
+                addLogEntry(`Erro ao coletar DTs/placas para ${unitsConfig[unit].name}: ${error.message}`, 'error');
+                return [];
+            }
+        }
+
         // Função para calcular estatísticas de pausas a partir dos carregamentos
         async function calculatePauseStats(unit) {
             try {
@@ -502,6 +598,9 @@
                 // Calcula estatísticas de pausas (de todos os carregamentos)
                 const pauseStats = await calculatePauseStats(unit);
                 
+                // Coleta DTs/placas dos últimos 5 dias com detalhes
+                const dtsPlacasDetails = await collectRecentDTs(unit);
+                
                 // Retorna os dados formatados
                 const result = {
                     nome: unitsConfig[unit].name,
@@ -516,6 +615,7 @@
                     mixMedio: mixMedio,
                     pauseStats: pauseStats,
                     pausasHoje: formatMinutesToTime(totalPauseTimeToday),
+                    dtsPlacasDetails: dtsPlacasDetails,
                     atualizadoEm: new Date().toISOString()
                 };
                 
@@ -528,12 +628,13 @@
             }
         }
 
-        // Função para formatar e salvar todos os TMPs
+        // Função para formatar e salvar todos os TMPs e DTs
         async function formatAndSaveTMPs() {
-            addLogEntry("Iniciando formatação e salvamento dos TMPs...", 'info');
+            addLogEntry("Iniciando formatação e salvamento dos TMPs e DTs...", 'info');
             
             try {
                 const allData = {};
+                const allDTs = {};
                 const promises = [];
                 
                 // Coleta dados de todas as unidades em paralelo
@@ -566,7 +667,11 @@
                                 };
                                 
                                 allData[unit] = flatData;
-                                updateUnitDisplay(unit, flatData);
+                                
+                                // Adiciona DTs/placas para a lista geral com detalhes
+                                allDTs[unit] = data.dtsPlacasDetails;
+                                
+                                updateUnitDisplay(unit, flatData, data.dtsPlacasDetails);
                             }
                         })
                     );
@@ -577,6 +682,9 @@
                 // Salva no banco de dados principal com estrutura plana
                 await mainDatabase.ref('unidades').set(allData);
                 
+                // Salva as DTs/placas com detalhes em uma estrutura separada para o Power BI
+                await mainDatabase.ref('dts_placas').set(allDTs);
+                
                 lastFormattedData = allData;
                 const now = new Date();
                 lastUpdate.textContent = now.toLocaleString('pt-BR');
@@ -585,17 +693,17 @@
                 const nextUpdateTime = new Date(now.getTime() + updateIntervalMinutes * 60000);
                 nextUpdate.textContent = nextUpdateTime.toLocaleTimeString('pt-BR');
                 
-                addLogEntry("Dados de todas as unidades foram salvos com sucesso!", 'success');
+                addLogEntry("Dados de todas as unidades e DTs/placas foram salvos com sucesso!", 'success');
                 return true;
                 
             } catch (error) {
-                addLogEntry(`Erro ao formatar e salvar TMPs: ${error.message}`, 'error');
+                addLogEntry(`Erro ao formatar e salvar TMPs e DTs: ${error.message}`, 'error');
                 return false;
             }
         }
 
         // Função para atualizar a exibição dos dados de uma unidade (ajustada para estrutura plana)
-        function updateUnitDisplay(unit, data) {
+        function updateUnitDisplay(unit, data, dtsPlacasDetails) {
             let unitElement = document.getElementById(`unit-${unit}`);
             
             if (!unitElement) {
@@ -619,6 +727,34 @@
                     <div class="data-label">Motivos de Pausa:</div>
                     <div class="data-value">${data.motivosPausa}</div>
                 </div>` : '';
+            
+            // HTML para lista de DTs/placas com detalhes
+            let dtsPlacasHTML = '';
+            if (dtsPlacasDetails && dtsPlacasDetails.length > 0) {
+                dtsPlacasHTML = `
+                    <div class="data-row">
+                        <div class="data-label">DTs/Placas (últimos 5 dias):</div>
+                        <div class="data-value">${dtsPlacasDetails.length} registros</div>
+                    </div>
+                    <div class="dt-list">
+                        ${dtsPlacasDetails.map(dt => `
+                            <div class="dt-item">
+                                ${dt.identificador} (${dt.tipo})
+                                <div class="dt-details">
+                                    Tempo sem pausas: ${dt.tempoSemPausas} | Data: ${dt.data}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else {
+                dtsPlacasHTML = `
+                    <div class="data-row">
+                        <div class="data-label">DTs/Placas (últimos 5 dias):</div>
+                        <div class="data-value">Nenhuma DT/placa encontrada</div>
+                    </div>
+                `;
+            }
             
             unitElement.innerHTML = `
                 <div class="unit-name">${data.nome}</div>
@@ -660,6 +796,7 @@
                     <div class="data-value">${data.tempoTotalPausas}</div>
                 </div>
                 ${motivosPausaHTML}
+                ${dtsPlacasHTML}
                 <div class="data-row">
                     <div class="data-label">Atualizado em:</div>
                     <div class="data-value">${new Date(data.atualizadoEm).toLocaleString('pt-BR')}</div>
