@@ -1,11 +1,12 @@
         const firebaseConfig = {
-        apiKey: "AIzaSyD7Qbw6l9O_R2WIj6kr7AvGUFYk2WBfclA",
-        authDomain: "produtividade-bc-maracanau.firebaseapp.com",
-        projectId: "produtividade-bc-maracanau",
-        storageBucket: "produtividade-bc-maracanau.firebasestorage.app",
-        messagingSenderId: "615712010394",
-        appId: "1:615712010394:web:e483c645d7c69aa92b6f23",
-        measurementId: "G-LHM2NDR1YT"
+        apiKey: "AIzaSyDmhnN2jEQWMeAwSLJiAfNHUapM5_HgiOw",
+        authDomain: "appguizilim.firebaseapp.com",
+        databaseURL: "https://appguizilim-default-rtdb.firebaseio.com",
+        projectId: "appguizilim",
+        storageBucket: "appguizilim.firebasestorage.app",
+        messagingSenderId: "669241709255",
+        appId: "1:669241709255:web:bde10d035254b74c9724e2",
+        measurementId: "G-J2MKLZ5XL0"
         };
 
 // Inicializa Firebase e expõe variáveis globais
