@@ -9,6 +9,108 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <link rel="stylesheet" href="../css/historico.css">
+    <style>
+        /* Estilos adicionais para o botão de mudança de unidade */
+        .change-unit-btn {
+            background-color: #4a6da7;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        .change-unit-btn:hover {
+            background-color: #3a5a8f;
+        }
+        
+        /* Modal de mudança de unidade */
+        .unit-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .unit-modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 400px;
+            max-width: 90%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .unit-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .unit-modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .unit-close-btn {
+            font-size: 24px;
+            cursor: pointer;
+            color: #777;
+        }
+        
+        .unit-close-btn:hover {
+            color: #333;
+        }
+        
+        .unit-select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        
+        .unit-modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .unit-cancel-btn, .unit-confirm-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .unit-cancel-btn {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        
+        .unit-confirm-btn {
+            background-color: #4a6da7;
+            color: white;
+        }
+        
+        .unit-confirm-btn:hover {
+            background-color: #3a5a8f;
+        }
+    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -32,6 +134,7 @@
                     <div class="user-name">Carregando...</div>
                     <div class="user-role"></div>
                 </div>
+                <button class="change-unit-btn" id="changeUnitBtn">Mudar Unidade</button>
                 <button class="logout-btn">Sair</button>
             </div>
         </div>
@@ -188,6 +291,35 @@
             </div>
         </div>
     </div>
+    
+    <!-- Modal de Mudança de Unidade -->
+    <div class="unit-modal" id="unitModal">
+        <div class="unit-modal-content">
+            <div class="unit-modal-header">
+                <h2 class="unit-modal-title">Mudar Unidade</h2>
+                <span class="unit-close-btn" id="unitCloseBtn">&times;</span>
+            </div>
+            
+            <div class="modal-body">
+                <p>Selecione a unidade para a qual deseja mudar:</p>
+                <select id="unitSelect" class="unit-select">
+                    <option value="">Selecione uma unidade</option>
+                    <option value="Unidade Maracanau">Unidade Maracanau</option>
+                    <option value="Unidade Belem">Unidade Belem</option>
+                    <option value="Unidade Mogi Das Cruzes">Unidade Mogi Das Cruzes</option>
+                    <option value="Unidade Imperatriz">Unidade Imperatriz</option>
+                    <option value="Unidade Cariacica">Unidade Cariacica</option>
+                    <option value="Unidade Aracruz">Unidade Aracruz</option>
+                    <option value="Unidade Teste">Unidade Teste</option>
+                </select>
+            </div>
+            
+            <div class="unit-modal-actions">
+                <button class="unit-cancel-btn" id="unitCancelBtn">Cancelar</button>
+                <button class="unit-confirm-btn" id="unitConfirmBtn">Confirmar</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // Configuração do Firebase
@@ -222,6 +354,14 @@
         const historyTableBody = document.getElementById('historyTableBody');
         const historySummary = document.getElementById('historySummary');
         const editModal = document.getElementById('editModal');
+        
+        // Elementos do modal de mudança de unidade
+        const changeUnitBtn = document.getElementById('changeUnitBtn');
+        const unitModal = document.getElementById('unitModal');
+        const unitSelect = document.getElementById('unitSelect');
+        const unitCloseBtn = document.getElementById('unitCloseBtn');
+        const unitCancelBtn = document.getElementById('unitCancelBtn');
+        const unitConfirmBtn = document.getElementById('unitConfirmBtn');
         
         // Estado da aplicação
         let currentUser = null;
@@ -578,6 +718,57 @@
             applyFilters();
         }
         
+        // Funções para mudança de unidade
+        function openUnitModal() {
+            // Selecionar a unidade atual no dropdown
+            unitSelect.value = currentUnit;
+            unitModal.style.display = 'block';
+        }
+        
+        function closeUnitModal() {
+            unitModal.style.display = 'none';
+        }
+        
+        function confirmUnitChange() {
+            const selectedUnit = unitSelect.value;
+            
+            if (!selectedUnit) {
+                alert('Por favor, selecione uma unidade.');
+                return;
+            }
+            
+            if (selectedUnit === currentUnit) {
+                alert('Você já está nesta unidade.');
+                closeUnitModal();
+                return;
+            }
+            
+            // Atualizar a unidade no Firestore
+            db.collection('users').doc(currentUser.uid).update({
+                unit: selectedUnit
+            })
+            .then(() => {
+                // Atualizar localmente
+                currentUnit = selectedUnit;
+                userUnitInfo.textContent = `Unidade atual: ${currentUnit}`;
+                
+                // Recarregar dados
+                loadEmployeesData();
+                
+                // Se o histórico já estiver sendo exibido, recarregar
+                if (historyContainer.style.display !== 'none') {
+                    loadHistoryData();
+                }
+                
+                closeUnitModal();
+                alert(`Unidade alterada para: ${selectedUnit}`);
+            })
+            .catch((error) => {
+                console.error("Erro ao atualizar unidade:", error);
+                alert('Erro ao alterar unidade. Tente novamente.');
+            });
+        }
+        
         // Event Listeners
         passwordBtn.addEventListener('click', checkPassword);
         passwordInput.addEventListener('keypress', (e) => {
@@ -593,10 +784,19 @@
         document.getElementById('cancelEdit').addEventListener('click', closeEditModal);
         document.getElementById('saveEdit').addEventListener('click', saveEdit);
         
-        // Fechar modal clicando fora dele
+        // Event Listeners para mudança de unidade
+        changeUnitBtn.addEventListener('click', openUnitModal);
+        unitCloseBtn.addEventListener('click', closeUnitModal);
+        unitCancelBtn.addEventListener('click', closeUnitModal);
+        unitConfirmBtn.addEventListener('click', confirmUnitChange);
+        
+        // Fechar modais clicando fora deles
         window.addEventListener('click', (e) => {
             if (e.target === editModal) {
                 closeEditModal();
+            }
+            if (e.target === unitModal) {
+                closeUnitModal();
             }
         });
         
