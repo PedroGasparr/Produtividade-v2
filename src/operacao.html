@@ -1,0 +1,1587 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema - Operação</title>
+    <!-- Importar Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- Biblioteca jsQR para leitura de QR Code -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <link rel="stylesheet" href="../css/operacao.css">
+    <style>
+        /* Estilos adicionais para os novos recursos */
+        .warehouse-multiselect {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 5px;
+        }
+        
+        .warehouse-checkbox {
+            margin-right: 8px;
+        }
+        
+        .warehouse-item {
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .selected-warehouses {
+            margin-top: 10px;
+            padding: 8px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+        
+        .pause-reason-select {
+            display: none;
+            margin-top: 10px;
+        }
+        
+        .employee-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .remove-employee {
+            background-color: #ff4757;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        
+        .remove-employee:hover {
+            background-color: #ff2e43;
+        }
+        
+        .car-in-dock-list {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        
+        .car-in-dock-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+        }
+        
+        .car-in-dock-item:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .car-in-dock-item.selected {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .car-details {
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <span>Prod</span>Plan
+            </div>
+            
+            <ul class="nav-links">
+                <li><a href="operacao.html" class="active">Operação</a></li>
+                <li><a href="cadastrar_funcionario.html">Cadastrar Funcionário</a></li>
+                <li><a href="buscar_funcionario.html">Buscar Funcionário</a></li>
+                <li><a href="ranking.html">Ranking</a></li>
+                <li><a href="painel_controle.html">Painel de Controle</a></li>
+                <li><a href="zles001.html">zles001</a></li>
+                <li><a href="historico.html">Histórico</a></li>
+            </ul>
+            
+            <div class="user-section">
+                <div class="user-info">
+                    <div class="user-name">Carregando...</div>
+                    <div class="user-role"></div>
+                </div>
+                <button class="logout-btn">Sair</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="content">
+        <h1 class="page-title">Tela de Operação</h1>
+        
+        <div class="operation-container">
+            <div class="user-unit-info" id="userUnitInfo">
+                Carregando informações da unidade...
+            </div>
+            
+            <div class="action-buttons">
+                <button class="operation-button" id="startOperationBtn">Iniciar Carregamento</button>
+                <button class="operation-button finish" id="finishOperationBtn">Finalizar Operação</button>
+                <button class="operation-button pause" id="pauseOperationBtn">Pausar/Retomar Carregamento</button>
+                <button class="operation-button add" id="addEmployeeBtn">Adicionar/Remover Funcionário</button>
+                <button class="operation-button car-dock" id="carInDockBtn" style="background-color: #ff9800;">Carro em Doca</button>
+            </div>
+            
+            <!-- Formulário de Carro em Doca -->
+            <div class="operation-form" id="carInDockForm">
+                <h2>Registrar Carro em Doca</h2>
+                
+                <div class="form-group">
+                    <label for="carDockNumber">Número da DT</label>
+                    <input type="text" id="carDockNumber" placeholder="Ex: 12345">
+                </div>
+                
+                <div class="form-group">
+                    <label for="carDock">Doca</label>
+                    <select id="carDock">
+                        <option value="">Selecione a Doca</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                    </select>
+                </div>
+                
+                <button class="submit-button" id="submitCarInDockBtn">Registrar Carro em Doca</button>
+                
+                <div class="car-in-dock-list" id="carsInDockList">
+                    <h3>Carros em Doca Registrados</h3>
+                    <!-- Lista de carros em doca será preenchida aqui -->
+                </div>
+            </div>
+            
+            <!-- Formulário de Iniciar Operação -->
+            <div class="operation-form" id="operationForm">
+                <h2>Iniciar Operação</h2>
+                
+                <div class="form-group">
+                    <label for="employeeCode">Código do Funcionário Principal</label>
+                    <input type="text" id="employeeCode" placeholder="Ex: GZL-EO-1234">
+                    <button class="qr-button" id="scanQRBtn">Ler QR Code</button>
+                </div>
+                
+                <div id="additionalLoaders">
+                    <!-- Campos adicionais para outros carregadores serão inseridos aqui -->
+                </div>
+                
+                <button class="add-loader-button" id="addLoaderBtn">Adicionar mais carregadores</button>
+                
+                <div class="form-group">
+                    <label for="operationType">Tipo de Operação</label>
+                    <select id="operationType">
+                        <option value="carregamento">Carregamento (2h 20min)</option>
+                        <option value="carregamento_Paletizado">Carregamento Paletizado (1h)</option>
+                        <option value="descarga">Descarga (2h 20min)</option>
+                        <option value="separacao">Separação (1h 30min)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="selectCarInDock">Selecionar Carro em Doca</label>
+                    <select id="selectCarInDock">
+                        <option value="">Selecione um carro em doca</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dock">Doca</label>
+                    <input type="text" id="dock" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label for="dockNumber">Número da DT</label>
+                    <input type="text" id="dockNumber" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label for="vehicleType">Tipo de Veículo</label>
+                    <select id="vehicleType">
+                        <option value="">Selecione...</option>
+                        <option value="carreta">Carreta</option>
+                        <option value="toco">Toco</option>
+                        <option value="vuc">VUC</option>
+                        <option value="bitrem">Bitrem</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Armazém (onde foi buscar material)</label>
+                    <div class="warehouse-multiselect" id="warehouseMultiselect">
+                        <div class="warehouse-item">
+                            <input type="checkbox" id="warehouse_unico" class="warehouse-checkbox" value="unico">
+                            <label for="warehouse_unico">Unico Armazém</label>
+                        </div>
+                        <div class="warehouse-item">
+                            <input type="checkbox" id="warehouse_1" class="warehouse-checkbox" value="armazem1">
+                            <label for="warehouse_1">Armazém 1</label>
+                        </div>
+                        <div class="warehouse-item">
+                            <input type="checkbox" id="warehouse_2" class="warehouse-checkbox" value="armazem2">
+                            <label for="warehouse_2">Armazém 2</label>
+                        </div>
+                        <div class="warehouse-item">
+                            <input type="checkbox" id="warehouse_3" class="warehouse-checkbox" value="armazem3">
+                            <label for="warehouse_3">Armazém 3</label>
+                        </div>
+                        <div class="warehouse-item">
+                            <input type="checkbox" id="warehouse_4" class="warehouse-checkbox" value="armazem4">
+                            <label for="warehouse_4">Armazém 4</label>
+                        </div>
+                        <div class="warehouse-item">
+                            <input type="checkbox" id="warehouse_5" class="warehouse-checkbox" value="armazem5">
+                            <label for="warehouse_5">Armazém 5</label>
+                        </div>
+                        <div class="warehouse-item">
+                            <input type="checkbox" id="warehouse_6" class="warehouse-checkbox" value="armazem6">
+                            <label for="warehouse_6">Armazém 6</label>
+                        </div>
+                        <div class="warehouse-item">
+                            <input type="checkbox" id="warehouse_7" class="warehouse-checkbox" value="armazem7">
+                            <label for="warehouse_7">Armazém 7</label>
+                        </div>
+                        <div class="warehouse-item">
+                            <input type="checkbox" id="warehouse_8" class="warehouse-checkbox" value="armazem8">
+                            <label for="warehouse_8">Armazém 8</label>
+                        </div>
+                        <div class="warehouse-item">
+                            <input type="checkbox" id="warehouse_externo1" class="warehouse-checkbox" value="externo1">
+                            <label for="warehouse_externo1">Armazém Externo 1</label>
+                        </div>
+                        <div class="warehouse-item">
+                            <input type="checkbox" id="warehouse_externo2" class="warehouse-checkbox" value="externo2">
+                            <label for="warehouse_externo2">Armazém Externo 2</label>
+                        </div>
+                        <div class="warehouse-item">
+                            <input type="checkbox" id="warehouse_externo3" class="warehouse-checkbox" value="externo3">
+                            <label for="warehouse_externo3">Armazém Externo 3</label>
+                        </div>
+                        <div class="warehouse-item">
+                            <input type="checkbox" id="warehouse_externo4" class="warehouse-checkbox" value="externo4">
+                            <label for="warehouse_externo4">Armazém Externo 4</label>
+                        </div>
+                        <div class="warehouse-item">
+                            <input type="checkbox" id="warehouse_externo5" class="warehouse-checkbox" value="externo5">
+                            <label for="warehouse_externo5">Armazém Externo 5</label>
+                        </div>
+                    </div>
+                    <div class="selected-warehouses" id="selectedWarehouses">
+                        Nenhum armazém selecionado
+                    </div>
+                </div>
+                
+                <button class="submit-button" id="submitOperationBtn">Iniciar Operação</button>
+            </div>
+            
+            <!-- Formulário de Finalizar Operação -->
+            <div class="operation-form" id="finishOperationForm">
+                <h2>Finalizar Operação</h2>
+                
+                <div class="form-group">
+                    <label for="finishEmployeeCode">Código do Funcionário Principal</label>
+                    <input type="text" id="finishEmployeeCode" placeholder="Ex: GZL-EO-1234">
+                    <button class="qr-button" id="scanFinishQRBtn">Ler QR Code</button>
+                </div>
+                
+                <div class="form-group">
+                    <label for="finishOperationType">Tipo de Operação</label>
+                    <select id="finishOperationType" disabled>
+                        <option value="">Selecione o tipo de operação</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="materialMix">Quantidade de Mix de Material</label>
+                    <input type="number" id="materialMix" placeholder="Ex: 5" min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="tonsLoaded">Toneladas Carregadas</label>
+                    <input type="number" id="tonsLoaded" placeholder="Ex: 10.5" step="0.1" min="0.1">
+                </div>
+                
+                <div class="form-group">
+                    <label for="observation">Observação/Justificativa</label>
+                    <textarea id="observation" placeholder="Digite observações ou justificativas aqui..."></textarea>
+                </div>
+                
+                <button class="submit-button finish" id="submitFinishBtn">Finalizar Operação</button>
+            </div>
+            
+            <!-- Formulário de Pausar/Retomar Operação -->
+            <div class="operation-form" id="pauseOperationForm">
+                <h2>Pausar/Retomar Carregamento</h2>
+                
+                <div class="form-group">
+                    <label for="pauseEmployeeCode">Código do Funcionário</label>
+                    <input type="text" id="pauseEmployeeCode" placeholder="Ex: GZL-EO-1234">
+                    <button class="qr-button" id="scanPauseQRBtn">Ler QR Code</button>
+                </div>
+                
+                <div class="form-group">
+                    <label for="selectPauseOperation">Selecionar Carregamento (Doca - DT)</label>
+                    <select id="selectPauseOperation">
+                        <option value="">Selecione um carregamento em andamento</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="pauseAction">Ação</label>
+                    <select id="pauseAction">
+                        <option value="pausar">Pausar</option>
+                        <option value="retomar">Retomar</option>
+                    </select>
+                </div>
+                
+                <div class="pause-reason-select" id="pauseReasonContainer">
+                    <label for="pauseReason">Motivo da Pausa</label>
+                    <select id="pauseReason">
+                        <option value="pausar_refeicao">Pausar (Refeição)</option>
+                        <option value="retomar_refeicao">Retomar (Após Refeição)</option>
+                        <option value="pausar_faturar">Pausar (Aguardando Faturar)</option>
+                        <option value="retomar_faturar">Retomar (Após Faturar)</option>
+                        <option value="pausar_treinamento">Pausar (Treinamento)</option>
+                        <option value="retomar_treinamento">Retomar (Após Treinamento)</option>
+                        <option value="pausar_sna">Pausar (SNA)</option>
+                        <option value="retomar_sna">Retomar (Após SNA)</option>
+                        <option value="pausar_prioridade">Pausar (Prioridade Operacional)</option>
+                        <option value="retomar_prioridade">Retomar (Após Prioridade)</option>
+                        <option value="pausar_limpeza">Pausar (Limpeza/Organização)</option>
+                        <option value="retomar_limpeza">Retomar (Após Limpeza)</option>
+                        <option value="pausar_ocorrencia">Pausar (Ocorrência)</option>
+                        <option value="retomar_ocorrencia">Retomar (Após Ocorrência)</option>
+                        <option value="pausar_tombamento">Pausar (Tombamento)</option>
+                        <option value="retomar_tombamento">Retomar (Após Tombamento)</option>
+                        <option value="pausar_chuva">Pausar (Chuva)</option>
+                        <option value="retomar_chuva">Retomar (Após Chuva)</option>
+                    </select>
+                </div>
+                
+                <button class="submit-button pause" id="submitPauseBtn">Executar Ação</button>
+            </div>
+            
+            <!-- Formulário de Adicionar/Remover Funcionário -->
+            <div class="operation-form" id="addEmployeeForm">
+                <h2>Adicionar/Remover Funcionário</h2>
+                
+                <div class="form-group">
+                    <label for="selectEmployeeOperation">Selecionar Carregamento (Doca - DT)</label>
+                    <select id="selectEmployeeOperation">
+                        <option value="">Selecione um carregamento em andamento</option>
+                    </select>
+                </div>
+                
+                <div class="employee-list" id="currentEmployees">
+                    <p>Funcionários atuais no carregamento:</p>
+                    <!-- Lista de funcionários será preenchida aqui -->
+                </div>
+                
+                <div class="form-group">
+                    <label for="newEmployeeCode">Código do Funcionário a Adicionar</label>
+                    <input type="text" id="newEmployeeCode" placeholder="Ex: GZL-EO-1234">
+                    <button class="qr-button" id="scanNewEmployeeQRBtn">Ler QR Code</button>
+                </div>
+                
+                <button class="submit-button add" id="submitAddEmployeeBtn">Adicionar Funcionário</button>
+                <button class="submit-button remove" id="submitRemoveEmployeeBtn" style="background-color: #ff4757; margin-left: 10px;">Remover Funcionário Selecionado</button>
+            </div>
+            
+            <div class="active-loads" id="activeLoadsContainer">
+                <h2>Carregamentos Ativos</h2>
+                <div id="activeLoadsList">
+                    <!-- Os carregamentos ativos serão exibidos aqui -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scanner de QR Code -->
+    <div id="scanner-container">
+        <video id="scanner-video" playsinline></video>
+        <div id="scan-result"></div>
+        <div class="scanner-controls">
+            <button class="scanner-btn cancel" id="cancel-scan">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Modal para cadastro de novo colaborador -->
+    <div id="employeeModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Cadastrar Novo Colaborador</h2>
+            <p>Colaborador não encontrado. Por favor, complete o cadastro:</p>
+            
+            <div class="form-group">
+                <label for="employeeId">Código do Funcionário</label>
+                <input type="text" id="employeeId" readonly>
+            </div>
+            
+            <div class="form-group">
+                <label for="employeeName">Nome do Colaborador</label>
+                <input type="text" id="employeeName" placeholder="Digite o nome completo">
+            </div>
+            
+            <div class="form-group">
+                <label for="employeeUnit">Unidade</label>
+                <input type="text" id="employeeUnit" readonly>
+            </div>
+            
+            <button class="submit-button" id="saveEmployeeBtn">Salvar e Continuar</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMu17OV-5ST1rlg00zbpt6Hv37GKqkX4A",
+            authDomain: "projetos-d868d.firebaseapp.com",
+            databaseURL: "https://projetos-d868d-default-rtdb.firebaseio.com",
+            projectId: "projetos-d868d",
+            storageBucket: "projetos-d868d.firebasestorage.app",
+            messagingSenderId: "420029352781",
+            appId: "1:420029352781:web:05176699348e0ccdd78504",
+            measurementId: "G-FXWXRX04WF"
+        };
+        
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        
+        // Elementos da interface
+        const startOperationBtn = document.getElementById('startOperationBtn');
+        const finishOperationBtn = document.getElementById('finishOperationBtn');
+        const pauseOperationBtn = document.getElementById('pauseOperationBtn');
+        const addEmployeeBtn = document.getElementById('addEmployeeBtn');
+        const carInDockBtn = document.getElementById('carInDockBtn');
+        
+        const operationForm = document.getElementById('operationForm');
+        const finishOperationForm = document.getElementById('finishOperationForm');
+        const pauseOperationForm = document.getElementById('pauseOperationForm');
+        const addEmployeeForm = document.getElementById('addEmployeeForm');
+        const carInDockForm = document.getElementById('carInDockForm');
+        
+        const userUnitInfo = document.getElementById('userUnitInfo');
+        const userNameElement = document.querySelector('.user-name');
+        
+        // Elementos do scanner
+        const scannerContainer = document.getElementById('scanner-container');
+        const scannerVideo = document.getElementById('scanner-video');
+        const scanResult = document.getElementById('scan-result');
+        const cancelScanBtn = document.getElementById('cancel-scan');
+        
+        // Elementos do modal
+        const employeeModal = document.getElementById('employeeModal');
+        const closeModal = document.querySelector('.close');
+        const employeeIdInput = document.getElementById('employeeId');
+        const employeeNameInput = document.getElementById('employeeName');
+        const employeeUnitInput = document.getElementById('employeeUnit');
+        const saveEmployeeBtn = document.getElementById('saveEmployeeBtn');
+        
+        // Elementos para seleção múltipla de armazéns
+        const warehouseCheckboxes = document.querySelectorAll('.warehouse-checkbox');
+        const selectedWarehousesDiv = document.getElementById('selectedWarehouses');
+        
+        // Elementos para pausa
+        const pauseActionSelect = document.getElementById('pauseAction');
+        const pauseReasonContainer = document.getElementById('pauseReasonContainer');
+        const pauseReasonSelect = document.getElementById('pauseReason');
+        
+        // Elementos para remover funcionários
+        const selectEmployeeOperation = document.getElementById('selectEmployeeOperation');
+        const submitRemoveEmployeeBtn = document.getElementById('submitRemoveEmployeeBtn');
+        
+        // Elementos para carro em doca
+        const selectCarInDock = document.getElementById('selectCarInDock');
+        const dockInput = document.getElementById('dock');
+        const dockNumberInput = document.getElementById('dockNumber');
+        
+        // Estado da aplicação
+        let currentUser = null;
+        let userData = null;
+        let currentUnit = '';
+        let activeLoads = {};
+        let loadIntervals = {};
+        let scannerActive = false;
+        let stream = null;
+        let currentScannerInput = null;
+        let scanningInterval = null;
+        let canvas = null;
+        let canvasContext = null;
+        let selectedEmployeeToRemove = null;
+        let carsInDock = {};
+        
+        // Verificar autenticação
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                userNameElement.textContent = 'Carregando...';
+                
+                // Buscar dados do usuário no Firestore
+                db.collection('users').doc(user.uid).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        userData = doc.data();
+                        userNameElement.textContent = userData.name;
+                        currentUnit = userData.unit;
+                        userUnitInfo.textContent = `Unidade atual: ${currentUnit}`;
+                        employeeUnitInput.value = currentUnit;
+                        
+                        // Carregar carregamentos ativos
+                        loadActiveLoads();
+                        // Carregar carros em doca
+                        loadCarsInDock();
+                    } else {
+                        console.error("Documento do usuário não encontrado");
+                    }
+                })
+                .catch((error) => {
+                    console.error("Erro ao buscar dados do usuário:", error);
+                });
+            } else {
+                // Usuário não autenticado, redirecionar para login
+                window.location.href = 'login.html';
+            }
+        });
+        
+        // Atualizar seleção de armazéns
+        warehouseCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectedWarehouses);
+        });
+        
+        function updateSelectedWarehouses() {
+            const selected = Array.from(warehouseCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => {
+                    const label = cb.nextElementSibling.textContent;
+                    return label;
+                });
+                
+            if (selected.length > 0) {
+                selectedWarehousesDiv.textContent = selected.join(', ');
+            } else {
+                selectedWarehousesDiv.textContent = 'Nenhum armazém selecionado';
+            }
+        }
+        
+        // Mostrar/ocultar motivo de pausa
+        pauseActionSelect.addEventListener('change', function() {
+            if (this.value === 'pausar') {
+                pauseReasonContainer.style.display = 'block';
+                // Mostrar apenas opções de pausa
+                Array.from(pauseReasonSelect.options).forEach(option => {
+                    option.style.display = option.value.startsWith('pausar_') ? '' : 'none';
+                });
+            } else if (this.value === 'retomar') {
+                pauseReasonContainer.style.display = 'block';
+                // Mostrar apenas opções de retomar
+                Array.from(pauseReasonSelect.options).forEach(option => {
+                    option.style.display = option.value.startsWith('retomar_') ? '' : 'none';
+                });
+            } else {
+                pauseReasonContainer.style.display = 'none';
+            }
+        });
+        
+        // Função para carregar carros em doca
+        function loadCarsInDock() {
+            db.collection('carsInDock')
+                .where('unit', '==', currentUnit)
+                .where('status', '==', 'available')
+                .onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added' || change.type === 'modified') {
+                            const carData = change.doc.data();
+                            carsInDock[change.doc.id] = carData;
+                            updateCarInDockDisplay(change.doc.id, carData);
+                        }
+                        if (change.type === 'removed') {
+                            delete carsInDock[change.doc.id];
+                            removeCarInDockDisplay(change.doc.id);
+                        }
+                    });
+                    
+                    // Atualizar select de carros em doca
+                    updateCarInDockSelect();
+                }, (error) => {
+                    console.error("Erro ao carregar carros em doca:", error);
+                });
+        }
+        
+        // Atualizar select de carros em doca
+        function updateCarInDockSelect() {
+            selectCarInDock.innerHTML = '<option value="">Selecione um carro em doca</option>';
+            
+            Object.keys(carsInDock).forEach(carId => {
+                const car = carsInDock[carId];
+                const option = document.createElement('option');
+                option.value = carId;
+                option.textContent = `DT ${car.dockNumber} - Doca ${car.dock}`;
+                selectCarInDock.appendChild(option);
+            });
+        }
+        
+        // Atualizar display de carros em doca
+        function updateCarInDockDisplay(carId, carData) {
+            const carsList = document.getElementById('carsInDockList');
+            
+            // Remover item existente se houver
+            const existingItem = document.getElementById(`car-${carId}`);
+            if (existingItem) {
+                existingItem.remove();
+            }
+            
+            const carItem = document.createElement('div');
+            carItem.id = `car-${carId}`;
+            carItem.className = 'car-in-dock-item';
+            carItem.innerHTML = `
+                <div><strong>DT ${carData.dockNumber}</strong> - Doca ${carData.dock}</div>
+                <div class="car-details">
+                    Chegou em: ${carData.arrivalTime.toDate().toLocaleString('pt-BR')}
+                </div>
+            `;
+            
+            carsList.appendChild(carItem);
+        }
+        
+        // Remover display de carro em doca
+        function removeCarInDockDisplay(carId) {
+            const carItem = document.getElementById(`car-${carId}`);
+            if (carItem) {
+                carItem.remove();
+            }
+        }
+        
+        // Evento para selecionar carro em doca
+        selectCarInDock.addEventListener('change', function() {
+            const carId = this.value;
+            if (carId && carsInDock[carId]) {
+                const car = carsInDock[carId];
+                dockInput.value = car.dock;
+                dockNumberInput.value = car.dockNumber;
+            } else {
+                dockInput.value = '';
+                dockNumberInput.value = '';
+            }
+        });
+        
+        // Função para carregar carregamentos ativos
+        function loadActiveLoads() {
+            db.collection('operations')
+                .where('unit', '==', currentUnit)
+                .where('status', 'in', ['active', 'paused'])
+                .onSnapshot((snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added' || change.type === 'modified') {
+                            const loadData = change.doc.data();
+                            activeLoads[change.doc.id] = loadData;
+                            updateLoadDisplay(change.doc.id, loadData);
+                        }
+                        if (change.type === 'removed') {
+                            delete activeLoads[change.doc.id];
+                            removeLoadDisplay(change.doc.id);
+                        }
+                    });
+                    
+                    // Atualizar selects de carregamentos
+                    updateOperationSelects();
+                    
+                    // Mostrar ou esconder container baseado em existirem carregamentos
+                    if (Object.keys(activeLoads).length > 0) {
+                        activeLoadsContainer.style.display = 'block';
+                    } else {
+                        activeLoadsContainer.style.display = 'none';
+                    }
+                }, (error) => {
+                    console.error("Erro ao carregar operações ativas:", error);
+                    if (error.code === 'permission-denied') {
+                        console.log("Permissão negada para acessar operações. Verifique as regras de segurança.");
+                    }
+                });
+        }
+        
+        // Atualizar selects de carregamentos
+        function updateOperationSelects() {
+            const pauseSelect = document.getElementById('selectPauseOperation');
+            const addEmployeeSelect = document.getElementById('selectEmployeeOperation');
+            const finishOperationType = document.getElementById('finishOperationType');
+            
+            // Limpar selects
+            pauseSelect.innerHTML = '<option value="">Selecione um carregamento em andamento</option>';
+            addEmployeeSelect.innerHTML = '<option value="">Selecione um carregamento em andamento</option>';
+            finishOperationType.innerHTML = '<option value="">Selecione o tipo de operação</option>';
+            
+            // Preencher selects com carregamentos ativos
+            Object.keys(activeLoads).forEach(loadId => {
+                const load = activeLoads[loadId];
+                const optionText = `Doca ${load.dock} - DT ${load.dockNumber}`;
+                const optionValue = loadId;
+                
+                // Para pausar/retomar
+                const pauseOption = document.createElement('option');
+                pauseOption.value = optionValue;
+                pauseOption.textContent = optionText;
+                pauseSelect.appendChild(pauseOption.cloneNode(true));
+                
+                // Para adicionar/remover funcionário
+                addEmployeeSelect.appendChild(pauseOption.cloneNode(true));
+                
+                // Para finalizar operação
+                const finishOption = document.createElement('option');
+                finishOption.value = load.type;
+                finishOption.textContent = `${getOperationTypeName(load.type)} - ${optionText}`;
+                finishOperationType.appendChild(finishOption);
+            });
+        }
+        
+        // Função para atualizar a exibição de um carregamento
+        function updateLoadDisplay(loadId, loadData) {
+            let loadElement = document.getElementById(`load-${loadId}`);
+            
+            if (!loadElement) {
+                // Criar novo elemento se não existir
+                loadElement = document.createElement('div');
+                loadElement.id = `load-${loadId}`;
+                loadElement.className = 'load-card';
+                activeLoadsList.appendChild(loadElement);
+            }
+            
+            // Calcular tempo decorrido e tempo restante
+            const startTime = loadData.startTime.toDate();
+            const now = new Date();
+            const elapsedMs = now - startTime;
+            const elapsedMins = Math.floor(elapsedMs / 60000);
+            
+            // Definir tempo limite baseado no tipo de operação
+            let timeLimitMs;
+            switch(loadData.type) {
+                case 'carregamento':
+                    timeLimitMs = 140 * 60000; // 2h 20min
+                    break;
+                case 'carregamento_Paletizado':
+                    timeLimitMs = 60 * 60000; // 1h
+                    break;
+                case 'descarga':
+                    timeLimitMs = 140 * 60000; // 2h 20min
+                    break;
+                case 'separacao':
+                    timeLimitMs = 90 * 60000; // 1h 30min
+                    break;
+                default:
+                    timeLimitMs = 120 * 60000; // padrão 2h
+            }
+            
+            // Ajustar tempo decorrido se estiver pausado
+            let actualElapsedMs = elapsedMs;
+            if (loadData.pausedTime && loadData.status === 'paused') {
+                const pausedTime = loadData.pausedTime.toDate();
+                actualElapsedMs -= (now - pausedTime);
+            }
+            
+            const remainingMs = timeLimitMs - actualElapsedMs;
+            const remainingMins = Math.max(0, Math.floor(remainingMs / 60000));
+            
+            // Calcular porcentagem do progresso
+            const progressPercent = Math.min(100, (actualElapsedMs / timeLimitMs) * 100);
+            
+            // Determinar status com base no tempo restante e estado
+            let statusClass, statusText, progressClass;
+            
+            if (loadData.status === 'paused') {
+                statusClass = 'status-paused';
+                statusText = 'Pausado';
+                progressClass = 'progress-warning';
+            } else if (remainingMs <= 0) {
+                statusClass = 'status-danger';
+                statusText = 'Atrasado';
+                progressClass = 'progress-danger';
+            } else if (remainingMs <= 0.2 * timeLimitMs) { // últimos 20%
+                statusClass = 'status-warning';
+                statusText = 'Quase terminando';
+                progressClass = 'progress-warning';
+            } else {
+                statusClass = 'status-active';
+                statusText = 'Em andamento';
+                progressClass = 'progress-normal';
+            }
+            
+            // Formatar o conteúdo do elemento
+            loadElement.innerHTML = `
+                <div class="load-header">
+                    <div class="load-time">Iniciado: ${formatTime(startTime)}</div>
+                    <div class="load-status ${statusClass}">${statusText}</div>
+                </div>
+                <div>Colaborador: ${loadData.employeeName || loadData.employeeCode}</div>
+                <div>Tipo: ${getOperationTypeName(loadData.type)}</div>
+                <div>Tempo decorrido: ${Math.floor(actualElapsedMs / 60000)} min</div>
+                <div>Tempo restante: ${remainingMins} min</div>
+                <div class="progress-bar">
+                    <div class="progress ${progressClass}" style="width: ${progressPercent}%"></div>
+                </div>
+                <div class="load-details">
+                    <div class="detail-item"><span class="detail-label">Doca:</span> ${loadData.dock || 'N/A'}</div>
+                    <div class="detail-item"><span class="detail-label">DT:</span> ${loadData.dockNumber || 'N/A'}</div>
+                    <div class="detail-item"><span class="detail-label">Veículo:</span> ${loadData.vehicleType || 'N/A'}</div>
+                    <div class="detail-item"><span class="detail-label">Armazéns:</span> ${loadData.warehouses ? loadData.warehouses.join(', ') : 'N/A'}</div>
+                </div>
+                ${loadData.additionalLoaders && loadData.additionalLoaders.length > 0 ? `
+                <div class="detail-item"><span class="detail-label">Carregadores adicionais:</span> ${loadData.additionalLoaders.join(', ')}</div>
+                ` : ''}
+            `;
+            
+            // Se já existe um intervalo para este carregamento, limpe-o
+            if (loadIntervals[loadId]) {
+                clearInterval(loadIntervals[loadId]);
+            }
+            
+            // Atualizar a cada minuto
+            loadIntervals[loadId] = setInterval(() => {
+                updateLoadDisplay(loadId, loadData);
+            }, 60000);
+        }
+        
+        // Função para remover a exibição de um carregamento
+        function removeLoadDisplay(loadId) {
+            const loadElement = document.getElementById(`load-${loadId}`);
+            if (loadElement) {
+                loadElement.remove();
+            }
+            
+            // Limpar o intervalo se existir
+            if (loadIntervals[loadId]) {
+                clearInterval(loadIntervals[loadId]);
+                delete loadIntervals[loadId];
+            }
+        }
+        
+        // Função para formatar hora
+        function formatTime(date) {
+            return date.toLocaleTimeString('pt-BR', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+        
+        // Função para obter nome do tipo de operação
+        function getOperationTypeName(type) {
+            const types = {
+                'carregamento': 'Carregamento',
+                'carregamento_Paletizado': 'Carregamento Paletizado',
+                'descarga': 'Descarga',
+                'separacao': 'Separação'
+            };
+            return types[type] || type;
+        }
+        
+        // Eventos para mostrar os formulários
+        startOperationBtn.addEventListener('click', () => {
+            hideAllForms();
+            operationForm.style.display = 'block';
+        });
+        
+        finishOperationBtn.addEventListener('click', () => {
+            hideAllForms();
+            finishOperationForm.style.display = 'block';
+        });
+        
+        pauseOperationBtn.addEventListener('click', () => {
+            hideAllForms();
+            pauseOperationForm.style.display = 'block';
+            // Resetar o select de ação
+            pauseActionSelect.selectedIndex = 0;
+            pauseReasonContainer.style.display = 'none';
+        });
+        
+        addEmployeeBtn.addEventListener('click', () => {
+            hideAllForms();
+            addEmployeeForm.style.display = 'block';
+            updateEmployeeList();
+        });
+        
+        carInDockBtn.addEventListener('click', () => {
+            hideAllForms();
+            carInDockForm.style.display = 'block';
+        });
+        
+        // Ocultar todos os formulários
+        function hideAllForms() {
+            operationForm.style.display = 'none';
+            finishOperationForm.style.display = 'none';
+            pauseOperationForm.style.display = 'none';
+            addEmployeeForm.style.display = 'none';
+            carInDockForm.style.display = 'none';
+        }
+        
+        // Inicia o scanner de QR code
+        function iniciarScanner(inputElement) {
+            currentScannerInput = inputElement;
+            scannerContainer.style.display = 'flex';
+            scannerActive = true;
+            scanResult.style.display = 'none';
+
+            // Criar canvas para processamento
+            if (!canvas) {
+                canvas = document.createElement('canvas');
+                canvasContext = canvas.getContext('2d');
+            }
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(function(s) {
+                    stream = s;
+                    scannerVideo.srcObject = stream;
+                    scannerVideo.play();
+                    scanningInterval = requestAnimationFrame(tick);
+                })
+                .catch(function(err) {
+                    console.error("Erro ao acessar a câmera:", err);
+                    alert("Não foi possível acessar a câmera. Verifique as permissões.");
+                    pararScanner();
+                });
+        }
+
+        // Para o scanner de QR code
+        function pararScanner() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            if (scanningInterval) {
+                cancelAnimationFrame(scanningInterval);
+                scanningInterval = null;
+            }
+            
+            scannerActive = false;
+            scannerContainer.style.display = 'none';
+            currentScannerInput = null;
+        }
+
+        // Processa o vídeo para detectar QR codes
+        function tick() {
+            if (!scannerActive || !scannerVideo || scannerVideo.readyState !== scannerVideo.HAVE_ENOUGH_DATA) {
+                if(scannerActive) scanningInterval = requestAnimationFrame(tick);
+                return;
+            }
+
+            canvas.width = scannerVideo.videoWidth;
+            canvas.height = scannerVideo.videoHeight;
+            canvasContext.drawImage(scannerVideo, 0, 0, canvas.width, canvas.height);
+
+            const imageData = canvasContext.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "dontInvert",
+            });
+
+            if (code) {
+                scanResult.textContent = `Código detectado: ${code.data}`;
+                scanResult.style.display = 'block';
+
+                if (currentScannerInput) {
+                    currentScannerInput.value = code.data;
+                    
+                    // Verificar se o colaborador existe apenas para o funcionário principal
+                    if (currentScannerInput.id === 'employeeCode' || 
+                        currentScannerInput.id === 'finishEmployeeCode' ||
+                        currentScannerInput.id === 'pauseEmployeeCode' ||
+                        currentScannerInput.id === 'newEmployeeCode') {
+                        checkEmployeeExists(code.data);
+                    }
+                }
+
+                setTimeout(pararScanner, 1500);
+                return;
+            }
+
+            if (scannerActive) {
+                scanningInterval = requestAnimationFrame(tick);
+            }
+        }
+        
+        // Eventos para escanear QR Code
+        document.getElementById('scanQRBtn').addEventListener('click', () => {
+            iniciarScanner(document.getElementById('employeeCode'));
+        });
+        
+        document.getElementById('scanFinishQRBtn').addEventListener('click', () => {
+            iniciarScanner(document.getElementById('finishEmployeeCode'));
+        });
+        
+        document.getElementById('scanPauseQRBtn').addEventListener('click', () => {
+            iniciarScanner(document.getElementById('pauseEmployeeCode'));
+        });
+        
+        document.getElementById('scanNewEmployeeQRBtn').addEventListener('click', () => {
+            iniciarScanner(document.getElementById('newEmployeeCode'));
+        });
+        
+        // Evento para cancelar o scanner
+        cancelScanBtn.addEventListener('click', pararScanner);
+        
+        // Função para verificar se colaborador existe
+        function checkEmployeeExists(employeeCode) {
+            db.collection('colaboradores')
+                .where('codigo', '==', employeeCode)
+                .get()
+                .then((snapshot) => {
+                    if (snapshot.empty) {
+                        // Colaborador não existe, abrir modal para cadastro
+                        employeeIdInput.value = employeeCode;
+                        employeeModal.style.display = 'block';
+                    } else {
+                        // Colaborador existe, preencher nome se disponível
+                        const employeeData = snapshot.docs[0].data();
+                        if (employeeData.nome) {
+                            console.log(`Colaborador: ${employeeData.nome}`);
+                        }
+                    }
+                })
+                .catch((error) => {
+                    console.error("Erro ao verificar colaborador:", error);
+                    
+                    // Se for erro de permissão, assumir que o colaborador não existe
+                    if (error.code === 'permission-denied') {
+                        employeeIdInput.value = employeeCode;
+                        employeeModal.style.display = 'block';
+                    }
+                });
+        }
+        
+        // Atualizar lista de funcionários no formulário de adicionar/remover
+        function updateEmployeeList() {
+            const selectOperation = document.getElementById('selectEmployeeOperation');
+            const employeeList = document.getElementById('currentEmployees');
+            
+            if (!selectOperation.value) {
+                employeeList.innerHTML = '<p>Selecione um carregamento para ver os funcionários</p>';
+                return;
+            }
+            
+            const operationId = selectOperation.value;
+            const operation = activeLoads[operationId];
+            
+            if (!operation) {
+                employeeList.innerHTML = '<p>Carregamento não encontrado</p>';
+                return;
+            }
+            
+            let html = `<p>Funcionários atuais no carregamento (Doca ${operation.dock} - DT ${operation.dockNumber}):</p>`;
+            
+            // Funcionário principal
+            html += `
+                <div class="employee-item">
+                    <span>${operation.employeeName || operation.employeeCode} (Principal)</span>
+                    <input type="radio" name="selectedEmployee" value="${operation.employeeCode}" data-type="principal">
+                </div>
+            `;
+            
+            // Funcionários adicionais
+            if (operation.additionalLoaders && operation.additionalLoaders.length > 0) {
+                operation.additionalLoaders.forEach(loader => {
+                    html += `
+                        <div class="employee-item">
+                            <span>${loader}</span>
+                            <input type="radio" name="selectedEmployee" value="${loader}" data-type="additional">
+                        </div>
+                    `;
+                });
+            } else {
+                html += '<p>Nenhum funcionário adicional</p>';
+            }
+            
+            employeeList.innerHTML = html;
+            
+            // Adicionar eventos aos radio buttons
+            const radioButtons = employeeList.querySelectorAll('input[type="radio"]');
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    selectedEmployeeToRemove = {
+                        code: this.value,
+                        type: this.getAttribute('data-type'),
+                        operationId: operationId
+                    };
+                });
+            });
+        }
+        
+        // Evento para atualizar a lista de funcionários quando selecionar um carregamento
+        document.getElementById('selectEmployeeOperation').addEventListener('change', updateEmployeeList);
+        
+        // Adicionar mais carregadores (para o formulário de iniciar operação)
+        document.getElementById('addLoaderBtn').addEventListener('click', () => {
+            const additionalLoadersContainer = document.getElementById('additionalLoaders');
+            const loaderCount = additionalLoadersContainer.querySelectorAll('.additional-loader').length + 1;
+            const loaderId = `loader${loaderCount}`;
+            
+            const loaderDiv = document.createElement('div');
+            loaderDiv.className = 'additional-loader';
+            loaderDiv.innerHTML = `
+                <div class="form-group">
+                    <label for="${loaderId}">Código do Carregador Adicional ${loaderCount}</label>
+                    <input type="text" id="${loaderId}" placeholder="Ex: GZL-EO-1234">
+                    <button class="qr-button" data-target="${loaderId}">Ler QR Code</button>
+                </div>
+                <button class="remove-loader" data-target="${loaderId}">Remover</button>
+            `;
+            
+            additionalLoadersContainer.appendChild(loaderDiv);
+            
+            // Adicionar evento ao botão de QR code
+            const qrButton = loaderDiv.querySelector('.qr-button');
+            qrButton.addEventListener('click', () => {
+                const inputField = document.getElementById(loaderId);
+                iniciarScanner(inputField);
+            });
+            
+            // Adicionar evento ao botão de remover
+            const removeButton = loaderDiv.querySelector('.remove-loader');
+            removeButton.addEventListener('click', () => {
+                loaderDiv.remove();
+            });
+        });
+        
+        // Fechar modal
+        closeModal.addEventListener('click', () => {
+            employeeModal.style.display = 'none';
+        });
+        
+        // Salvar novo colaborador
+        saveEmployeeBtn.addEventListener('click', () => {
+            const employeeCode = employeeIdInput.value;
+            const employeeName = employeeNameInput.value;
+            
+            if (!employeeName) {
+                alert('Por favor, informe o nome do colaborador');
+                return;
+            }
+            
+            // Salvar no Firestore
+            db.collection('colaboradores').add({
+                codigo: employeeCode,
+                nome: employeeName,
+                unidade: currentUnit,
+                dataCadastro: new Date()
+            })
+            .then(() => {
+                alert('Colaborador cadastrado com sucesso!');
+                employeeModal.style.display = 'none';
+            })
+            .catch((error) => {
+                console.error("Erro ao salvar colaborador:", error);
+                alert('Erro ao cadastrar colaborador');
+            });
+        });
+        
+        // Registrar carro em doca
+        document.getElementById('submitCarInDockBtn').addEventListener('click', () => {
+            const dockNumber = document.getElementById('carDockNumber').value;
+            const dock = document.getElementById('carDock').value;
+            
+            if (!dockNumber || !dock) {
+                alert('Por favor, preencha o número da DT e a doca');
+                return;
+            }
+            
+            // Verificar se já existe um carro com esta DT em doca
+            db.collection('carsInDock')
+                .where('dockNumber', '==', dockNumber)
+                .where('unit', '==', currentUnit)
+                .where('status', '==', 'available')
+                .get()
+                .then((snapshot) => {
+                    if (!snapshot.empty) {
+                        alert('Já existe um carro com esta DT em doca');
+                        return;
+                    }
+                    
+                    // Registrar o carro em doca
+                    return db.collection('carsInDock').add({
+                        dockNumber: dockNumber,
+                        dock: dock,
+                        unit: currentUnit,
+                        arrivalTime: new Date(),
+                        status: 'available',
+                        registeredBy: currentUser.uid
+                    });
+                })
+                .then(() => {
+                    alert('Carro registrado em doca com sucesso!');
+                    document.getElementById('carDockNumber').value = '';
+                    document.getElementById('carDock').value = '';
+                })
+                .catch((error) => {
+                    console.error("Erro ao registrar carro em doca:", error);
+                    alert('Erro ao registrar carro em doca: ' + error.message);
+                });
+        });
+        
+        // Iniciar operação
+        document.getElementById('submitOperationBtn').addEventListener('click', () => {
+            const employeeCode = document.getElementById('employeeCode').value;
+            const operationType = document.getElementById('operationType').value;
+            const carInDockId = document.getElementById('selectCarInDock').value;
+            const dock = document.getElementById('dock').value;
+            const dockNumber = document.getElementById('dockNumber').value;
+            const vehicleType = document.getElementById('vehicleType').value;
+            
+            // Coletar armazéns selecionados
+            const selectedWarehouses = Array.from(warehouseCheckboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.nextElementSibling.textContent);
+            
+            // Coletar carregadores adicionais
+            const additionalLoaders = [];
+            const additionalLoaderInputs = document.querySelectorAll('.additional-loader input[type="text"]');
+            additionalLoaderInputs.forEach(input => {
+                if (input.value) {
+                    additionalLoaders.push(input.value);
+                }
+            });
+            
+            // Validação básica
+            if (!employeeCode || !operationType || !carInDockId || selectedWarehouses.length === 0) {
+                alert('Por favor, preencha todos os campos obrigatórios');
+                return;
+            }
+            
+            // Verificar se o colaborador existe
+            db.collection('colaboradores')
+                .where('codigo', '==', employeeCode)
+                .get()
+                .then((snapshot) => {
+                    let employeeName = '';
+                    
+                    if (!snapshot.empty) {
+                        const employeeData = snapshot.docs[0].data();
+                        employeeName = employeeData.nome || '';
+                    }
+                    
+                    // Criar a operação no Firestore
+                    return db.collection('operations').add({
+                        employeeCode: employeeCode,
+                        employeeName: employeeName,
+                        additionalLoaders: additionalLoaders,
+                        type: operationType,
+                        dock: dock,
+                        dockNumber: dockNumber,
+                        vehicleType: vehicleType,
+                        warehouses: selectedWarehouses,
+                        unit: currentUnit,
+                        startTime: new Date(),
+                        status: 'active',
+                        createdBy: currentUser.uid,
+                        createdAt: new Date(),
+                        carInDockId: carInDockId // Referência ao carro em doca
+                    });
+                })
+                .then((operationRef) => {
+                    // Atualizar o status do carro em doca para "em uso"
+                    return db.collection('carsInDock').doc(carInDockId).update({
+                        status: 'in_use',
+                        operationId: operationRef.id
+                    });
+                })
+                .then(() => {
+                    alert('Operação iniciada com sucesso!');
+                    operationForm.style.display = 'none';
+                    
+                    // Limpar formulário
+                    document.getElementById('employeeCode').value = '';
+                    document.getElementById('selectCarInDock').value = '';
+                    document.getElementById('dock').value = '';
+                    document.getElementById('dockNumber').value = '';
+                    document.getElementById('vehicleType').value = '';
+                    
+                    // Limpar seleção de armazéns
+                    warehouseCheckboxes.forEach(cb => cb.checked = false);
+                    updateSelectedWarehouses();
+                    
+                    // Limpar carregadores adicionais
+                    document.getElementById('additionalLoaders').innerHTML = '';
+                })
+                .catch((error) => {
+                    console.error("Erro ao iniciar operação:", error);
+                    alert('Erro ao iniciar operação: ' + error.message);
+                });
+        });
+        
+        // Finalizar operação
+        document.getElementById('submitFinishBtn').addEventListener('click', () => {
+            const employeeCode = document.getElementById('finishEmployeeCode').value;
+            const operationType = document.getElementById('finishOperationType').value;
+            const materialMix = document.getElementById('materialMix').value;
+            const tonsLoaded = document.getElementById('tonsLoaded').value;
+            const observation = document.getElementById('observation').value;
+            
+            // Validação básica
+            if (!employeeCode || !materialMix || !tonsLoaded) {
+                alert('Por favor, preencha todos os campos obrigatórios');
+                return;
+            }
+            
+            // Encontrar a operação correspondente ao funcionário
+            let operationId = null;
+            let carInDockId = null;
+            
+            for (const id in activeLoads) {
+                if (activeLoads[id].employeeCode === employeeCode || 
+                    (activeLoads[id].additionalLoaders && activeLoads[id].additionalLoaders.includes(employeeCode))) {
+                    operationId = id;
+                    carInDockId = activeLoads[id].carInDockId;
+                    break;
+                }
+            }
+            
+            if (!operationId) {
+                alert('Nenhuma operação encontrada para este funcionário');
+                return;
+            }
+            
+            // Atualizar a operação no Firestore
+            db.collection('operations').doc(operationId).update({
+                status: 'completed',
+                endTime: new Date(),
+                materialMix: parseInt(materialMix),
+                tonsLoaded: parseFloat(tonsLoaded),
+                observation: observation,
+                completedBy: currentUser.uid
+            })
+            .then(() => {
+                // Se havia um carro em doca associado, removê-lo
+                if (carInDockId) {
+                    return db.collection('carsInDock').doc(carInDockId).delete();
+                }
+            })
+            .then(() => {
+                alert('Operação finalizada com sucesso!');
+                finishOperationForm.style.display = 'none';
+                
+                // Limpar formulário
+                document.getElementById('finishEmployeeCode').value = '';
+                document.getElementById('materialMix').value = '';
+                document.getElementById('tonsLoaded').value = '';
+                document.getElementById('observation').value = '';
+            })
+            .catch((error) => {
+                console.error("Erro ao finalizar operação:", error);
+                alert('Erro ao finalizar operação: ' + error.message);
+            });
+        });
+        
+        // Pausar/Retomar operação
+        document.getElementById('submitPauseBtn').addEventListener('click', () => {
+            const employeeCode = document.getElementById('pauseEmployeeCode').value;
+            const operationId = document.getElementById('selectPauseOperation').value;
+            const action = document.getElementById('pauseAction').value;
+            const reason = document.getElementById('pauseReason').value;
+            
+            // Validação básica
+            if (!employeeCode || !operationId) {
+                alert('Por favor, preencha todos os campos obrigatórios');
+                return;
+            }
+            
+            // Verificar se o funcionário pertence à operação
+            const operation = activeLoads[operationId];
+            if (!operation || (operation.employeeCode !== employeeCode && 
+                (!operation.additionalLoaders || !operation.additionalLoaders.includes(employeeCode)))) {
+                alert('Este funcionário não pertence à operação selecionada');
+                return;
+            }
+            
+            // Atualizar a operação no Firestore
+            if (action === 'pausar') {
+                db.collection('operations').doc(operationId).update({
+                    status: 'paused',
+                    pausedTime: new Date(),
+                    pauseReason: reason,
+                    pausedBy: currentUser.uid
+                })
+                .then(() => {
+                    alert('Operação pausada com sucesso!');
+                    pauseOperationForm.style.display = 'none';
+                    
+                    // Limpar formulário
+                    document.getElementById('pauseEmployeeCode').value = '';
+                })
+                .catch((error) => {
+                    console.error("Erro ao pausar operação:", error);
+                    alert('Erro ao pausar operação: ' + error.message);
+                });
+            } else {
+                // Calcular o tempo pausado para ajustar o tempo total
+                const now = new Date();
+                const pausedTime = operation.pausedTime.toDate();
+                const pausedDuration = now - pausedTime;
+                
+                db.collection('operations').doc(operationId).update({
+                    status: 'active',
+                    resumedTime: new Date(),
+                    resumeReason: reason,
+                    resumedBy: currentUser.uid,
+                    totalPausedTime: (operation.totalPausedTime || 0) + pausedDuration
+                })
+                .then(() => {
+                    alert('Operação retomada com sucesso!');
+                    pauseOperationForm.style.display = 'none';
+                    
+                    // Limpar formulário
+                    document.getElementById('pauseEmployeeCode').value = '';
+                })
+                .catch((error) => {
+                    console.error("Erro ao retomar operação:", error);
+                    alert('Erro ao retomar operação: ' + error.message);
+                });
+            }
+        });
+        
+        // Adicionar funcionário a operação existente
+        document.getElementById('submitAddEmployeeBtn').addEventListener('click', () => {
+            const employeeCode = document.getElementById('newEmployeeCode').value;
+            const operationId = document.getElementById('selectEmployeeOperation').value;
+            
+            // Validação básica
+            if (!employeeCode || !operationId) {
+                alert('Por favor, preencha todos os campos obrigatórios');
+                return;
+            }
+            
+            const operationRef = db.collection('operations').doc(operationId);
+            
+            db.runTransaction((transaction) => {
+                return transaction.get(operationRef).then((doc) => {
+                    if (!doc.exists) {
+                        throw new Error("Documento não existe!");
+                    }
+                    
+                    const data = doc.data();
+                    const additionalLoaders = data.additionalLoaders || [];
+                    
+                    // Verificar se o funcionário já está na operação
+                    if (data.employeeCode === employeeCode || additionalLoaders.includes(employeeCode)) {
+                        throw new Error("Este funcionário já está nesta operação!");
+                    }
+                    
+                    // Adicionar o funcionário à lista
+                    additionalLoaders.push(employeeCode);
+                    
+                    transaction.update(operationRef, {
+                        additionalLoaders: additionalLoaders
+                    });
+                });
+            }).then(() => {
+                alert('Funcionário adicionado com sucesso!');
+                document.getElementById('newEmployeeCode').value = '';
+                
+                // Atualizar a lista de funcionários
+                updateEmployeeList();
+            }).catch((error) => {
+                console.error("Erro ao adicionar funcionário:", error);
+                alert('Erro ao adicionar funcionário: ' + error.message);
+            });
+        });
+        
+        // Remover funcionário de uma operação
+        submitRemoveEmployeeBtn.addEventListener('click', () => {
+            if (!selectedEmployeeToRemove) {
+                alert('Por favor, selecione um funcionário para remover');
+                return;
+            }
+            
+            if (!confirm(`Tem certeza que deseja remover o funcionário ${selectedEmployeeToRemove.code} deste carregamento?`)) {
+                return;
+            }
+            
+            const operationRef = db.collection('operations').doc(selectedEmployeeToRemove.operationId);
+            
+            if (selectedEmployeeToRemove.type === 'principal') {
+                alert('Não é possível remover o funcionário principal do carregamento.');
+                return;
+            }
+            
+            db.runTransaction((transaction) => {
+                return transaction.get(operationRef).then((doc) => {
+                    if (!doc.exists) {
+                        throw new Error("Documento não existe!");
+                    }
+                    
+                    const data = doc.data();
+                    const updatedAdditionalLoaders = data.additionalLoaders ? 
+                        data.additionalLoaders.filter(l => l !== selectedEmployeeToRemove.code) : [];
+                    
+                    transaction.update(operationRef, {
+                        additionalLoaders: updatedAdditionalLoaders
+                    });
+                });
+            }).then(() => {
+                alert('Funcionário removido com sucesso!');
+                selectedEmployeeToRemove = null;
+                updateEmployeeList();
+            }).catch((error) => {
+                console.error("Erro ao remover funcionário:", error);
+                alert('Erro ao remover funcionário: ' + error.message);
+            });
+        });
+        
+        // Simulação de logout
+        document.querySelector('.logout-btn').addEventListener('click', function() {
+            if (confirm('Tem certeza que deseja sair do sistema?')) {
+                auth.signOut().then(() => {
+                    window.location.href = 'index.html';
+                }).catch((error) => {
+                    console.error('Erro ao fazer logout:', error);
+                });
+            }
+        });
+        
+        // Destacar link ativo na navbar
+        const currentPage = window.location.pathname.split('/').pop();
+        const navLinks = document.querySelectorAll('.nav-links a');
+        
+        navLinks.forEach(link => {
+            const linkPage = link.getAttribute('href');
+            if (currentPage === linkPage) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+        
+        // Fechar modal clicando fora dele
+        window.addEventListener('click', (event) => {
+            if (event.target === employeeModal) {
+                employeeModal.style.display = 'none';
+            }
+            if (event.target === scannerContainer) {
+                pararScanner();
+            }
+        });
+    </script>
+</body>
+</html>

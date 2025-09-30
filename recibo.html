@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Recebimentos</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --radius: 8px;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background-color: var(--primary);
+            color: white;
+            padding: 20px 0;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            height: 60px;
+            width: auto;
+            background-color: white;
+            padding: 5px;
+            border-radius: var(--radius);
+        }
+
+        .company-name {
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+
+        .form-container {
+            background-color: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: var(--primary);
+        }
+
+        .subtitle {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #7f8c8d;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: var(--radius);
+            font-size: 16px;
+            transition: var(--transition);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: var(--secondary);
+            color: white;
+            border: none;
+            padding: 14px 25px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: var(--transition);
+            text-align: center;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+        }
+
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .success {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .error {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .required::after {
+            content: " *";
+            color: var(--danger);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <div class="logo-container">
+                <!-- Substitua pelo caminho da sua logo -->
+                <img src="img/GZL - Logos_pages-to-jpg-0001.jpg" alt="Logo da Empresa" class="logo">
+                <div class="company-name">LP GUIZILIM LTDA</div>
+            </div>
+            <div>Sistema de Recebimentos</div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="form-container">
+            <h1>Registro de Recibos</h1>
+            <p class="subtitle">Preencha os dados abaixo para registrar um recibo</p>
+            
+            <div id="message" class="message"></div>
+            
+            <form id="receiptForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="unit" class="required">Unidade</label>
+                        <select name="unit" id="unit" required>
+                            <option value="">Selecione...</option>
+                            <option value="Suzano Limeira">Suzano Limeira</option>
+                            <option value="Suzano Suzano B">Suzano Suzano B</option>
+                            <option value="Suzano Suzanlog">Suzano Suzanlog</option>
+                            <option value="Suzano CDR SUZANO">Suzano CDR SUZANO</option>
+                            <option value="Suzano Triangulo">Suzano Triangulo</option>
+                            <option value="Suzano Tsuzuki">Suzano Tsuzuki</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="transportCompany" class="required">Nome da Transportadora</label>
+                        <input type="text" id="transportCompany" name="transportCompany" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="vehiclePlate" class="required">Placa do Veículo</label>
+                        <input type="text" id="vehiclePlate" name="vehiclePlate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="compositionPlate">Placa da Composição</label>
+                        <input type="text" id="compositionPlate" name="compositionPlate">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="vehicleType" class="required">Tipo do Veículo</label>
+                        <select id="vehicleType" name="vehicleType" required>
+                            <option value="">Selecione...</option>
+                            <option value="Caminhão">Caminhão</option>
+                            <option value="Carreta">Carreta</option>
+                            <option value="Bitrem">Bitrem</option>
+                            <option value="Rodotrem">Rodotrem</option>
+                            <option value="VUC">VUC</option>
+                            <option value="Toco">Toco</option>
+                            <option value="Truck">Truck</option>
+                            <option value="Cavalo Mecânico">Cavalo Mecânico</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="value" class="required">Valor (R$)</label>
+                        <input type="number" id="value" name="value" step="0.01" min="0" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="paymentType" class="required">Tipo de Pagamento</label>
+                        <select id="paymentType" name="paymentType" required>
+                            <option value="">Selecione...</option>
+                            <option value="À Vista">À Vista</option>
+                            <option value="PIX">PIX</option>
+                            <option value="Depósito Bancário">Depósito Bancário</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="dt">DT (Documento de Transporte)</label>
+                        <input type="text" id="dt" name="dt">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="issuerName" class="required">Quem fez o recibo</label>
+                        <input type="text" id="issuerName" name="issuerName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="driverName" class="required">Nome do Motorista</label>
+                        <input type="text" id="driverName" name="driverName" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit" class="btn btn-success">Registrar Recibo</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Sistema de Recebimentos &copy; 2025 - Todos os direitos reservados</p>
+        </div>
+    </footer>
+
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMu17OV-5ST1rlg00zbpt6Hv37GKqkX4A",
+            authDomain: "projetos-d868d.firebaseapp.com",
+            databaseURL: "https://projetos-d868d-default-rtdb.firebaseio.com",
+            projectId: "projetos-d868d",
+            storageBucket: "projetos-d868d.firebasestorage.app",
+            messagingSenderId: "420029352781",
+            appId: "1:420029352781:web:05176699348e0ccdd78504",
+            measurementId: "G-FXWXRX04WF"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Manipular o envio do formulário
+        document.getElementById('receiptForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Obter os valores do formulário
+            const formData = {
+                unit: document.getElementById('unit').value,
+                transportCompany: document.getElementById('transportCompany').value,
+                vehiclePlate: document.getElementById('vehiclePlate').value,
+                compositionPlate: document.getElementById('compositionPlate').value,
+                vehicleType: document.getElementById('vehicleType').value,
+                value: parseFloat(document.getElementById('value').value),
+                paymentType: document.getElementById('paymentType').value,
+                dt: document.getElementById('dt').value,
+                issuerName: document.getElementById('issuerName').value,
+                driverName: document.getElementById('driverName').value,
+                timestamp: new Date() // Data e hora automáticas
+            };
+            
+            // Validar dados obrigatórios
+            if (!formData.unit || !formData.transportCompany || !formData.vehiclePlate || 
+                !formData.vehicleType || !formData.value || !formData.paymentType || 
+                !formData.issuerName || !formData.driverName) {
+                showMessage('Por favor, preencha todos os campos obrigatórios.', 'error');
+                return;
+            }
+            
+            // Enviar dados para o Firestore
+            db.collection('recibos').add(formData)
+                .then((docRef) => {
+                    console.log('Recibo registrado com ID: ', docRef.id);
+                    showMessage('Recibo registrado com sucesso!', 'success');
+                    document.getElementById('receiptForm').reset();
+                })
+                .catch((error) => {
+                    console.error('Erro ao registrar recibo: ', error);
+                    showMessage('Erro ao registrar recibo. Tente novamente.', 'error');
+                });
+        });
+        
+        // Função para exibir mensagens
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = 'message ' + type;
+            messageDiv.style.display = 'block';
+            
+            // Esconder a mensagem após 5 segundos
+            setTimeout(() => {
+                messageDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

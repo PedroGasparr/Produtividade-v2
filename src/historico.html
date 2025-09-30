@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Histórico - Sistema de Operação</title>
+    <!-- Importar Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <link rel="stylesheet" href="../css/historico.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <span>Prod</span>Plan
+            </div>
+            
+            <ul class="nav-links">
+                <li><a href="operacao.html">Operação</a></li>
+                <li><a href="cadastrar_funcionario.html">Cadastrar Funcionário</a></li>
+                <li><a href="buscar_funcionario.html">Buscar Funcionário</a></li>
+                <li><a href="ranking.html">Ranking</a></li>
+                <li><a href="painel_controle.html">Painel de Controle</a></li>
+                <li><a href="zles001.html">zles001</a></li>
+                <li><a href="historico.html" class="active">Histórico</a></li>
+            </ul>
+            
+            <div class="user-section">
+                <div class="user-info">
+                    <div class="user-name">Carregando...</div>
+                    <div class="user-role"></div>
+                </div>
+                <button class="logout-btn">Sair</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="content">
+        <h1 class="page-title">Histórico de Carregamentos</h1>
+        
+        <div class="user-unit-info" id="userUnitInfo">
+            Carregando informações da unidade...
+        </div>
+        
+        <div class="password-section" id="passwordSection">
+            <h2>Acesso ao Histórico</h2>
+            <p>Para acessar o histórico, digite a senha de administração:</p>
+            <div style="margin: 20px 0;">
+                <input type="password" id="passwordInput" class="password-input" placeholder="Digite a senha">
+                <button id="passwordBtn" class="password-btn">Acessar</button>
+            </div>
+            <div class="error-message" id="passwordError"></div>
+        </div>
+        
+        <div class="filters-container" id="filtersContainer">
+            <div class="filters-header">
+                <h2 class="filters-title">Filtros</h2>
+            </div>
+            
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Data Inicial</label>
+                    <input type="date" id="startDate" class="filter-input">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Data Final</label>
+                    <input type="date" id="endDate" class="filter-input">
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Status</label>
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">Todos</option>
+                        <option value="completed">Concluído</option>
+                        <option value="active">Em Andamento</option>
+                        <option value="paused">Pausado</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Tipo</label>
+                    <select id="typeFilter" class="filter-select">
+                        <option value="">Todos</option>
+                        <option value="carregamento">Carregamento</option>
+                        <option value="carregamento_Paletizado">Carregamento Paletizado</option>
+                        <option value="descarga">Descarga</option>
+                        <option value="separacao">Separação</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Colaborador</label>
+                    <select id="employeeFilter" class="filter-select">
+                        <option value="">Todos</option>
+                        <!-- Opções serão preenchidas via JavaScript -->
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Doca</label>
+                    <input type="text" id="dockFilter" class="filter-input" placeholder="Número da doca">
+                </div>
+            </div>
+            
+            <div class="filter-buttons">
+                <button id="clearFilters" class="filter-btn clear-btn">Limpar Filtros</button>
+                <button id="applyFilters" class="filter-btn apply-btn">Aplicar Filtros</button>
+            </div>
+        </div>
+        
+        <div class="history-container" id="historyContainer">
+            <div class="history-header">
+                <h2 class="history-title">Histórico de Carregamentos</h2>
+                <div class="history-summary" id="historySummary">Mostrando 0 registros</div>
+            </div>
+            
+            <div class="loading" id="historyLoading">
+                <div class="loading-spinner"></div>
+            </div>
+            
+            <div class="no-data" id="historyNoData" style="display: none;">
+                Nenhum dado encontrado com os filtros aplicados.
+            </div>
+            
+            <table class="history-table" id="historyTable" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Colaborador</th>
+                        <th>Tipo</th>
+                        <th>Status</th>
+                        <th>Doca</th>
+                        <th>DT</th>
+                        <th>Toneladas</th>
+                        <th>Mix</th>
+                        <th>Veículo</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="historyTableBody">
+                    <!-- Dados serão preenchidos via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Modal de Edição -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Editar Carregamento</h2>
+                <span class="close-btn" id="closeModal">&times;</span>
+            </div>
+            
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Número DT</label>
+                    <input type="text" id="editDockNumber" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Toneladas</label>
+                    <input type="number" id="editTons" class="form-input" step="0.1">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Mix de Material</label>
+                    <input type="number" id="editMix" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Tipo de Veículo</label>
+                    <input type="text" id="editVehicle" class="form-input">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Observações</label>
+                    <textarea id="editObservation" class="form-input" rows="3"></textarea>
+                </div>
+            </div>
+            
+            <div class="modal-actions">
+                <button class="cancel-btn" id="cancelEdit">Cancelar</button>
+                <button class="save-btn" id="saveEdit">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMu17OV-5ST1rlg00zbpt6Hv37GKqkX4A",
+            authDomain: "projetos-d868d.firebaseapp.com",
+            databaseURL: "https://projetos-d868d-default-rtdb.firebaseio.com",
+            projectId: "projetos-d868d",
+            storageBucket: "projetos-d868d.firebasestorage.app",
+            messagingSenderId: "420029352781",
+            appId: "1:420029352781:web:05176699348e0ccdd78504",
+            measurementId: "G-FXWXRX04WF"
+        };
+        
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        
+        // Elementos da interface
+        const userNameElement = document.querySelector('.user-name');
+        const userUnitInfo = document.getElementById('userUnitInfo');
+        const passwordSection = document.getElementById('passwordSection');
+        const passwordInput = document.getElementById('passwordInput');
+        const passwordBtn = document.getElementById('passwordBtn');
+        const passwordError = document.getElementById('passwordError');
+        const filtersContainer = document.getElementById('filtersContainer');
+        const historyContainer = document.getElementById('historyContainer');
+        const historyLoading = document.getElementById('historyLoading');
+        const historyNoData = document.getElementById('historyNoData');
+        const historyTable = document.getElementById('historyTable');
+        const historyTableBody = document.getElementById('historyTableBody');
+        const historySummary = document.getElementById('historySummary');
+        const editModal = document.getElementById('editModal');
+        
+        // Estado da aplicação
+        let currentUser = null;
+        let userData = null;
+        let currentUnit = '';
+        let operationsData = [];
+        let employeesData = [];
+        let currentEditId = null;
+        const ADMIN_PASSWORD = "195#%$*7advan!7"; // Senha de administração
+        
+        // Verificar autenticação
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                userNameElement.textContent = 'Carregando...';
+                
+                // Buscar dados do usuário no Firestore
+                db.collection('users').doc(user.uid).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        userData = doc.data();
+                        userNameElement.textContent = userData.name;
+                        currentUnit = userData.unit;
+                        userUnitInfo.textContent = `Unidade atual: ${currentUnit}`;
+                        
+                        // Carregar dados dos colaboradores para o filtro
+                        loadEmployeesData();
+                    } else {
+                        console.error("Documento do usuário não encontrado");
+                    }
+                })
+                .catch((error) => {
+                    console.error("Erro ao buscar dados do usuário:", error);
+                });
+            } else {
+                // Usuário não autenticado, redirecionar para login
+                window.location.href = 'login.html';
+            }
+        });
+        
+        // Carregar dados dos colaboradores
+        function loadEmployeesData() {
+            db.collection('colaboradores')
+                .where('unidade', '==', currentUnit)
+                .get()
+                .then((querySnapshot) => {
+                    employeesData = [];
+                    const employeeFilter = document.getElementById('employeeFilter');
+                    
+                    // Adicionar opção "Todos"
+                    employeeFilter.innerHTML = '<option value="">Todos</option>';
+                    
+                    querySnapshot.forEach((doc) => {
+                        const employeeData = {
+                            id: doc.id,
+                            ...doc.data()
+                        };
+                        
+                        employeesData.push(employeeData);
+                        
+                        // Adicionar ao filtro
+                        const option = document.createElement('option');
+                        option.value = employeeData.codigo;
+                        option.textContent = employeeData.nome;
+                        employeeFilter.appendChild(option);
+                    });
+                })
+                .catch((error) => {
+                    console.error("Erro ao carregar colaboradores:", error);
+                });
+        }
+        
+        // Verificar senha de administração
+        function checkPassword() {
+            const password = passwordInput.value.trim();
+            
+            if (password === ADMIN_PASSWORD) {
+                passwordError.style.display = 'none';
+                passwordSection.style.display = 'none';
+                filtersContainer.style.display = 'block';
+                historyContainer.style.display = 'block';
+                loadHistoryData();
+            } else {
+                passwordError.textContent = 'Senha incorreta. Tente novamente.';
+                passwordError.style.display = 'block';
+            }
+        }
+        
+        // Carregar dados do histórico
+        function loadHistoryData() {
+            showHistoryLoading();
+            
+            // Buscar operações da unidade atual
+            db.collection('operations')
+                .where('unit', '==', currentUnit)
+                .orderBy('createdAt', 'desc')
+                .get()
+                .then((querySnapshot) => {
+                    operationsData = [];
+                    querySnapshot.forEach((doc) => {
+                        operationsData.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    // Aplicar filtros iniciais
+                    applyFilters();
+                })
+                .catch((error) => {
+                    console.error("Erro ao carregar histórico:", error);
+                    showHistoryError('Erro ao carregar histórico.');
+                });
+        }
+        
+        // Aplicar filtros
+        function applyFilters() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const status = document.getElementById('statusFilter').value;
+            const type = document.getElementById('typeFilter').value;
+            const employee = document.getElementById('employeeFilter').value;
+            const dock = document.getElementById('dockFilter').value.toLowerCase();
+            
+            let filteredData = operationsData;
+            
+            // Filtrar por data
+            if (startDate) {
+                const start = new Date(startDate);
+                filteredData = filteredData.filter(op => {
+                    const opDate = op.createdAt ? op.createdAt.toDate() : new Date(0);
+                    return opDate >= start;
+                });
+            }
+            
+            if (endDate) {
+                const end = new Date(endDate);
+                end.setHours(23, 59, 59, 999); // Final do dia
+                filteredData = filteredData.filter(op => {
+                    const opDate = op.createdAt ? op.createdAt.toDate() : new Date(0);
+                    return opDate <= end;
+                });
+            }
+            
+            // Filtrar por status
+            if (status) {
+                filteredData = filteredData.filter(op => op.status === status);
+            }
+            
+            // Filtrar por tipo
+            if (type) {
+                filteredData = filteredData.filter(op => op.type === type);
+            }
+            
+            // Filtrar por colaborador
+            if (employee) {
+                filteredData = filteredData.filter(op => 
+                    op.employeeCode === employee || 
+                    (op.additionalLoaders && op.additionalLoaders.includes(employee))
+                );
+            }
+            
+            // Filtrar por doca
+            if (dock) {
+                filteredData = filteredData.filter(op => 
+                    (op.dock && op.dock.toLowerCase().includes(dock)) ||
+                    (op.dockNumber && op.dockNumber.toLowerCase().includes(dock))
+                );
+            }
+            
+            // Exibir dados filtrados
+            displayHistoryData(filteredData);
+        }
+        
+        // Exibir dados do histórico
+        function displayHistoryData(data) {
+            hideHistoryLoading();
+            
+            if (data.length === 0) {
+                historyNoData.style.display = 'block';
+                historyTable.style.display = 'none';
+                historySummary.textContent = 'Nenhum registro encontrado';
+                return;
+            }
+            
+            historyNoData.style.display = 'none';
+            historyTable.style.display = 'table';
+            historySummary.textContent = `Mostrando ${data.length} de ${operationsData.length} registros`;
+            
+            // Limpar tabela
+            historyTableBody.innerHTML = '';
+            
+            // Preencher tabela
+            data.forEach(operation => {
+                const row = document.createElement('tr');
+                
+                // Formatar data
+                const opDate = operation.createdAt ? operation.createdAt.toDate() : new Date(0);
+                const formattedDate = opDate.toLocaleString('pt-BR');
+                
+                // Encontrar nome do colaborador
+                let employeeName = operation.employeeName || 'N/A';
+                const employee = employeesData.find(emp => emp.codigo === operation.employeeCode);
+                if (employee) {
+                    employeeName = employee.nome;
+                }
+                
+                // Formatar tipo de operação
+                const typeMap = {
+                    'carregamento': 'Carregamento',
+                    'carregamento_Paletizado': 'Carreg. Paletizado',
+                    'descarga': 'Descarga',
+                    'separacao': 'Separação'
+                };
+                const formattedType = typeMap[operation.type] || operation.type;
+                
+                // Formatar status
+                let statusClass = '';
+                let statusText = '';
+                
+                switch (operation.status) {
+                    case 'completed':
+                        statusClass = 'status-completed';
+                        statusText = 'Concluído';
+                        break;
+                    case 'active':
+                        statusClass = 'status-active';
+                        statusText = 'Em Andamento';
+                        break;
+                    case 'paused':
+                        statusClass = 'status-paused';
+                        statusText = 'Pausado';
+                        break;
+                    default:
+                        statusClass = '';
+                        statusText = operation.status || 'N/A';
+                }
+                
+                row.innerHTML = `
+                    <td>${formattedDate}</td>
+                    <td>${employeeName}</td>
+                    <td>${formattedType}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                    <td>${operation.dock || 'N/A'}</td>
+                    <td>${operation.dockNumber || 'N/A'}</td>
+                    <td>${operation.tonsLoaded || '0'}</td>
+                    <td>${operation.materialMix || '0'}</td>
+                    <td>${operation.vehicleType || 'N/A'}</td>
+                    <td>
+                        <button class="edit-btn" data-id="${operation.id}">Editar</button>
+                    </td>
+                `;
+                
+                historyTableBody.appendChild(row);
+            });
+            
+            // Adicionar event listeners aos botões de edição
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const operationId = this.getAttribute('data-id');
+                    openEditModal(operationId);
+                });
+            });
+        }
+        
+        // Abrir modal de edição
+        function openEditModal(operationId) {
+            const operation = operationsData.find(op => op.id === operationId);
+            
+            if (!operation) return;
+            
+            currentEditId = operationId;
+            
+            // Preencher formulário
+            document.getElementById('editDockNumber').value = operation.dockNumber || '';
+            document.getElementById('editTons').value = operation.tonsLoaded || '';
+            document.getElementById('editMix').value = operation.materialMix || '';
+            document.getElementById('editVehicle').value = operation.vehicleType || '';
+            document.getElementById('editObservation').value = operation.observation || '';
+            
+            // Mostrar modal
+            editModal.style.display = 'block';
+        }
+        
+        // Fechar modal de edição
+        function closeEditModal() {
+            editModal.style.display = 'none';
+            currentEditId = null;
+        }
+        
+        // Salvar edição
+        function saveEdit() {
+            if (!currentEditId) return;
+            
+            const updates = {
+                dockNumber: document.getElementById('editDockNumber').value,
+                tonsLoaded: parseFloat(document.getElementById('editTons').value) || 0,
+                materialMix: parseInt(document.getElementById('editMix').value) || 0,
+                vehicleType: document.getElementById('editVehicle').value,
+                observation: document.getElementById('editObservation').value
+            };
+            
+            // Atualizar no Firestore
+            db.collection('operations').doc(currentEditId).update(updates)
+                .then(() => {
+                    // Atualizar localmente
+                    const operationIndex = operationsData.findIndex(op => op.id === currentEditId);
+                    if (operationIndex !== -1) {
+                        operationsData[operationIndex] = {
+                            ...operationsData[operationIndex],
+                            ...updates
+                        };
+                    }
+                    
+                    // Recarregar dados exibidos
+                    applyFilters();
+                    closeEditModal();
+                })
+                .catch((error) => {
+                    console.error("Erro ao atualizar operação:", error);
+                    alert('Erro ao salvar alterações. Tente novamente.');
+                });
+        }
+        
+        // Mostrar loading do histórico
+        function showHistoryLoading() {
+            historyLoading.style.display = 'flex';
+            historyNoData.style.display = 'none';
+            historyTable.style.display = 'none';
+        }
+        
+        // Ocultar loading do histórico
+        function hideHistoryLoading() {
+            historyLoading.style.display = 'none';
+        }
+        
+        // Mostrar erro do histórico
+        function showHistoryError(message) {
+            historyLoading.style.display = 'none';
+            historyNoData.textContent = message;
+            historyNoData.style.display = 'block';
+            historyTable.style.display = 'none';
+        }
+        
+        // Limpar filtros
+        function clearFilters() {
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('typeFilter').value = '';
+            document.getElementById('employeeFilter').value = '';
+            document.getElementById('dockFilter').value = '';
+            
+            applyFilters();
+        }
+        
+        // Event Listeners
+        passwordBtn.addEventListener('click', checkPassword);
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        });
+        
+        document.getElementById('applyFilters').addEventListener('click', applyFilters);
+        document.getElementById('clearFilters').addEventListener('click', clearFilters);
+        
+        document.getElementById('closeModal').addEventListener('click', closeEditModal);
+        document.getElementById('cancelEdit').addEventListener('click', closeEditModal);
+        document.getElementById('saveEdit').addEventListener('click', saveEdit);
+        
+        // Fechar modal clicando fora dele
+        window.addEventListener('click', (e) => {
+            if (e.target === editModal) {
+                closeEditModal();
+            }
+        });
+        
+        // Destacar link ativo na navbar
+        const currentPage = window.location.pathname.split('/').pop();
+        const navLinks = document.querySelectorAll('.nav-links a');
+        
+        navLinks.forEach(link => {
+            const linkPage = link.getAttribute('href');
+            if (currentPage === linkPage) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+        
+        // Simulação de logout
+        document.querySelector('.logout-btn').addEventListener('click', function() {
+            if (confirm('Tem certeza que deseja sair do sistema?')) {
+                auth.signOut().then(() => {
+                    window.location.href = 'index.html';
+                }).catch((error) => {
+                    console.error('Erro ao fazer logout:', error);
+                });
+            }
+        });
+    </script>
+</body>
+</html>

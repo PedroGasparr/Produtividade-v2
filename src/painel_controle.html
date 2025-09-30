@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Controle - Sistema de Operação</title>
+    <!-- Importar Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <link rel="stylesheet" href="../css/painel_controle.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <span>Prod</span>Plan
+            </div>
+            
+            <ul class="nav-links">
+                <li><a href="operacao.html">Operação</a></li>
+                <li><a href="cadastrar_funcionario.html">Cadastrar Funcionário</a></li>
+                <li><a href="buscar_funcionario.html">Buscar Funcionário</a></li>
+                <li><a href="ranking.html">Ranking</a></li>
+                <li><a href="painel_controle.html" class="active">Painel de Controle</a></li>
+                <li><a href="zles001.html">zles001</a></li>
+                <li><a href="historico.html">Histórico</a></li>
+            </ul>
+            
+            <div class="user-section">
+                <div class="user-info">
+                    <div class="user-name">Carregando...</div>
+                    <div class="user-role"></div>
+                </div>
+                <button class="logout-btn">Sair</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="content">
+        <h1 class="page-title">Painel de Controle</h1>
+        
+        <div class="user-unit-info" id="userUnitInfo">
+            Carregando informações da unidade...
+        </div>
+        
+        <div class="dashboard-header">
+            <h2>Status das Docas</h2>
+            <p>Monitoramento em tempo real das docas de carregamento</p>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color legend-green"></div>
+                <span>Normal (dentro do tempo)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color legend-yellow"></div>
+                <span>Alerta (faltando 20% do tempo)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color legend-red"></div>
+                <span>Crítico (tempo esgotado)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color legend-gray"></div>
+                <span>Pausado</span>
+            </div>
+        </div>
+        
+        <div class="stats-container" id="statsContainer">
+            <div class="stat-card">
+                <h3>Caminhões (Dia)</h3>
+                <div class="stat-value" id="trucksDay"></div>
+                <div class="stat-meta"><span id="trucksGoalDay"></span></div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Toneladas (Dia)</h3>
+                <div class="stat-value" id="tonsDay"></div>
+                <div class="stat-meta"><span id="tonsGoalDay"></span></div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Tempo Médio (Dia)</h3>
+                <div class="stat-value" id="avgTimeDay"></div>
+                <div class="stat-meta"><span id="timeLimitDay"></span></div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Mix Médio (Dia)</h3>
+                <div class="stat-value" id="avgMixDay"></div>
+                <div class="stat-meta"></div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Caminhões (Mês)</h3>
+                <div class="stat-value" id="trucksMonth"></div>
+                <div class="stat-meta"><span id="trucksGoalMonth"></span></div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Toneladas (Mês)</h3>
+                <div class="stat-value" id="tonsMonth"></div>
+                <div class="stat-meta"><span id="tonsGoalMonth"></span></div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Tempo Médio (Mês)</h3>
+                <div class="stat-value" id="avgTimeMonth"></div>
+                <div class="stat-meta"><span id="bestTimeMonth"></span></div>
+            </div>
+            
+            <div class="stat-card">
+                <h3>Mix Médio (Mês)</h3>
+                <div class="stat-value" id="avgMixMonth"></div>
+                <div class="stat-meta"></div>
+            </div>
+        </div>
+        
+        <div class="docks-container" id="docksContainer">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMu17OV-5ST1rlg00zbpt6Hv37GKqkX4A",
+            authDomain: "projetos-d868d.firebaseapp.com",
+            databaseURL: "https://projetos-d868d-default-rtdb.firebaseio.com",
+            projectId: "projetos-d868d",
+            storageBucket: "projetos-d868d.firebasestorage.app",
+            messagingSenderId: "420029352781",
+            appId: "1:420029352781:web:05176699348e0ccdd78504",
+            measurementId: "G-FXWXRX04WF"
+        };
+        
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        
+        // Elementos da interface
+        const userNameElement = document.querySelector('.user-name');
+        const userUnitInfo = document.getElementById('userUnitInfo');
+        const docksContainer = document.getElementById('docksContainer');
+        
+        // Estado da aplicação
+        let currentUser = null;
+        let userData = null;
+        let currentUnit = '';
+        let operationsData = [];
+        let employeesData = [];
+        let realtimeListener = null;
+        
+        // Tempos limite por tipo de operação (em minutos)
+        const timeLimits = {
+            'carregamento': 140,        // 2h 20min
+            'carregamento_Paletizado': 60, // 1h
+            'descarga': 90,             // 1h 30min
+            'separacao': 40             // 40min
+        };
+        
+        // Verificar autenticação
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                userNameElement.textContent = 'Carregando...';
+                
+                // Buscar dados do usuário no Firestore
+                db.collection('users').doc(user.uid).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        userData = doc.data();
+                        userNameElement.textContent = userData.name;
+                        currentUnit = userData.unit;
+                        userUnitInfo.textContent = `Unidade atual: ${currentUnit}`;
+                        
+                        // Carregar dados iniciais
+                        loadEmployeesData();
+                        setupRealtimeListener();
+                    } else {
+                        console.error("Documento do usuário não encontrado");
+                    }
+                })
+                .catch((error) => {
+                    console.error("Erro ao buscar dados do usuário:", error);
+                });
+            } else {
+                // Usuário não autenticado, redirecionar para login
+                window.location.href = 'login.html';
+            }
+        });
+        
+        // Configurar listener em tempo real
+        function setupRealtimeListener() {
+            // Remover listener anterior se existir
+            if (realtimeListener) {
+                realtimeListener();
+            }
+            
+            // Escutar mudanças em tempo real na coleção operations
+            realtimeListener = db.collection('operations')
+                .where('unit', '==', currentUnit)
+                .onSnapshot((snapshot) => {
+                    operationsData = [];
+                    snapshot.forEach((doc) => {
+                        operationsData.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    // Atualizar estatísticas
+                    updateStatistics();
+                    
+                    // Atualizar docas
+                    updateDocks();
+                }, (error) => {
+                    console.error("Erro em tempo real:", error);
+                });
+        }
+        
+        // Carregar dados dos colaboradores
+        function loadEmployeesData() {
+            db.collection('colaboradores')
+                .where('unidade', '==', currentUnit)
+                .get()
+                .then((querySnapshot) => {
+                    employeesData = [];
+                    querySnapshot.forEach((doc) => {
+                        employeesData.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                })
+                .catch((error) => {
+                    console.error("Erro ao carregar colaboradores:", error);
+                });
+        }
+        
+        // Atualizar estatísticas
+        function updateStatistics() {
+            // Filtrar operações do dia
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const todayOperations = operationsData.filter(op => {
+                const opDate = op.createdAt ? op.createdAt.toDate() : new Date(0);
+                return opDate >= today;
+            });
+            
+            // Filtrar operações do mês
+            const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+            
+            const monthOperations = operationsData.filter(op => {
+                const opDate = op.createdAt ? op.createdAt.toDate() : new Date(0);
+                return opDate >= monthStart;
+            });
+            
+            // Calcular estatísticas do dia
+            const trucksDay = todayOperations.length;
+            const tonsDay = todayOperations.reduce((sum, op) => sum + (op.tonsLoaded || 0), 0);
+            
+            // Calcular tempo médio do dia
+            const totalTimeDay = todayOperations.reduce((sum, op) => {
+                if (op.startTime && op.endTime) {
+                    const start = op.startTime.toDate();
+                    const end = op.endTime.toDate();
+                    return sum + (end - start);
+                }
+                return sum;
+            }, 0);
+            
+            const avgTimeDay = trucksDay > 0 ? totalTimeDay / (trucksDay * 60000) : 0; // em minutos
+            
+            // Calcular mix médio do dia
+            const avgMixDay = trucksDay > 0 ? tonsDay / trucksDay : 0;
+            
+            // Calcular estatísticas do mês
+            const trucksMonth = monthOperations.length;
+            const tonsMonth = monthOperations.reduce((sum, op) => sum + (op.tonsLoaded || 0), 0);
+            
+            // Calcular tempo médio do mês
+            const totalTimeMonth = monthOperations.reduce((sum, op) => {
+                if (op.startTime && op.endTime) {
+                    const start = op.startTime.toDate();
+                    const end = op.endTime.toDate();
+                    return sum + (end - start);
+                }
+                return sum;
+            }, 0);
+            
+            const avgTimeMonth = trucksMonth > 0 ? totalTimeMonth / (trucksMonth * 60000) : 0; // em minutos
+            
+            // Calcular mix médio do mês
+            const avgMixMonth = trucksMonth > 0 ? tonsMonth / trucksMonth : 0;
+            
+            // Atualizar interface
+            document.getElementById('trucksDay').textContent = trucksDay;
+            document.getElementById('tonsDay').textContent = tonsDay.toFixed(1);
+            document.getElementById('avgTimeDay').textContent = formatTime(avgTimeDay);
+            document.getElementById('avgMixDay').textContent = avgMixDay.toFixed(1);
+            
+            document.getElementById('trucksMonth').textContent = trucksMonth;
+            document.getElementById('tonsMonth').textContent = tonsMonth.toFixed(1);
+            document.getElementById('avgTimeMonth').textContent = formatTime(avgTimeMonth);
+            document.getElementById('avgMixMonth').textContent = avgMixMonth.toFixed(1);
+        }
+        
+        // Atualizar docas
+        function updateDocks() {
+            // Agrupar operações por doca
+            const docks = {};
+            
+            operationsData.forEach(op => {
+                if (op.status !== 'completed') {
+                    const dockNumber = op.dock || op.dockNumber || 'Unknown';
+                    if (!docks[dockNumber]) {
+                        docks[dockNumber] = [];
+                    }
+                    docks[dockNumber].push(op);
+                }
+            });
+            
+            // Gerar HTML para as docas
+            let docksHTML = '';
+            
+            // Docas ocupadas
+            for (const dockNumber in docks) {
+                const operations = docks[dockNumber];
+                const latestOp = operations[operations.length - 1]; // Operação mais recente
+                
+                docksHTML += generateDockCard(dockNumber, latestOp);
+            }
+            
+            // Docas livres (de 1 a 11)
+            for (let i = 1; i <= 11; i++) {
+                if (!docks[i]) {
+                    docksHTML += `
+                        <div class="dock-card">
+                            <div class="dock-header">
+                                <div class="dock-name">Doca ${i}</div>
+                                <div class="dock-status status-free">Livre 🚛</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            
+            docksContainer.innerHTML = docksHTML;
+            
+            // Iniciar atualização em tempo real para as docas ocupadas
+            startRealtimeUpdates();
+        }
+        
+        // Gerar card para doca ocupada
+        function generateDockCard(dockNumber, operation) {
+            const now = new Date();
+            const startTime = operation.startTime ? operation.startTime.toDate() : now;
+            const elapsedMs = now - startTime;
+            const elapsedMins = Math.floor(elapsedMs / 60000);
+            
+            // Obter tempo limite baseado no tipo de operação
+            const timeLimit = timeLimits[operation.type] || 140; // Padrão 140min se não encontrado
+            const remainingMins = timeLimit - elapsedMins;
+            const warningThreshold = Math.floor(timeLimit * 0.2); // 20% do tempo restante para alerta
+            
+            // Determinar status da doca
+            let statusClass = '';
+            let statusText = '';
+            let statusType = '';
+            
+            if (operation.status === 'paused') {
+                statusClass = 'paused';
+                statusText = 'Pausado';
+                statusType = 'status-paused';
+            } else if (remainingMins <= 0) {
+                statusClass = 'danger';
+                statusText = 'Estourado';
+                statusType = 'status-danger';
+            } else if (remainingMins <= warningThreshold) {
+                statusClass = 'warning';
+                statusText = 'Alerta';
+                statusType = 'status-warning';
+            } else {
+                statusClass = '';
+                statusText = 'Ocupada 🚚💨';
+                statusType = 'status-busy';
+            }
+            
+            // Encontrar nome do colaborador principal
+            let mainEmployeeName = operation.employeeName || 'Carregando...';
+            const mainEmployee = employeesData.find(emp => emp.codigo === operation.employeeCode);
+            if (mainEmployee) {
+                mainEmployeeName = mainEmployee.nome;
+            }
+            
+            // Encontrar nomes dos colaboradores adicionais
+            const additionalEmployees = [];
+            if (operation.additionalLoaders && Array.isArray(operation.additionalLoaders)) {
+                operation.additionalLoaders.forEach(code => {
+                    const employee = employeesData.find(emp => emp.codigo === code);
+                    if (employee) {
+                        additionalEmployees.push(employee.nome);
+                    } else {
+                        additionalEmployees.push(code); // Mostrar código se não encontrar nome
+                    }
+                });
+            }
+            
+            // Formatar tipo de operação para exibição
+            const operationTypeMap = {
+                'carregamento': 'Carregamento',
+                'carregamento_Paletizado': 'Carregamento Paletizado',
+                'descarga': 'Descarga',
+                'separacao': 'Separação'
+            };
+            
+            const formattedType = operationTypeMap[operation.type] || operation.type;
+            
+            return `
+                <div class="dock-card ${statusClass}" id="dock-${dockNumber}">
+                    <div class="dock-header">
+                        <div class="dock-name">Doca ${dockNumber}</div>
+                        <div class="dock-status ${statusType}">${statusText}</div>
+                    </div>
+                    
+                    <div class="dock-details">
+                        <div class="dock-detail"><strong>Iniciado:</strong> ${formatDateTime(startTime)}</div>
+                        <div class="dock-detail"><strong>Status:</strong> ${operation.status === 'paused' ? 'Pausado' : 'Em andamento'}</div>
+                        <div class="dock-detail"><strong>Colaborador Principal:</strong> ${mainEmployeeName}</div>
+                        
+                        ${additionalEmployees.length > 0 ? `
+                            <div class="dock-detail">
+                                <strong>Carregadores Adicionais:</strong>
+                                <ul class="employees-list">
+                                    ${additionalEmployees.map(emp => `<li class="employee-item">${emp}</li>`).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="dock-detail"><strong>Tipo:</strong> ${formattedType}</div>
+                        <div class="dock-detail"><strong>Doca:</strong> ${dockNumber}</div>
+                        <div class="dock-detail"><strong>DT:</strong> ${operation.dockNumber || 'N/A'}</div>
+                        <div class="dock-detail"><strong>Veículo:</strong> ${operation.vehicleType || 'N/A'}</div>
+                        <div class="dock-detail"><strong>Armazém:</strong> ${operation.warehouse || 'N/A'}</div>
+                        
+                        ${operation.status === 'paused' ? `
+                            <div class="dock-detail"><strong>Motivo Pausa:</strong> ${operation.pauseReason || 'Não especificado'}</div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="time-info">
+                        <div class="dock-detail">
+                            <strong>Tempo decorrido:</strong> 
+                            <span class="time-value" id="time-${dockNumber}">${formatDuration(elapsedMins)}</span>
+                        </div>
+                        
+                        <div class="dock-detail">
+                            <strong>Tempo restante (${formatTimeLimit(timeLimit)}):</strong> 
+                            <span class="time-value ${remainingMins <= warningThreshold ? remainingMins <= 0 ? 'time-danger' : 'time-warning' : ''}" id="remaining-${dockNumber}">
+                                ${remainingMins <= 0 ? 
+                                    `Estourou em ${formatDuration(Math.abs(remainingMins))}` : 
+                                    `${formatDuration(remainingMins)} restantes`}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Iniciar atualizações em tempo real
+        function startRealtimeUpdates() {
+            // Atualizar tempos a cada minuto
+            setInterval(() => {
+                operationsData.forEach(op => {
+                    if (op.status !== 'completed') {
+                        const dockNumber = op.dock || op.dockNumber;
+                        if (dockNumber) {
+                            updateDockTime(dockNumber, op);
+                        }
+                    }
+                });
+            }, 60000); // Atualizar a cada minuto
+        }
+        
+        // Atualizar tempo da doca
+        function updateDockTime(dockNumber, operation) {
+            const now = new Date();
+            const startTime = operation.startTime ? operation.startTime.toDate() : now;
+            const elapsedMs = now - startTime;
+            const elapsedMins = Math.floor(elapsedMs / 60000);
+            
+            // Obter tempo limite baseado no tipo de operação
+            const timeLimit = timeLimits[operation.type] || 140;
+            const remainingMins = timeLimit - elapsedMins;
+            const warningThreshold = Math.floor(timeLimit * 0.2); // 20% do tempo restante para alerta
+            
+            // Atualizar elementos da interface
+            const timeElement = document.getElementById(`time-${dockNumber}`);
+            const remainingElement = document.getElementById(`remaining-${dockNumber}`);
+            const dockCard = document.getElementById(`dock-${dockNumber}`);
+            
+            if (timeElement) {
+                timeElement.textContent = formatDuration(elapsedMins);
+            }
+            
+            if (remainingElement) {
+                remainingElement.textContent = remainingMins <= 0 ? 
+                    `Estourou em ${formatDuration(Math.abs(remainingMins))}` : 
+                    `${formatDuration(remainingMins)} restantes`;
+                
+                // Atualizar classes de cor
+                remainingElement.classList.remove('time-warning', 'time-danger');
+                if (remainingMins <= 0) {
+                    remainingElement.classList.add('time-danger');
+                } else if (remainingMins <= warningThreshold) {
+                    remainingElement.classList.add('time-warning');
+                }
+            }
+            
+            // Atualizar cor do card se necessário
+            if (dockCard) {
+                dockCard.classList.remove('warning', 'danger', 'paused');
+                
+                if (operation.status === 'paused') {
+                    dockCard.classList.add('paused');
+                } else if (remainingMins <= 0) {
+                    dockCard.classList.add('danger');
+                } else if (remainingMins <= warningThreshold) {
+                    dockCard.classList.add('warning');
+                }
+            }
+        }
+        
+        // Funções auxiliares de formatação
+        function formatTime(minutes) {
+            const hrs = Math.floor(minutes / 60);
+            const mins = Math.floor(minutes % 60);
+            return `${hrs}:${mins.toString().padStart(2, '0')}h`;
+        }
+        
+        function formatTimeLimit(minutes) {
+            const hrs = Math.floor(minutes / 60);
+            const mins = Math.floor(minutes % 60);
+            if (hrs > 0 && mins > 0) {
+                return `${hrs}h ${mins}min`;
+            } else if (hrs > 0) {
+                return `${hrs}h`;
+            } else {
+                return `${mins}min`;
+            }
+        }
+        
+        function formatDateTime(date) {
+            return date.toLocaleString('pt-BR', { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        }
+        
+        function formatDuration(minutes) {
+            const hrs = Math.floor(minutes / 60);
+            const mins = Math.floor(minutes % 60);
+            if (hrs > 0 && mins > 0) {
+                return `${hrs}h ${mins}min`;
+            } else if (hrs > 0) {
+                return `${hrs}h`;
+            } else {
+                return `${mins}min`;
+            }
+        }
+        
+        // Destacar link ativo na navbar
+        const currentPage = window.location.pathname.split('/').pop();
+        const navLinks = document.querySelectorAll('.nav-links a');
+        
+        navLinks.forEach(link => {
+            const linkPage = link.getAttribute('href');
+            if (currentPage === linkPage) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+        
+        // Simulação de logout
+        document.querySelector('.logout-btn').addEventListener('click', function() {
+            if (confirm('Tem certeza que deseja sair do sistema?')) {
+                auth.signOut().then(() => {
+                    window.location.href = 'index.html';
+                }).catch((error) => {
+                    console.error('Erro ao fazer logout:', error);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
