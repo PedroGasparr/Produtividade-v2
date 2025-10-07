@@ -80,6 +80,7 @@
             padding: 8px;
             border-bottom: 1px solid #eee;
             cursor: pointer;
+            position: relative;
         }
         
         .car-in-dock-item:hover {
@@ -95,13 +96,97 @@
             font-size: 0.9em;
             color: #666;
         }
+        
+        .remove-car-btn {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background-color: #ff4757;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        
+        .remove-car-btn:hover {
+            background-color: #ff2e43;
+        }
+        
+        /* Estilos para o modal de atraso */
+        .delay-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .delay-modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .delay-reason-select {
+            width: 100%;
+            padding: 8px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        
+        .delay-buttons {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 15px;
+        }
+        
+        .delay-buttons button {
+            margin-left: 10px;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .delay-submit {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .delay-cancel {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .simultaneous-loading {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            border-left: 4px solid #2196F3;
+        }
+        
+        .simultaneous-checkbox {
+            margin-right: 8px;
+        }
     </style>
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-container">
             <div class="logo">
-                <span>Prod</span>Plan
+                <span>Prod</span>Plan<span>Gzl</span>
             </div>
             
             <ul class="nav-links">
@@ -110,7 +195,6 @@
                 <li><a href="buscar_funcionario.html">Buscar Funcionário</a></li>
                 <li><a href="ranking.html">Ranking</a></li>
                 <li><a href="painel_controle.html">Painel de Controle</a></li>
-                <li><a href="zles001.html">zles001</a></li>
                 <li><a href="historico.html">Histórico</a></li>
             </ul>
             
@@ -164,6 +248,16 @@
                         <option value="9">9</option>
                         <option value="10">10</option>
                         <option value="11">11</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="compositionsCount">Quantidade de Composições</label>
+                    <select id="compositionsCount">
+                        <option value="1">1 (Carro Simples)</option>
+                        <option value="2">2 (Bitrem)</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
                     </select>
                 </div>
                 
@@ -291,6 +385,16 @@
                     </div>
                     <div class="selected-warehouses" id="selectedWarehouses">
                         Nenhum armazém selecionado
+                    </div>
+                </div>
+                
+                <!-- Nova seção para carregamento simultâneo -->
+                <div class="simultaneous-loading">
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="simultaneousLoading" class="simultaneous-checkbox">
+                            Manter carro em doca após iniciar (para operação simultânea)
+                        </label>
                     </div>
                 </div>
                 
@@ -454,6 +558,38 @@
         </div>
     </div>
 
+    <!-- Modal para registro de atraso -->
+    <div id="delayModal" class="delay-modal">
+        <div class="delay-modal-content">
+            <h2>Registro de Atraso</h2>
+            <p>Foi detectado um atraso de mais de 10 minutos entre o registro do carro em doca e o início do carregamento.</p>
+            <p>Por favor, informe o motivo do atraso:</p>
+            
+            <div class="form-group">
+                <label for="delayReason">Motivo do Atraso</label>
+                <select id="delayReason" class="delay-reason-select">
+                    <option value="">Selecione o motivo</option>
+                    <option value="aguardando_motorista">Aguardando motorista</option>
+                    <option value="problema_veiculo">Problema com o veículo</option>
+                    <option value="falta_material">Falta de material</option>
+                    <option value="problema_doca">Problema na doca</option>
+                    <option value="prioridade_outra_operacao">Prioridade para outra operação</option>
+                    <option value="outro">Outro</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="otherReasonContainer" style="display: none;">
+                <label for="otherReason">Especifique o motivo</label>
+                <input type="text" id="otherReason" placeholder="Digite o motivo do atraso">
+            </div>
+            
+            <div class="delay-buttons">
+                <button class="delay-cancel" id="delayCancelBtn">Cancelar</button>
+                <button class="delay-submit" id="delaySubmitBtn">Registrar</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Configuração do Firebase
         const firebaseConfig = {
@@ -520,6 +656,20 @@
         const dockInput = document.getElementById('dock');
         const dockNumberInput = document.getElementById('dockNumber');
         
+        // Novos elementos para composições
+        const compositionsCountSelect = document.getElementById('compositionsCount');
+        
+        // Novos elementos para carregamento simultâneo
+        const simultaneousLoadingCheckbox = document.getElementById('simultaneousLoading');
+        
+        // Elementos do modal de atraso
+        const delayModal = document.getElementById('delayModal');
+        const delayReasonSelect = document.getElementById('delayReason');
+        const otherReasonContainer = document.getElementById('otherReasonContainer');
+        const otherReasonInput = document.getElementById('otherReason');
+        const delayCancelBtn = document.getElementById('delayCancelBtn');
+        const delaySubmitBtn = document.getElementById('delaySubmitBtn');
+        
         // Estado da aplicação
         let currentUser = null;
         let userData = null;
@@ -534,6 +684,7 @@
         let canvasContext = null;
         let selectedEmployeeToRemove = null;
         let carsInDock = {};
+        let pendingOperationWithDelay = null;
         
         // Verificar autenticação
         auth.onAuthStateChanged((user) => {
@@ -607,11 +758,20 @@
             }
         });
         
+        // Mostrar/ocultar campo para outro motivo de atraso
+        delayReasonSelect.addEventListener('change', function() {
+            if (this.value === 'outro') {
+                otherReasonContainer.style.display = 'block';
+            } else {
+                otherReasonContainer.style.display = 'none';
+            }
+        });
+        
         // Função para carregar carros em doca
         function loadCarsInDock() {
             db.collection('carsInDock')
                 .where('unit', '==', currentUnit)
-                .where('status', '==', 'available')
+                .where('status', 'in', ['available', 'in_use_partial'])
                 .onSnapshot((snapshot) => {
                     snapshot.docChanges().forEach((change) => {
                         if (change.type === 'added' || change.type === 'modified') {
@@ -640,7 +800,13 @@
                 const car = carsInDock[carId];
                 const option = document.createElement('option');
                 option.value = carId;
-                option.textContent = `DT ${car.dockNumber} - Doca ${car.dock}`;
+                
+                let statusText = '';
+                if (car.status === 'in_use_partial') {
+                    statusText = ' (Carregamento parcial)';
+                }
+                
+                option.textContent = `DT ${car.dockNumber} - Doca ${car.dock}${statusText}`;
                 selectCarInDock.appendChild(option);
             });
         }
@@ -655,25 +821,95 @@
                 existingItem.remove();
             }
             
-            const carItem = document.createElement('div');
-            carItem.id = `car-${carId}`;
-            carItem.className = 'car-in-dock-item';
-            carItem.innerHTML = `
-                <div><strong>DT ${carData.dockNumber}</strong> - Doca ${carData.dock}</div>
-                <div class="car-details">
-                    Chegou em: ${carData.arrivalTime.toDate().toLocaleString('pt-BR')}
-                </div>
-            `;
+            // Gerar composições
+            const compositionsCount = carData.compositionsCount || 1;
             
-            carsList.appendChild(carItem);
+            for (let i = 1; i <= compositionsCount; i++) {
+                const carItem = document.createElement('div');
+                carItem.id = `car-${carId}-${i}`;
+                carItem.className = 'car-in-dock-item';
+                
+                // Definir o texto da DT baseado no número da composição
+                let dtText = `DT ${carData.dockNumber}`;
+                if (compositionsCount > 1 && i > 1) {
+                    dtText = `DT ${carData.dockNumber}-${i}`;
+                }
+                
+                carItem.innerHTML = `
+                    <div><strong>${dtText}</strong> - Doca ${carData.dock}</div>
+                    <div class="car-details">
+                        Chegou em: ${carData.arrivalTime.toDate().toLocaleString('pt-BR')}
+                    </div>
+                    <button class="remove-car-btn" data-car-id="${carId}" data-composition="${i}">Remover</button>
+                `;
+                
+                carsList.appendChild(carItem);
+                
+                // Adicionar evento ao botão de remover
+                const removeBtn = carItem.querySelector('.remove-car-btn');
+                removeBtn.addEventListener('click', function() {
+                    const carIdToRemove = this.getAttribute('data-car-id');
+                    const composition = this.getAttribute('data-composition');
+                    removeCarFromDock(carIdToRemove, composition);
+                });
+            }
+        }
+        
+        // Remover carro da doca
+        function removeCarFromDock(carId, composition) {
+            if (!confirm('Tem certeza que deseja remover este carro da doca?')) {
+                return;
+            }
+            
+            const car = carsInDock[carId];
+            const compositionsCount = car.compositionsCount || 1;
+            
+            if (compositionsCount === 1) {
+                // Se tem apenas uma composição, remove o carro completo
+                db.collection('carsInDock').doc(carId).delete()
+                .then(() => {
+                    alert('Carro removido da doca com sucesso!');
+                })
+                .catch((error) => {
+                    console.error("Erro ao remover carro:", error);
+                    alert('Erro ao remover carro: ' + error.message);
+                });
+            } else {
+                // Se tem múltiplas composições, atualiza o count
+                const newCount = compositionsCount - 1;
+                
+                if (newCount === 0) {
+                    // Se não sobrou composições, remove o carro
+                    db.collection('carsInDock').doc(carId).delete()
+                    .then(() => {
+                        alert('Carro removido da doca com sucesso!');
+                    })
+                    .catch((error) => {
+                        console.error("Erro ao remover carro:", error);
+                        alert('Erro ao remover carro: ' + error.message);
+                    });
+                } else {
+                    // Atualiza o count de composições
+                    db.collection('carsInDock').doc(carId).update({
+                        compositionsCount: newCount
+                    })
+                    .then(() => {
+                        alert('Composição removida com sucesso!');
+                    })
+                    .catch((error) => {
+                        console.error("Erro ao remover composição:", error);
+                        alert('Erro ao remover composição: ' + error.message);
+                    });
+                }
+            }
         }
         
         // Remover display de carro em doca
         function removeCarInDockDisplay(carId) {
-            const carItem = document.getElementById(`car-${carId}`);
-            if (carItem) {
-                carItem.remove();
-            }
+            const carItems = document.querySelectorAll(`[id^="car-${carId}"]`);
+            carItems.forEach(item => {
+                item.remove();
+            });
         }
         
         // Evento para selecionar carro em doca
@@ -850,6 +1086,9 @@
                 </div>
                 ${loadData.additionalLoaders && loadData.additionalLoaders.length > 0 ? `
                 <div class="detail-item"><span class="detail-label">Carregadores adicionais:</span> ${loadData.additionalLoaders.join(', ')}</div>
+                ` : ''}
+                ${loadData.keepCarInDock ? `
+                <div class="detail-item"><span class="detail-label">Carro mantido em doca:</span> Sim</div>
                 ` : ''}
             `;
             
@@ -1202,6 +1441,7 @@
         document.getElementById('submitCarInDockBtn').addEventListener('click', () => {
             const dockNumber = document.getElementById('carDockNumber').value;
             const dock = document.getElementById('carDock').value;
+            const compositionsCount = parseInt(document.getElementById('compositionsCount').value);
             
             if (!dockNumber || !dock) {
                 alert('Por favor, preencha o número da DT e a doca');
@@ -1212,7 +1452,7 @@
             db.collection('carsInDock')
                 .where('dockNumber', '==', dockNumber)
                 .where('unit', '==', currentUnit)
-                .where('status', '==', 'available')
+                .where('status', 'in', ['available', 'in_use_partial'])
                 .get()
                 .then((snapshot) => {
                     if (!snapshot.empty) {
@@ -1224,6 +1464,7 @@
                     return db.collection('carsInDock').add({
                         dockNumber: dockNumber,
                         dock: dock,
+                        compositionsCount: compositionsCount,
                         unit: currentUnit,
                         arrivalTime: new Date(),
                         status: 'available',
@@ -1234,6 +1475,7 @@
                     alert('Carro registrado em doca com sucesso!');
                     document.getElementById('carDockNumber').value = '';
                     document.getElementById('carDock').value = '';
+                    document.getElementById('compositionsCount').value = '1';
                 })
                 .catch((error) => {
                     console.error("Erro ao registrar carro em doca:", error);
@@ -1249,6 +1491,7 @@
             const dock = document.getElementById('dock').value;
             const dockNumber = document.getElementById('dockNumber').value;
             const vehicleType = document.getElementById('vehicleType').value;
+            const keepCarInDock = document.getElementById('simultaneousLoading').checked;
             
             // Coletar armazéns selecionados
             const selectedWarehouses = Array.from(warehouseCheckboxes)
@@ -1270,6 +1513,59 @@
                 return;
             }
             
+            // Verificar se há atraso no início do carregamento
+            const carInDock = carsInDock[carInDockId];
+            if (carInDock) {
+                const arrivalTime = carInDock.arrivalTime.toDate();
+                const now = new Date();
+                const timeDiff = (now - arrivalTime) / (1000 * 60); // diferença em minutos
+                
+                if (timeDiff > 10) {
+                    // Mostrar modal de atraso
+                    pendingOperationWithDelay = {
+                        employeeCode,
+                        operationType,
+                        carInDockId,
+                        dock,
+                        dockNumber,
+                        vehicleType,
+                        selectedWarehouses,
+                        additionalLoaders,
+                        keepCarInDock
+                    };
+                    
+                    delayModal.style.display = 'flex';
+                    return;
+                }
+            }
+            
+            // Se não há atraso, prosseguir com a operação normalmente
+            createOperation(
+                employeeCode,
+                operationType,
+                carInDockId,
+                dock,
+                dockNumber,
+                vehicleType,
+                selectedWarehouses,
+                additionalLoaders,
+                keepCarInDock
+            );
+        });
+        
+        // Função para criar a operação no banco de dados
+        function createOperation(
+            employeeCode,
+            operationType,
+            carInDockId,
+            dock,
+            dockNumber,
+            vehicleType,
+            selectedWarehouses,
+            additionalLoaders,
+            keepCarInDock,
+            delayReason = null
+        ) {
             // Verificar se o colaborador existe
             db.collection('colaboradores')
                 .where('codigo', '==', employeeCode)
@@ -1297,15 +1593,22 @@
                         status: 'active',
                         createdBy: currentUser.uid,
                         createdAt: new Date(),
-                        carInDockId: carInDockId // Referência ao carro em doca
+                        carInDockId: carInDockId, // Referência ao carro em doca
+                        keepCarInDock: keepCarInDock,
+                        delayReason: delayReason
                     });
                 })
                 .then((operationRef) => {
-                    // Atualizar o status do carro em doca para "em uso"
-                    return db.collection('carsInDock').doc(carInDockId).update({
-                        status: 'in_use',
-                        operationId: operationRef.id
-                    });
+                    // Se NÃO for para manter o carro em doca, remove-o
+                    if (!keepCarInDock) {
+                        return db.collection('carsInDock').doc(carInDockId).delete();
+                    } else {
+                        // Se for para manter, atualiza o status para uso parcial
+                        return db.collection('carsInDock').doc(carInDockId).update({
+                            status: 'in_use_partial',
+                            operationId: operationRef.id
+                        });
+                    }
                 })
                 .then(() => {
                     alert('Operação iniciada com sucesso!');
@@ -1317,6 +1620,7 @@
                     document.getElementById('dock').value = '';
                     document.getElementById('dockNumber').value = '';
                     document.getElementById('vehicleType').value = '';
+                    document.getElementById('simultaneousLoading').checked = false;
                     
                     // Limpar seleção de armazéns
                     warehouseCheckboxes.forEach(cb => cb.checked = false);
@@ -1324,11 +1628,57 @@
                     
                     // Limpar carregadores adicionais
                     document.getElementById('additionalLoaders').innerHTML = '';
+                    
+                    // Resetar operação pendente
+                    pendingOperationWithDelay = null;
                 })
                 .catch((error) => {
                     console.error("Erro ao iniciar operação:", error);
                     alert('Erro ao iniciar operação: ' + error.message);
                 });
+        }
+        
+        // Eventos para o modal de atraso
+        delayCancelBtn.addEventListener('click', () => {
+            delayModal.style.display = 'none';
+            pendingOperationWithDelay = null;
+        });
+        
+        delaySubmitBtn.addEventListener('click', () => {
+            const delayReason = document.getElementById('delayReason').value;
+            let finalDelayReason = delayReason;
+            
+            if (delayReason === 'outro') {
+                finalDelayReason = document.getElementById('otherReason').value;
+                if (!finalDelayReason) {
+                    alert('Por favor, especifique o motivo do atraso');
+                    return;
+                }
+            }
+            
+            if (!delayReason) {
+                alert('Por favor, selecione o motivo do atraso');
+                return;
+            }
+            
+            // Fechar modal
+            delayModal.style.display = 'none';
+            
+            // Continuar com a criação da operação com o motivo do atraso
+            if (pendingOperationWithDelay) {
+                createOperation(
+                    pendingOperationWithDelay.employeeCode,
+                    pendingOperationWithDelay.operationType,
+                    pendingOperationWithDelay.carInDockId,
+                    pendingOperationWithDelay.dock,
+                    pendingOperationWithDelay.dockNumber,
+                    pendingOperationWithDelay.vehicleType,
+                    pendingOperationWithDelay.selectedWarehouses,
+                    pendingOperationWithDelay.additionalLoaders,
+                    pendingOperationWithDelay.keepCarInDock,
+                    finalDelayReason
+                );
+            }
         });
         
         // Finalizar operação
@@ -1373,8 +1723,8 @@
                 completedBy: currentUser.uid
             })
             .then(() => {
-                // Se havia um carro em doca associado, removê-lo
-                if (carInDockId) {
+                // Se havia um carro em doca associado e não estava sendo mantido, remove-o
+                if (carInDockId && !activeLoads[operationId].keepCarInDock) {
                     return db.collection('carsInDock').doc(carInDockId).delete();
                 }
             })
@@ -1580,6 +1930,10 @@
             }
             if (event.target === scannerContainer) {
                 pararScanner();
+            }
+            if (event.target === delayModal) {
+                delayModal.style.display = 'none';
+                pendingOperationWithDelay = null;
             }
         });
     </script>
