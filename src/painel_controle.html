@@ -65,6 +65,10 @@
                 <div class="legend-color legend-gray"></div>
                 <span>Pausado</span>
             </div>
+            <div class="legend-item">
+                <div class="legend-color legend-blue"></div>
+                <span>Carro em Doca (Aguardando)</span>
+            </div>
         </div>
         
         <div class="stats-container" id="statsContainer">
@@ -152,8 +156,10 @@
         let userData = null;
         let currentUnit = '';
         let operationsData = [];
+        let carsInDockData = [];
         let employeesData = [];
-        let realtimeListener = null;
+        let operationsListener = null;
+        let carsInDockListener = null;
         
         // Tempos limite por tipo de operação (em minutos)
         const timeLimits = {
@@ -180,7 +186,7 @@
                         
                         // Carregar dados iniciais
                         loadEmployeesData();
-                        setupRealtimeListener();
+                        setupRealtimeListeners();
                     } else {
                         console.error("Documento do usuário não encontrado");
                     }
@@ -194,15 +200,18 @@
             }
         });
         
-        // Configurar listener em tempo real
-        function setupRealtimeListener() {
-            // Remover listener anterior se existir
-            if (realtimeListener) {
-                realtimeListener();
+        // Configurar listeners em tempo real
+        function setupRealtimeListeners() {
+            // Remover listeners anteriores se existirem
+            if (operationsListener) {
+                operationsListener();
+            }
+            if (carsInDockListener) {
+                carsInDockListener();
             }
             
             // Escutar mudanças em tempo real na coleção operations
-            realtimeListener = db.collection('operations')
+            operationsListener = db.collection('operations')
                 .where('unit', '==', currentUnit)
                 .onSnapshot((snapshot) => {
                     operationsData = [];
@@ -219,7 +228,26 @@
                     // Atualizar docas
                     updateDocks();
                 }, (error) => {
-                    console.error("Erro em tempo real:", error);
+                    console.error("Erro em tempo real nas operações:", error);
+                });
+            
+            // Escutar mudanças em tempo real na coleção carsInDock
+            carsInDockListener = db.collection('carsInDock')
+                .where('unit', '==', currentUnit)
+                .where('status', 'in', ['available', 'in_use_partial'])
+                .onSnapshot((snapshot) => {
+                    carsInDockData = [];
+                    snapshot.forEach((doc) => {
+                        carsInDockData.push({
+                            id: doc.id,
+                            ...doc.data()
+                        });
+                    });
+                    
+                    // Atualizar docas
+                    updateDocks();
+                }, (error) => {
+                    console.error("Erro em tempo real nos carros em doca:", error);
                 });
         }
         
@@ -313,16 +341,47 @@
         
         // Atualizar docas
         function updateDocks() {
-            // Agrupar operações por doca
-            const docks = {};
+            // Mapear todas as docas ocupadas (por operações e por carros em doca)
+            const occupiedDocks = new Map();
             
+            // Processar operações ativas
             operationsData.forEach(op => {
                 if (op.status !== 'completed') {
-                    const dockNumber = op.dock || op.dockNumber || 'Unknown';
-                    if (!docks[dockNumber]) {
-                        docks[dockNumber] = [];
+                    const dockNumber = op.dock || op.dockNumber;
+                    if (dockNumber) {
+                        occupiedDocks.set(dockNumber, {
+                            type: 'operation',
+                            data: op
+                        });
                     }
-                    docks[dockNumber].push(op);
+                }
+            });
+            
+            // Processar carros em doca que não estão em operação
+            carsInDockData.forEach(car => {
+                // Verificar se o carro não está sendo usado em operação
+                const isCarInOperation = operationsData.some(op => 
+                    op.carInDockId === car.id && op.status !== 'completed'
+                );
+                
+                if (!isCarInOperation) {
+                    // Adicionar doca principal
+                    if (car.dock) {
+                        occupiedDocks.set(car.dock, {
+                            type: 'car_in_dock',
+                            data: car
+                        });
+                    }
+                    
+                    // Adicionar docas das composições se houver
+                    if (car.compositionDocks) {
+                        Object.values(car.compositionDocks).forEach(compositionDock => {
+                            occupiedDocks.set(compositionDock, {
+                                type: 'car_in_dock',
+                                data: car
+                            });
+                        });
+                    }
                 }
             });
             
@@ -330,16 +389,17 @@
             let docksHTML = '';
             
             // Docas ocupadas
-            for (const dockNumber in docks) {
-                const operations = docks[dockNumber];
-                const latestOp = operations[operations.length - 1]; // Operação mais recente
-                
-                docksHTML += generateDockCard(dockNumber, latestOp);
+            for (const [dockNumber, dockInfo] of occupiedDocks) {
+                if (dockInfo.type === 'operation') {
+                    docksHTML += generateDockCard(dockNumber, dockInfo.data);
+                } else if (dockInfo.type === 'car_in_dock') {
+                    docksHTML += generateCarInDockCard(dockNumber, dockInfo.data);
+                }
             }
             
             // Docas livres (de 1 a 11)
             for (let i = 1; i <= 11; i++) {
-                if (!docks[i]) {
+                if (!occupiedDocks.has(i.toString())) {
                     docksHTML += `
                         <div class="dock-card">
                             <div class="dock-header">
@@ -357,7 +417,7 @@
             startRealtimeUpdates();
         }
         
-        // Gerar card para doca ocupada
+        // Gerar card para doca ocupada por operação
         function generateDockCard(dockNumber, operation) {
             const now = new Date();
             const startTime = operation.startTime ? operation.startTime.toDate() : now;
@@ -473,10 +533,48 @@
             `;
         }
         
+        // Gerar card para doca ocupada por carro aguardando
+        function generateCarInDockCard(dockNumber, carData) {
+            const arrivalTime = carData.arrivalTime ? carData.arrivalTime.toDate() : new Date();
+            const now = new Date();
+            const waitingTime = Math.floor((now - arrivalTime) / 60000); // em minutos
+            
+            return `
+                <div class="dock-card waiting" id="dock-${dockNumber}">
+                    <div class="dock-header">
+                        <div class="dock-name">Doca ${dockNumber}</div>
+                        <div class="dock-status status-waiting">Aguardando ⏳</div>
+                    </div>
+                    
+                    <div class="dock-details">
+                        <div class="dock-detail"><strong>Status:</strong> Carro em Doca (Aguardando Início)</div>
+                        <div class="dock-detail"><strong>DT:</strong> ${carData.dockNumber || 'N/A'}</div>
+                        <div class="dock-detail"><strong>Chegou em:</strong> ${formatDateTime(arrivalTime)}</div>
+                        <div class="dock-detail"><strong>Tempo de espera:</strong> ${formatDuration(waitingTime)}</div>
+                        
+                        ${carData.compositionsCount > 1 ? `
+                            <div class="dock-detail"><strong>Composições:</strong> ${carData.compositionsCount}</div>
+                            <div class="dock-detail"><strong>Docas das Composições:</strong> 
+                                ${Object.values(carData.compositionDocks || {}).join(', ')}
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="time-info">
+                        <div class="dock-detail">
+                            <strong>Aguardando início há:</strong> 
+                            <span class="time-value" id="waiting-${dockNumber}">${formatDuration(waitingTime)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
         // Iniciar atualizações em tempo real
         function startRealtimeUpdates() {
             // Atualizar tempos a cada minuto
             setInterval(() => {
+                // Atualizar operações
                 operationsData.forEach(op => {
                     if (op.status !== 'completed') {
                         const dockNumber = op.dock || op.dockNumber;
@@ -485,10 +583,25 @@
                         }
                     }
                 });
+                
+                // Atualizar carros em doca
+                carsInDockData.forEach(car => {
+                    // Atualizar doca principal
+                    if (car.dock) {
+                        updateCarInDockTime(car.dock, car);
+                    }
+                    
+                    // Atualizar docas das composições
+                    if (car.compositionDocks) {
+                        Object.values(car.compositionDocks).forEach(dockNumber => {
+                            updateCarInDockTime(dockNumber, car);
+                        });
+                    }
+                });
             }, 60000); // Atualizar a cada minuto
         }
         
-        // Atualizar tempo da doca
+        // Atualizar tempo da doca em operação
         function updateDockTime(dockNumber, operation) {
             const now = new Date();
             const startTime = operation.startTime ? operation.startTime.toDate() : now;
@@ -534,6 +647,19 @@
                 } else if (remainingMins <= warningThreshold) {
                     dockCard.classList.add('warning');
                 }
+            }
+        }
+        
+        // Atualizar tempo de espera do carro em doca
+        function updateCarInDockTime(dockNumber, carData) {
+            const now = new Date();
+            const arrivalTime = carData.arrivalTime ? carData.arrivalTime.toDate() : now;
+            const waitingTime = Math.floor((now - arrivalTime) / 60000); // em minutos
+            
+            // Atualizar elemento da interface
+            const waitingElement = document.getElementById(`waiting-${dockNumber}`);
+            if (waitingElement) {
+                waitingElement.textContent = formatDuration(waitingTime);
             }
         }
         

@@ -180,6 +180,70 @@
         .simultaneous-checkbox {
             margin-right: 8px;
         }
+
+        /* Novos estilos para composições */
+        .compositions-container {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+
+        .composition-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+        }
+
+        .composition-header {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .composition-option {
+            background-color: #e8f5e8;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .validation-error {
+            color: #d32f2f;
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .validation-success {
+            color: #388e3c;
+            font-size: 0.9em;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .composition-status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            margin-left: 10px;
+        }
+
+        .status-available {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .status-in-use {
+            background-color: #FF9800;
+            color: white;
+        }
+
+        .status-completed {
+            background-color: #2196F3;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -234,9 +298,9 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="carDock">Doca</label>
+                    <label for="carDock">Doca Principal</label>
                     <select id="carDock">
-                        <option value="">Selecione a Doca</option>
+                        <option value="">Selecione a Doca Principal</option>
                         <option value="1">1</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
@@ -260,6 +324,14 @@
                         <option value="4">4</option>
                     </select>
                 </div>
+
+                <!-- Container para seleção de docas por composição -->
+                <div class="compositions-container" id="compositionsContainer" style="display: none;">
+                    <h4>Selecionar Docas para Cada Composição</h4>
+                    <div id="compositionDocks">
+                        <!-- As seleções de doca por composição serão geradas aqui -->
+                    </div>
+                </div>
                 
                 <button class="submit-button" id="submitCarInDockBtn">Registrar Carro em Doca</button>
                 
@@ -276,6 +348,8 @@
                 <div class="form-group">
                     <label for="employeeCode">Código do Funcionário Principal</label>
                     <input type="text" id="employeeCode" placeholder="Ex: GZL-EO-1234">
+                    <div class="validation-error" id="employeeCodeError"></div>
+                    <div class="validation-success" id="employeeCodeSuccess"></div>
                     <button class="qr-button" id="scanQRBtn">Ler QR Code</button>
                 </div>
                 
@@ -303,13 +377,27 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="dock">Doca</label>
+                    <label for="dock">Doca Principal</label>
                     <input type="text" id="dock" readonly>
                 </div>
                 
                 <div class="form-group">
                     <label for="dockNumber">Número da DT</label>
                     <input type="text" id="dockNumber" readonly>
+                </div>
+
+                <!-- Container para seleção de composição específica -->
+                <div class="form-group" id="compositionSelectionContainer" style="display: none;">
+                    <label for="selectComposition">Selecionar Composição</label>
+                    <select id="selectComposition">
+                        <option value="">Selecione a composição</option>
+                    </select>
+                </div>
+
+                <!-- Container para mostrar a doca da composição selecionada -->
+                <div class="form-group" id="compositionDockInfo" style="display: none;">
+                    <label for="selectedCompositionDock">Doca da Composição Selecionada</label>
+                    <input type="text" id="selectedCompositionDock" readonly>
                 </div>
                 
                 <div class="form-group">
@@ -412,9 +500,9 @@
                 </div>
                 
                 <div class="form-group">
-                    <label for="finishOperationType">Tipo de Operação</label>
-                    <select id="finishOperationType" disabled>
-                        <option value="">Selecione o tipo de operação</option>
+                    <label for="finishOperationType">Selecionar Operação</label>
+                    <select id="finishOperationType">
+                        <option value="">Selecione a operação</option>
                     </select>
                 </div>
                 
@@ -658,6 +746,12 @@
         
         // Novos elementos para composições
         const compositionsCountSelect = document.getElementById('compositionsCount');
+        const compositionsContainer = document.getElementById('compositionsContainer');
+        const compositionDocks = document.getElementById('compositionDocks');
+        const compositionSelectionContainer = document.getElementById('compositionSelectionContainer');
+        const selectComposition = document.getElementById('selectComposition');
+        const compositionDockInfo = document.getElementById('compositionDockInfo');
+        const selectedCompositionDock = document.getElementById('selectedCompositionDock');
         
         // Novos elementos para carregamento simultâneo
         const simultaneousLoadingCheckbox = document.getElementById('simultaneousLoading');
@@ -669,6 +763,10 @@
         const otherReasonInput = document.getElementById('otherReason');
         const delayCancelBtn = document.getElementById('delayCancelBtn');
         const delaySubmitBtn = document.getElementById('delaySubmitBtn');
+        
+        // Elementos de validação
+        const employeeCodeError = document.getElementById('employeeCodeError');
+        const employeeCodeSuccess = document.getElementById('employeeCodeSuccess');
         
         // Estado da aplicação
         let currentUser = null;
@@ -685,6 +783,9 @@
         let selectedEmployeeToRemove = null;
         let carsInDock = {};
         let pendingOperationWithDelay = null;
+        let currentCarCompositions = {};
+        let validatedEmployees = {};
+        let compositions = {}; // Nova coleção para composições
         
         // Verificar autenticação
         auth.onAuthStateChanged((user) => {
@@ -706,6 +807,8 @@
                         loadActiveLoads();
                         // Carregar carros em doca
                         loadCarsInDock();
+                        // Carregar composições
+                        loadCompositions();
                     } else {
                         console.error("Documento do usuário não encontrado");
                     }
@@ -767,6 +870,68 @@
             }
         });
         
+        // Evento para gerar seleções de doca por composição
+        compositionsCountSelect.addEventListener('change', function() {
+            const count = parseInt(this.value);
+            compositionDocks.innerHTML = '';
+            
+            if (count > 1) {
+                compositionsContainer.style.display = 'block';
+                
+                for (let i = 1; i <= count; i++) {
+                    const compositionDiv = document.createElement('div');
+                    compositionDiv.className = 'composition-item';
+                    compositionDiv.innerHTML = `
+                        <div class="composition-header">Composição ${i}</div>
+                        <div class="form-group">
+                            <label for="compositionDock${i}">Doca para Composição ${i}</label>
+                            <select id="compositionDock${i}" class="composition-dock-select">
+                                <option value="">Selecione a Doca</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                            </select>
+                        </div>
+                    `;
+                    compositionDocks.appendChild(compositionDiv);
+                }
+            } else {
+                compositionsContainer.style.display = 'none';
+            }
+        });
+        
+        // Função para carregar composições
+        function loadCompositions() {
+            console.log("Carregando composições...");
+            db.collection('compositions')
+                .where('unit', '==', currentUnit)
+                .onSnapshot((snapshot) => {
+                    console.log("Composições carregadas:", snapshot.size);
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added' || change.type === 'modified') {
+                            compositions[change.doc.id] = change.doc.data();
+                            console.log('Composição carregada:', change.doc.data());
+                        }
+                        if (change.type === 'removed') {
+                            delete compositions[change.doc.id];
+                        }
+                    });
+                    
+                    // Atualizar select de carros em doca
+                    updateCarInDockSelect();
+                }, (error) => {
+                    console.error("Erro ao carregar composições:", error);
+                });
+        }
+        
         // Função para carregar carros em doca
         function loadCarsInDock() {
             db.collection('carsInDock')
@@ -792,66 +957,190 @@
                 });
         }
         
-        // Atualizar select de carros em doca
+        // Atualizar select de carros em doca - CORREÇÃO COMPLETA
         function updateCarInDockSelect() {
             selectCarInDock.innerHTML = '<option value="">Selecione um carro em doca</option>';
             
             Object.keys(carsInDock).forEach(carId => {
                 const car = carsInDock[carId];
-                const option = document.createElement('option');
-                option.value = carId;
+                const compositionsCount = car.compositionsCount || 1;
+                const compositionDocks = car.compositionDocks || {};
                 
-                let statusText = '';
-                if (car.status === 'in_use_partial') {
-                    statusText = ' (Carregamento parcial)';
+                if (compositionsCount === 1) {
+                    // Carro simples - apenas uma opção
+                    // Verificar se existe uma composição com status completed
+                    const composition = Object.values(compositions).find(comp => 
+                        comp.carId === carId && comp.compositionNumber === 1
+                    );
+                    
+                    // Se não existe composição OU se existe e NÃO está completed, mostra o carro
+                    if (!composition || composition.status !== 'completed') {
+                        const option = document.createElement('option');
+                        option.value = carId;
+                        option.textContent = `DT ${car.dockNumber} - Doca ${car.dock}`;
+                        option.dataset.dock = car.dock;
+                        option.dataset.dockNumber = car.dockNumber;
+                        selectCarInDock.appendChild(option);
+                    }
+                } else {
+                    // Bitrem - criar uma opção para cada composição disponível
+                    let hasAvailableCompositions = false;
+                    
+                    for (let i = 1; i <= compositionsCount; i++) {
+                        const compositionDock = compositionDocks[i] || car.dock;
+                        const compositionId = `${carId}_${i}`;
+                        
+                        // Buscar a composição específica
+                        const composition = Object.values(compositions).find(comp => 
+                            comp.carId === carId && comp.compositionNumber === i
+                        );
+                        
+                        // Só mostra se a composição NÃO existe ou se existe e NÃO está completed
+                        if (!composition || composition.status !== 'completed') {
+                            hasAvailableCompositions = true;
+                            
+                            const option = document.createElement('option');
+                            option.value = carId;
+                            option.dataset.composition = i;
+                            option.dataset.dock = compositionDock;
+                            option.dataset.dockNumber = car.dockNumber;
+                            
+                            let dtText = `DT ${car.dockNumber}`;
+                            if (i > 1) {
+                                dtText = `DT ${car.dockNumber}-${i}`;
+                            }
+                            
+                            let statusText = ' (Disponível)';
+                            if (composition && composition.status === 'in_use') {
+                                statusText = ' (Em Uso)';
+                                option.disabled = true;
+                            } else if (!composition) {
+                                statusText = ' (Disponível)';
+                            }
+                            
+                            option.textContent = `${dtText} - Doca ${compositionDock}${statusText}`;
+                            option.className = 'composition-option';
+                            
+                            selectCarInDock.appendChild(option);
+                        }
+                    }
+                    
+                    // Se não há composições disponíveis, verifica se pode remover o carro
+                    if (!hasAvailableCompositions) {
+                        // Verificar se TODAS as composições estão completed
+                        const allCompositions = Object.values(compositions).filter(comp => 
+                            comp.carId === carId
+                        );
+                        
+                        if (allCompositions.length === compositionsCount && 
+                            allCompositions.every(comp => comp.status === 'completed')) {
+                            // Todas as composições estão completed, remove o carro da doca
+                            removeCarFromDockAutomatically(carId);
+                        }
+                    }
                 }
-                
-                option.textContent = `DT ${car.dockNumber} - Doca ${car.dock}${statusText}`;
-                selectCarInDock.appendChild(option);
             });
         }
         
-        // Atualizar display de carros em doca
+        // Nova função para remover carro automaticamente quando todas as composições estiverem completed
+        function removeCarFromDockAutomatically(carId) {
+            console.log(`Removendo carro ${carId} automaticamente - todas as composições foram concluídas`);
+            
+            db.collection('carsInDock').doc(carId).delete()
+            .then(() => {
+                console.log("Carro removido automaticamente da doca");
+            })
+            .catch((error) => {
+                console.error("Erro ao remover carro automaticamente:", error);
+            });
+        }
+        
+        // Atualizar display de carros em doca - CORREÇÃO COMPLETA
         function updateCarInDockDisplay(carId, carData) {
             const carsList = document.getElementById('carsInDockList');
             
-            // Remover item existente se houver
-            const existingItem = document.getElementById(`car-${carId}`);
-            if (existingItem) {
-                existingItem.remove();
-            }
+            // Remover itens existentes deste carro
+            const existingItems = document.querySelectorAll(`[id^="car-${carId}"]`);
+            existingItems.forEach(item => {
+                item.remove();
+            });
             
             // Gerar composições
             const compositionsCount = carData.compositionsCount || 1;
+            const compositionDocks = carData.compositionDocks || {};
+            
+            let hasAvailableCompositions = false;
             
             for (let i = 1; i <= compositionsCount; i++) {
-                const carItem = document.createElement('div');
-                carItem.id = `car-${carId}-${i}`;
-                carItem.className = 'car-in-dock-item';
+                const compositionId = `${carId}_${i}`;
+                const composition = Object.values(compositions).find(comp => 
+                    comp.carId === carId && comp.compositionNumber === i
+                );
                 
-                // Definir o texto da DT baseado no número da composição
-                let dtText = `DT ${carData.dockNumber}`;
-                if (compositionsCount > 1 && i > 1) {
-                    dtText = `DT ${carData.dockNumber}-${i}`;
+                // Só mostra se a composição NÃO existe ou se existe e NÃO está completed
+                if (!composition || composition.status !== 'completed') {
+                    hasAvailableCompositions = true;
+                    
+                    const carItem = document.createElement('div');
+                    carItem.id = `car-${carId}-${i}`;
+                    carItem.className = 'car-in-dock-item';
+                    
+                    // Definir o texto da DT baseado no número da composição
+                    let dtText = `DT ${carData.dockNumber}`;
+                    if (i > 1) {
+                        dtText = `DT ${carData.dockNumber}-${i}`;
+                    }
+                    
+                    // Usar a doca específica da composição se disponível
+                    const compositionDock = compositionDocks[i] || carData.dock;
+                    
+                    let statusText = 'Disponível';
+                    let statusClass = 'status-available';
+                    
+                    if (composition) {
+                        if (composition.status === 'in_use') {
+                            statusText = 'Em Uso';
+                            statusClass = 'status-in-use';
+                        } else if (composition.status === 'completed') {
+                            statusText = 'Concluído';
+                            statusClass = 'status-completed';
+                        }
+                    }
+                    
+                    carItem.innerHTML = `
+                        <div>
+                            <strong>${dtText}</strong> - Doca ${compositionDock}
+                            <span class="composition-status ${statusClass}">${statusText}</span>
+                        </div>
+                        <div class="car-details">
+                            Chegou em: ${carData.arrivalTime.toDate().toLocaleString('pt-BR')}
+                        </div>
+                        <button class="remove-car-btn" data-car-id="${carId}" data-composition="${i}">Remover</button>
+                    `;
+                    
+                    carsList.appendChild(carItem);
+                    
+                    // Adicionar evento ao botão de remover
+                    const removeBtn = carItem.querySelector('.remove-car-btn');
+                    removeBtn.addEventListener('click', function() {
+                        const carIdToRemove = this.getAttribute('data-car-id');
+                        const composition = this.getAttribute('data-composition');
+                        removeCarFromDock(carIdToRemove, composition);
+                    });
                 }
+            }
+            
+            // Se não há composições disponíveis, verifica se pode remover o carro
+            if (!hasAvailableCompositions) {
+                const allCompositions = Object.values(compositions).filter(comp => 
+                    comp.carId === carId
+                );
                 
-                carItem.innerHTML = `
-                    <div><strong>${dtText}</strong> - Doca ${carData.dock}</div>
-                    <div class="car-details">
-                        Chegou em: ${carData.arrivalTime.toDate().toLocaleString('pt-BR')}
-                    </div>
-                    <button class="remove-car-btn" data-car-id="${carId}" data-composition="${i}">Remover</button>
-                `;
-                
-                carsList.appendChild(carItem);
-                
-                // Adicionar evento ao botão de remover
-                const removeBtn = carItem.querySelector('.remove-car-btn');
-                removeBtn.addEventListener('click', function() {
-                    const carIdToRemove = this.getAttribute('data-car-id');
-                    const composition = this.getAttribute('data-composition');
-                    removeCarFromDock(carIdToRemove, composition);
-                });
+                if (allCompositions.length === compositionsCount && 
+                    allCompositions.every(comp => comp.status === 'completed')) {
+                    // Todas as composições estão completed, remove o carro
+                    removeCarFromDockAutomatically(carId);
+                }
             }
         }
         
@@ -862,11 +1151,29 @@
             }
             
             const car = carsInDock[carId];
+            if (!car) {
+                alert('Carro não encontrado');
+                return;
+            }
+            
             const compositionsCount = car.compositionsCount || 1;
             
             if (compositionsCount === 1) {
                 // Se tem apenas uma composição, remove o carro completo
                 db.collection('carsInDock').doc(carId).delete()
+                .then(() => {
+                    // Remove também as composições associadas
+                    return db.collection('compositions')
+                        .where('carId', '==', carId)
+                        .get()
+                        .then((snapshot) => {
+                            const deletePromises = [];
+                            snapshot.forEach(doc => {
+                                deletePromises.push(doc.ref.delete());
+                            });
+                            return Promise.all(deletePromises);
+                        });
+                })
                 .then(() => {
                     alert('Carro removido da doca com sucesso!');
                 })
@@ -882,6 +1189,19 @@
                     // Se não sobrou composições, remove o carro
                     db.collection('carsInDock').doc(carId).delete()
                     .then(() => {
+                        // Remove também as composições associadas
+                        return db.collection('compositions')
+                            .where('carId', '==', carId)
+                            .get()
+                            .then((snapshot) => {
+                                const deletePromises = [];
+                                snapshot.forEach(doc => {
+                                    deletePromises.push(doc.ref.delete());
+                                });
+                                return Promise.all(deletePromises);
+                            });
+                    })
+                    .then(() => {
                         alert('Carro removido da doca com sucesso!');
                     })
                     .catch((error) => {
@@ -889,9 +1209,27 @@
                         alert('Erro ao remover carro: ' + error.message);
                     });
                 } else {
-                    // Atualiza o count de composições
+                    // Atualiza o count de composições e remove a composição específica
+                    const updatedCompositionDocks = {...car.compositionDocks};
+                    delete updatedCompositionDocks[composition];
+                    
                     db.collection('carsInDock').doc(carId).update({
-                        compositionsCount: newCount
+                        compositionsCount: newCount,
+                        compositionDocks: updatedCompositionDocks
+                    })
+                    .then(() => {
+                        // Remove a composição específica
+                        return db.collection('compositions')
+                            .where('carId', '==', carId)
+                            .where('compositionNumber', '==', parseInt(composition))
+                            .get()
+                            .then((snapshot) => {
+                                const deletePromises = [];
+                                snapshot.forEach(doc => {
+                                    deletePromises.push(doc.ref.delete());
+                                });
+                                return Promise.all(deletePromises);
+                            });
                     })
                     .then(() => {
                         alert('Composição removida com sucesso!');
@@ -904,24 +1242,81 @@
             }
         }
         
-        // Remover display de carro em doca
-        function removeCarInDockDisplay(carId) {
-            const carItems = document.querySelectorAll(`[id^="car-${carId}"]`);
-            carItems.forEach(item => {
-                item.remove();
-            });
-        }
-        
         // Evento para selecionar carro em doca
         selectCarInDock.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
             const carId = this.value;
+            
+            // Resetar campos
+            dockInput.value = '';
+            dockNumberInput.value = '';
+            selectComposition.innerHTML = '<option value="">Selecione a composição</option>';
+            compositionSelectionContainer.style.display = 'none';
+            compositionDockInfo.style.display = 'none';
+            
             if (carId && carsInDock[carId]) {
                 const car = carsInDock[carId];
-                dockInput.value = car.dock;
-                dockNumberInput.value = car.dockNumber;
+                const compositionsCount = car.compositionsCount || 1;
+                const compositionDocks = car.compositionDocks || {};
+                
+                // Preencher informações básicas
+                dockNumberInput.value = selectedOption.dataset.dockNumber || car.dockNumber;
+                
+                if (compositionsCount === 1) {
+                    // Carro simples
+                    dockInput.value = selectedOption.dataset.dock || car.dock;
+                    compositionSelectionContainer.style.display = 'none';
+                } else {
+                    // Bitrem - mostrar seleção de composição
+                    dockInput.value = selectedOption.dataset.dock || car.dock; // Doca principal
+                    compositionSelectionContainer.style.display = 'block';
+                    
+                    // Se já foi selecionada uma composição específica no dropdown principal
+                    if (selectedOption.dataset.composition) {
+                        const compositionNumber = selectedOption.dataset.composition;
+                        const compositionDock = selectedOption.dataset.dock;
+                        
+                        // Preencher automaticamente a composição
+                        selectComposition.innerHTML = `<option value="${compositionNumber}" selected>Composição ${compositionNumber}</option>`;
+                        selectedCompositionDock.value = compositionDock;
+                        compositionDockInfo.style.display = 'block';
+                    } else {
+                        // Mostrar todas as composições disponíveis
+                        for (let i = 1; i <= compositionsCount; i++) {
+                            const composition = Object.values(compositions).find(comp => 
+                                comp.carId === carId && comp.compositionNumber === i
+                            );
+                            
+                            if (!composition || composition.status !== 'completed') {
+                                const option = document.createElement('option');
+                                option.value = i;
+                                option.textContent = `Composição ${i}`;
+                                if (composition && composition.status === 'in_use') {
+                                    option.disabled = true;
+                                    option.textContent += ' (Em Uso)';
+                                }
+                                selectComposition.appendChild(option);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Evento para selecionar composição
+        selectComposition.addEventListener('change', function() {
+            const carId = selectCarInDock.value;
+            const compositionNumber = this.value;
+            
+            if (carId && compositionNumber && carsInDock[carId]) {
+                const car = carsInDock[carId];
+                const compositionDocks = car.compositionDocks || {};
+                const compositionDock = compositionDocks[compositionNumber] || car.dock;
+                
+                selectedCompositionDock.value = compositionDock;
+                compositionDockInfo.style.display = 'block';
             } else {
-                dockInput.value = '';
-                dockNumberInput.value = '';
+                compositionDockInfo.style.display = 'none';
             }
         });
         
@@ -955,7 +1350,7 @@
                 }, (error) => {
                     console.error("Erro ao carregar operações ativas:", error);
                     if (error.code === 'permission-denied') {
-                        console.log("Permissão negada para acessar operações. Verifique as regras de segurança.");
+                        console.log("Permissão negada para acessar operações. Verifique as regras do Firebase.");
                     }
                 });
         }
@@ -969,12 +1364,18 @@
             // Limpar selects
             pauseSelect.innerHTML = '<option value="">Selecione um carregamento em andamento</option>';
             addEmployeeSelect.innerHTML = '<option value="">Selecione um carregamento em andamento</option>';
-            finishOperationType.innerHTML = '<option value="">Selecione o tipo de operação</option>';
+            finishOperationType.innerHTML = '<option value="">Selecione a operação</option>';
             
             // Preencher selects com carregamentos ativos
             Object.keys(activeLoads).forEach(loadId => {
                 const load = activeLoads[loadId];
-                const optionText = `Doca ${load.dock} - DT ${load.dockNumber}`;
+                let optionText = `Doca ${load.dock} - DT ${load.dockNumber}`;
+                
+                // Adicionar informação da composição se existir
+                if (load.compositionNumber) {
+                    optionText += ` - Composição ${load.compositionNumber}`;
+                }
+                
                 const optionValue = loadId;
                 
                 // Para pausar/retomar
@@ -988,7 +1389,7 @@
                 
                 // Para finalizar operação
                 const finishOption = document.createElement('option');
-                finishOption.value = load.type;
+                finishOption.value = loadId;
                 finishOption.textContent = `${getOperationTypeName(load.type)} - ${optionText}`;
                 finishOperationType.appendChild(finishOption);
             });
@@ -1081,6 +1482,9 @@
                 <div class="load-details">
                     <div class="detail-item"><span class="detail-label">Doca:</span> ${loadData.dock || 'N/A'}</div>
                     <div class="detail-item"><span class="detail-label">DT:</span> ${loadData.dockNumber || 'N/A'}</div>
+                    ${loadData.compositionNumber ? `
+                    <div class="detail-item"><span class="detail-label">Composição:</span> ${loadData.compositionNumber}</div>
+                    ` : ''}
                     <div class="detail-item"><span class="detail-label">Veículo:</span> ${loadData.vehicleType || 'N/A'}</div>
                     <div class="detail-item"><span class="detail-label">Armazéns:</span> ${loadData.warehouses ? loadData.warehouses.join(', ') : 'N/A'}</div>
                 </div>
@@ -1250,7 +1654,7 @@
                         currentScannerInput.id === 'finishEmployeeCode' ||
                         currentScannerInput.id === 'pauseEmployeeCode' ||
                         currentScannerInput.id === 'newEmployeeCode') {
-                        checkEmployeeExists(code.data);
+                        checkEmployeeExistsAndValidate(code.data, currentScannerInput.id);
                     }
                 }
 
@@ -1283,8 +1687,8 @@
         // Evento para cancelar o scanner
         cancelScanBtn.addEventListener('click', pararScanner);
         
-        // Função para verificar se colaborador existe
-        function checkEmployeeExists(employeeCode) {
+        // Função para verificar se colaborador existe E pertence à mesma unidade
+        function checkEmployeeExistsAndValidate(employeeCode, inputId) {
             db.collection('colaboradores')
                 .where('codigo', '==', employeeCode)
                 .get()
@@ -1293,12 +1697,34 @@
                         // Colaborador não existe, abrir modal para cadastro
                         employeeIdInput.value = employeeCode;
                         employeeModal.style.display = 'block';
-                    } else {
-                        // Colaborador existe, preencher nome se disponível
-                        const employeeData = snapshot.docs[0].data();
-                        if (employeeData.nome) {
-                            console.log(`Colaborador: ${employeeData.nome}`);
+                        
+                        // Mostrar erro no campo específico
+                        if (inputId === 'employeeCode') {
+                            showValidationError('employeeCode', 'Colaborador não encontrado no sistema');
                         }
+                    } else {
+                        // Colaborador existe, verificar se pertence à mesma unidade
+                        const employeeData = snapshot.docs[0].data();
+                        const employeeUnit = employeeData.unidade;
+                        
+                        if (employeeUnit !== currentUnit) {
+                            // Colaborador pertence a outra unidade
+                            if (inputId === 'employeeCode') {
+                                showValidationError('employeeCode', `Colaborador pertence à unidade "${employeeUnit}" - Não pode operar na unidade "${currentUnit}"`);
+                            }
+                            alert(`ERRO: O colaborador ${employeeCode} pertence à unidade "${employeeUnit}", mas você está na unidade "${currentUnit}". Não é possível iniciar operação.`);
+                            return;
+                        }
+                        
+                        // Colaborador válido
+                        if (inputId === 'employeeCode') {
+                            showValidationSuccess('employeeCode', `Colaborador válido: ${employeeData.nome || employeeCode}`);
+                        }
+                        
+                        // Armazenar validação
+                        validatedEmployees[employeeCode] = employeeData;
+                        
+                        console.log(`Colaborador válido: ${employeeData.nome || employeeCode} - Unidade: ${employeeUnit}`);
                     }
                 })
                 .catch((error) => {
@@ -1308,8 +1734,135 @@
                     if (error.code === 'permission-denied') {
                         employeeIdInput.value = employeeCode;
                         employeeModal.style.display = 'block';
+                        if (inputId === 'employeeCode') {
+                            showValidationError('employeeCode', 'Erro de permissão ao consultar colaborador');
+                        }
+                    } else {
+                        if (inputId === 'employeeCode') {
+                            showValidationError('employeeCode', 'Erro na consulta do colaborador');
+                        }
                     }
                 });
+        }
+        
+        // Funções para mostrar validação
+        function showValidationError(field, message) {
+            const errorElement = document.getElementById(field + 'Error');
+            const successElement = document.getElementById(field + 'Success');
+            
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+            successElement.style.display = 'none';
+        }
+        
+        function showValidationSuccess(field, message) {
+            const errorElement = document.getElementById(field + 'Error');
+            const successElement = document.getElementById(field + 'Success');
+            
+            successElement.textContent = message;
+            successElement.style.display = 'block';
+            errorElement.style.display = 'none';
+        }
+        
+        function clearValidation(field) {
+            const errorElement = document.getElementById(field + 'Error');
+            const successElement = document.getElementById(field + 'Success');
+            
+            errorElement.style.display = 'none';
+            successElement.style.display = 'none';
+        }
+        
+        // Evento para validar colaborador principal quando digitar
+        document.getElementById('employeeCode').addEventListener('input', function() {
+            const employeeCode = this.value.trim();
+            clearValidation('employeeCode');
+            
+            if (employeeCode.length > 0) {
+                // Aguardar um pouco antes de validar (debounce)
+                setTimeout(() => {
+                    if (this.value.trim() === employeeCode) {
+                        checkEmployeeExistsAndValidate(employeeCode, 'employeeCode');
+                    }
+                }, 500);
+            }
+        });
+        
+        // Função para validar todos os colaboradores antes de iniciar operação
+        function validateAllEmployees(employeeCode, additionalLoaders, callback) {
+            const employeesToValidate = [employeeCode, ...additionalLoaders];
+            const validationResults = [];
+            
+            function validateNext(index) {
+                if (index >= employeesToValidate.length) {
+                    // Todos os colaboradores foram validados
+                    const allValid = validationResults.every(result => result.valid);
+                    callback(allValid, validationResults);
+                    return;
+                }
+                
+                const currentEmployee = employeesToValidate[index];
+                
+                // Se já foi validado anteriormente, usar o resultado
+                if (validatedEmployees[currentEmployee]) {
+                    validationResults.push({
+                        employeeCode: currentEmployee,
+                        valid: true,
+                        data: validatedEmployees[currentEmployee],
+                        message: 'Já validado'
+                    });
+                    validateNext(index + 1);
+                    return;
+                }
+                
+                // Validar no banco de dados
+                db.collection('colaboradores')
+                    .where('codigo', '==', currentEmployee)
+                    .get()
+                    .then((snapshot) => {
+                        if (snapshot.empty) {
+                            validationResults.push({
+                                employeeCode: currentEmployee,
+                                valid: false,
+                                data: null,
+                                message: 'Não encontrado no sistema'
+                            });
+                        } else {
+                            const employeeData = snapshot.docs[0].data();
+                            const employeeUnit = employeeData.unidade;
+                            
+                            if (employeeUnit !== currentUnit) {
+                                validationResults.push({
+                                    employeeCode: currentEmployee,
+                                    valid: false,
+                                    data: employeeData,
+                                    message: `Pertence à unidade "${employeeUnit}"`
+                                });
+                            } else {
+                                validationResults.push({
+                                    employeeCode: currentEmployee,
+                                    valid: true,
+                                    data: employeeData,
+                                    message: 'Válido'
+                                });
+                                // Armazenar para validações futuras
+                                validatedEmployees[currentEmployee] = employeeData;
+                            }
+                        }
+                        
+                        validateNext(index + 1);
+                    })
+                    .catch((error) => {
+                        validationResults.push({
+                            employeeCode: currentEmployee,
+                            valid: false,
+                            data: null,
+                            message: 'Erro na consulta'
+                        });
+                        validateNext(index + 1);
+                    });
+            }
+            
+            validateNext(0);
         }
         
         // Atualizar lista de funcionários no formulário de adicionar/remover
@@ -1430,6 +1983,15 @@
             .then(() => {
                 alert('Colaborador cadastrado com sucesso!');
                 employeeModal.style.display = 'none';
+                
+                // Limpar validação e recarregar
+                clearValidation('employeeCode');
+                document.getElementById('employeeCode').value = employeeCode;
+                
+                // Validar automaticamente o novo colaborador
+                setTimeout(() => {
+                    checkEmployeeExistsAndValidate(employeeCode, 'employeeCode');
+                }, 500);
             })
             .catch((error) => {
                 console.error("Erro ao salvar colaborador:", error);
@@ -1437,15 +1999,30 @@
             });
         });
         
-        // Registrar carro em doca
+        // Registrar carro em doca - ATUALIZADA PARA CRIAR COMPOSIÇÕES
         document.getElementById('submitCarInDockBtn').addEventListener('click', () => {
             const dockNumber = document.getElementById('carDockNumber').value;
-            const dock = document.getElementById('carDock').value;
+            const mainDock = document.getElementById('carDock').value;
             const compositionsCount = parseInt(document.getElementById('compositionsCount').value);
             
-            if (!dockNumber || !dock) {
-                alert('Por favor, preencha o número da DT e a doca');
+            if (!dockNumber || !mainDock) {
+                alert('Por favor, preencha o número da DT e a doca principal');
                 return;
+            }
+            
+            // Coletar docas das composições se houver mais de uma
+            const compositionDocks = {};
+            if (compositionsCount > 1) {
+                for (let i = 1; i <= compositionsCount; i++) {
+                    const dockSelect = document.getElementById(`compositionDock${i}`);
+                    if (!dockSelect || !dockSelect.value) {
+                        alert(`Por favor, selecione a doca para a composição ${i}`);
+                        return;
+                    }
+                    compositionDocks[i] = dockSelect.value;
+                }
+            } else {
+                compositionDocks[1] = mainDock;
             }
             
             // Verificar se já existe um carro com esta DT em doca
@@ -1463,19 +2040,42 @@
                     // Registrar o carro em doca
                     return db.collection('carsInDock').add({
                         dockNumber: dockNumber,
-                        dock: dock,
+                        dock: mainDock,
                         compositionsCount: compositionsCount,
+                        compositionDocks: compositionDocks,
                         unit: currentUnit,
                         arrivalTime: new Date(),
                         status: 'available',
                         registeredBy: currentUser.uid
                     });
                 })
+                .then((carRef) => {
+                    // Criar composições para cada parte do bitrem
+                    const compositionPromises = [];
+                    
+                    for (let i = 1; i <= compositionsCount; i++) {
+                        const compositionPromise = db.collection('compositions').add({
+                            carId: carRef.id,
+                            dockNumber: dockNumber,
+                            dock: compositionDocks[i] || mainDock,
+                            compositionNumber: i,
+                            unit: currentUnit,
+                            status: 'available',
+                            createdAt: new Date(),
+                            createdBy: currentUser.uid
+                        });
+                        compositionPromises.push(compositionPromise);
+                    }
+                    
+                    return Promise.all(compositionPromises);
+                })
                 .then(() => {
                     alert('Carro registrado em doca com sucesso!');
                     document.getElementById('carDockNumber').value = '';
                     document.getElementById('carDock').value = '';
                     document.getElementById('compositionsCount').value = '1';
+                    compositionsContainer.style.display = 'none';
+                    compositionDocks.innerHTML = '';
                 })
                 .catch((error) => {
                     console.error("Erro ao registrar carro em doca:", error);
@@ -1483,7 +2083,7 @@
                 });
         });
         
-        // Iniciar operação
+        // Iniciar operação - ATUALIZADA PARA USAR COMPOSIÇÕES
         document.getElementById('submitOperationBtn').addEventListener('click', () => {
             const employeeCode = document.getElementById('employeeCode').value;
             const operationType = document.getElementById('operationType').value;
@@ -1492,11 +2092,15 @@
             const dockNumber = document.getElementById('dockNumber').value;
             const vehicleType = document.getElementById('vehicleType').value;
             const keepCarInDock = document.getElementById('simultaneousLoading').checked;
+            const compositionNumber = document.getElementById('selectComposition').value;
             
             // Coletar armazéns selecionados
             const selectedWarehouses = Array.from(warehouseCheckboxes)
                 .filter(cb => cb.checked)
-                .map(cb => cb.nextElementSibling.textContent);
+                .map(cb => {
+                    const label = cb.nextElementSibling.textContent;
+                    return label;
+                });
             
             // Coletar carregadores adicionais
             const additionalLoaders = [];
@@ -1513,6 +2117,74 @@
                 return;
             }
             
+            // Determinar a doca correta
+            let finalDock = dock;
+            const selectedOption = selectCarInDock.options[selectCarInDock.selectedIndex];
+            const carInDock = carsInDock[carInDockId];
+            
+            if (carInDock && carInDock.compositionsCount > 1) {
+                if (selectedOption.dataset.composition) {
+                    // Usar a doca da composição selecionada no dropdown principal
+                    finalDock = selectedOption.dataset.dock;
+                } else if (compositionNumber) {
+                    // Usar a doca da composição selecionada no select de composição
+                    const compositionDocks = carInDock.compositionDocks || {};
+                    finalDock = compositionDocks[compositionNumber] || dock;
+                } else {
+                    alert('Por favor, selecione a composição para este veículo');
+                    return;
+                }
+            }
+            
+            // VALIDAÇÃO DOS COLABORADORES
+            validateAllEmployees(employeeCode, additionalLoaders, (allValid, results) => {
+                if (!allValid) {
+                    let errorMessage = 'ERRO: Validação de colaboradores falhou:\n\n';
+                    results.forEach(result => {
+                        if (!result.valid) {
+                            if (result.message.includes('unidade')) {
+                                errorMessage += `• ${result.employeeCode}: ${result.message}\n`;
+                            } else if (result.message.includes('Não encontrado')) {
+                                errorMessage += `• ${result.employeeCode}: Não encontrado no sistema\n`;
+                            } else {
+                                errorMessage += `• ${result.employeeCode}: ${result.message}\n`;
+                            }
+                        }
+                    });
+                    errorMessage += `\nUnidade atual: ${currentUnit}`;
+                    alert(errorMessage);
+                    return;
+                }
+                
+                // Todos os colaboradores são válidos, continuar com a operação
+                proceedWithOperation(
+                    employeeCode,
+                    operationType,
+                    carInDockId,
+                    finalDock,
+                    dockNumber,
+                    vehicleType,
+                    selectedWarehouses,
+                    additionalLoaders,
+                    keepCarInDock,
+                    compositionNumber || selectedOption.dataset.composition
+                );
+            });
+        });
+        
+        // Função separada para prosseguir com a operação após validação
+        function proceedWithOperation(
+            employeeCode,
+            operationType,
+            carInDockId,
+            dock,
+            dockNumber,
+            vehicleType,
+            selectedWarehouses,
+            additionalLoaders,
+            keepCarInDock,
+            compositionNumber = null
+        ) {
             // Verificar se há atraso no início do carregamento
             const carInDock = carsInDock[carInDockId];
             if (carInDock) {
@@ -1526,12 +2198,13 @@
                         employeeCode,
                         operationType,
                         carInDockId,
-                        dock,
+                        dock: dock,
                         dockNumber,
                         vehicleType,
                         selectedWarehouses,
                         additionalLoaders,
-                        keepCarInDock
+                        keepCarInDock,
+                        compositionNumber: compositionNumber
                     };
                     
                     delayModal.style.display = 'flex';
@@ -1549,11 +2222,12 @@
                 vehicleType,
                 selectedWarehouses,
                 additionalLoaders,
-                keepCarInDock
+                keepCarInDock,
+                compositionNumber
             );
-        });
+        }
         
-        // Função para criar a operação no banco de dados
+        // Função para criar a operação no banco de dados - ATUALIZADA PARA COMPOSIÇÕES
         function createOperation(
             employeeCode,
             operationType,
@@ -1564,78 +2238,95 @@
             selectedWarehouses,
             additionalLoaders,
             keepCarInDock,
+            compositionNumber = null,
             delayReason = null
         ) {
-            // Verificar se o colaborador existe
-            db.collection('colaboradores')
-                .where('codigo', '==', employeeCode)
-                .get()
-                .then((snapshot) => {
-                    let employeeName = '';
-                    
-                    if (!snapshot.empty) {
-                        const employeeData = snapshot.docs[0].data();
-                        employeeName = employeeData.nome || '';
-                    }
-                    
-                    // Criar a operação no Firestore
-                    return db.collection('operations').add({
-                        employeeCode: employeeCode,
-                        employeeName: employeeName,
-                        additionalLoaders: additionalLoaders,
-                        type: operationType,
-                        dock: dock,
-                        dockNumber: dockNumber,
-                        vehicleType: vehicleType,
-                        warehouses: selectedWarehouses,
-                        unit: currentUnit,
-                        startTime: new Date(),
-                        status: 'active',
-                        createdBy: currentUser.uid,
-                        createdAt: new Date(),
-                        carInDockId: carInDockId, // Referência ao carro em doca
-                        keepCarInDock: keepCarInDock,
-                        delayReason: delayReason
-                    });
-                })
-                .then((operationRef) => {
-                    // Se NÃO for para manter o carro em doca, remove-o
+            // Buscar dados dos colaboradores validados
+            const employeeData = validatedEmployees[employeeCode] || {};
+            const employeeName = employeeData.nome || '';
+            
+            // Criar a operação no Firestore
+            db.collection('operations').add({
+                employeeCode: employeeCode,
+                employeeName: employeeName,
+                additionalLoaders: additionalLoaders,
+                type: operationType,
+                dock: dock,
+                dockNumber: dockNumber,
+                vehicleType: vehicleType,
+                warehouses: selectedWarehouses,
+                unit: currentUnit,
+                startTime: new Date(),
+                status: 'active',
+                createdBy: currentUser.uid,
+                createdAt: new Date(),
+                carInDockId: carInDockId,
+                keepCarInDock: keepCarInDock,
+                compositionNumber: compositionNumber,
+                delayReason: delayReason
+            })
+            .then((operationRef) => {
+                // Se for um bitrem, atualizar a composição específica
+                if (compositionNumber) {
+                    // Encontrar a composição correspondente
+                    return db.collection('compositions')
+                        .where('carId', '==', carInDockId)
+                        .where('compositionNumber', '==', parseInt(compositionNumber))
+                        .get()
+                        .then((snapshot) => {
+                            if (!snapshot.empty) {
+                                const compositionDoc = snapshot.docs[0];
+                                return compositionDoc.ref.update({
+                                    status: 'in_use',
+                                    operationId: operationRef.id,
+                                    updatedAt: new Date()
+                                });
+                            }
+                            return Promise.resolve();
+                        });
+                } else {
+                    // Para carros simples
                     if (!keepCarInDock) {
-                        return db.collection('carsInDock').doc(carInDockId).delete();
-                    } else {
-                        // Se for para manter, atualiza o status para uso parcial
                         return db.collection('carsInDock').doc(carInDockId).update({
-                            status: 'in_use_partial',
-                            operationId: operationRef.id
+                            status: 'in_use'
+                        });
+                    } else {
+                        return db.collection('carsInDock').doc(carInDockId).update({
+                            status: 'in_use_partial'
                         });
                     }
-                })
-                .then(() => {
-                    alert('Operação iniciada com sucesso!');
-                    operationForm.style.display = 'none';
-                    
-                    // Limpar formulário
-                    document.getElementById('employeeCode').value = '';
-                    document.getElementById('selectCarInDock').value = '';
-                    document.getElementById('dock').value = '';
-                    document.getElementById('dockNumber').value = '';
-                    document.getElementById('vehicleType').value = '';
-                    document.getElementById('simultaneousLoading').checked = false;
-                    
-                    // Limpar seleção de armazéns
-                    warehouseCheckboxes.forEach(cb => cb.checked = false);
-                    updateSelectedWarehouses();
-                    
-                    // Limpar carregadores adicionais
-                    document.getElementById('additionalLoaders').innerHTML = '';
-                    
-                    // Resetar operação pendente
-                    pendingOperationWithDelay = null;
-                })
-                .catch((error) => {
-                    console.error("Erro ao iniciar operação:", error);
-                    alert('Erro ao iniciar operação: ' + error.message);
-                });
+                }
+            })
+            .then(() => {
+                alert('Operação iniciada com sucesso!');
+                operationForm.style.display = 'none';
+                
+                // Limpar formulário
+                document.getElementById('employeeCode').value = '';
+                document.getElementById('selectCarInDock').value = '';
+                document.getElementById('dock').value = '';
+                document.getElementById('dockNumber').value = '';
+                document.getElementById('vehicleType').value = '';
+                document.getElementById('simultaneousLoading').checked = false;
+                document.getElementById('selectComposition').selectedIndex = 0;
+                compositionSelectionContainer.style.display = 'none';
+                compositionDockInfo.style.display = 'none';
+                clearValidation('employeeCode');
+                
+                // Limpar seleção de armazéns
+                warehouseCheckboxes.forEach(cb => cb.checked = false);
+                updateSelectedWarehouses();
+                
+                // Limpar carregadores adicionais
+                document.getElementById('additionalLoaders').innerHTML = '';
+                
+                // Resetar operação pendente
+                pendingOperationWithDelay = null;
+            })
+            .catch((error) => {
+                console.error("Erro ao iniciar operação:", error);
+                alert('Erro ao iniciar operação: ' + error.message);
+            });
         }
         
         // Eventos para o modal de atraso
@@ -1676,42 +2367,42 @@
                     pendingOperationWithDelay.selectedWarehouses,
                     pendingOperationWithDelay.additionalLoaders,
                     pendingOperationWithDelay.keepCarInDock,
+                    pendingOperationWithDelay.compositionNumber,
                     finalDelayReason
                 );
             }
         });
         
-        // Finalizar operação
+        // Finalizar operação - ATUALIZADA PARA COMPOSIÇÕES
         document.getElementById('submitFinishBtn').addEventListener('click', () => {
             const employeeCode = document.getElementById('finishEmployeeCode').value;
-            const operationType = document.getElementById('finishOperationType').value;
+            const operationId = document.getElementById('finishOperationType').value;
             const materialMix = document.getElementById('materialMix').value;
             const tonsLoaded = document.getElementById('tonsLoaded').value;
             const observation = document.getElementById('observation').value;
             
             // Validação básica
-            if (!employeeCode || !materialMix || !tonsLoaded) {
+            if (!employeeCode || !operationId || !materialMix || !tonsLoaded) {
                 alert('Por favor, preencha todos os campos obrigatórios');
                 return;
             }
             
-            // Encontrar a operação correspondente ao funcionário
-            let operationId = null;
-            let carInDockId = null;
-            
-            for (const id in activeLoads) {
-                if (activeLoads[id].employeeCode === employeeCode || 
-                    (activeLoads[id].additionalLoaders && activeLoads[id].additionalLoaders.includes(employeeCode))) {
-                    operationId = id;
-                    carInDockId = activeLoads[id].carInDockId;
-                    break;
-                }
-            }
-            
-            if (!operationId) {
-                alert('Nenhuma operação encontrada para este funcionário');
+            const operation = activeLoads[operationId];
+            if (!operation) {
+                alert('Operação não encontrada');
                 return;
             }
+            
+            // Verificar se o funcionário pertence à operação
+            if (operation.employeeCode !== employeeCode && 
+                (!operation.additionalLoaders || !operation.additionalLoaders.includes(employeeCode))) {
+                alert('Este funcionário não pertence à operação selecionada');
+                return;
+            }
+            
+            const carInDockId = operation.carInDockId;
+            const keepCarInDock = operation.keepCarInDock;
+            const compositionNumber = operation.compositionNumber;
             
             // Atualizar a operação no Firestore
             db.collection('operations').doc(operationId).update({
@@ -1723,9 +2414,56 @@
                 completedBy: currentUser.uid
             })
             .then(() => {
-                // Se havia um carro em doca associado e não estava sendo mantido, remove-o
-                if (carInDockId && !activeLoads[operationId].keepCarInDock) {
-                    return db.collection('carsInDock').doc(carInDockId).delete();
+                // Se for uma composição de bitrem, marcar como concluída
+                if (compositionNumber) {
+                    return db.collection('compositions')
+                        .where('carId', '==', carInDockId)
+                        .where('compositionNumber', '==', parseInt(compositionNumber))
+                        .get()
+                        .then((snapshot) => {
+                            if (!snapshot.empty) {
+                                const compositionDoc = snapshot.docs[0];
+                                return compositionDoc.ref.update({
+                                    status: 'completed',
+                                    completedAt: new Date()
+                                });
+                            }
+                            return Promise.resolve();
+                        })
+                        .then(() => {
+                            // Verificar se todas as composições foram concluídas
+                            return db.collection('compositions')
+                                .where('carId', '==', carInDockId)
+                                .where('status', 'in', ['available', 'in_use'])
+                                .get();
+                        })
+                        .then((snapshot) => {
+                            if (snapshot.empty) {
+                                // Todas as composições foram concluídas, remover o carro
+                                return db.collection('carsInDock').doc(carInDockId).delete();
+                            }
+                            return Promise.resolve();
+                        });
+                } else {
+                    // Para carros simples
+                    if (!keepCarInDock) {
+                        return db.collection('carsInDock').doc(carInDockId).delete();
+                    } else {
+                        // Verificar se ainda há operações usando este carro
+                        return db.collection('operations')
+                            .where('carInDockId', '==', carInDockId)
+                            .where('status', 'in', ['active', 'paused'])
+                            .get()
+                            .then((snapshot) => {
+                                if (snapshot.empty) {
+                                    // Se não há mais operações, remove o carro da doca
+                                    return db.collection('carsInDock').doc(carInDockId).delete();
+                                } else {
+                                    // Se ainda há operações, mantém o carro
+                                    return Promise.resolve();
+                                }
+                            });
+                    }
                 }
             })
             .then(() => {
@@ -1737,6 +2475,7 @@
                 document.getElementById('materialMix').value = '';
                 document.getElementById('tonsLoaded').value = '';
                 document.getElementById('observation').value = '';
+                document.getElementById('finishOperationType').selectedIndex = 0;
             })
             .catch((error) => {
                 console.error("Erro ao finalizar operação:", error);
@@ -1936,6 +2675,20 @@
                 pendingOperationWithDelay = null;
             }
         });
+
+        // Função de debug para composições
+        function debugCompositions() {
+            console.log('=== DEBUG COMPOSITIONS ===');
+            console.log('Composições carregadas:', Object.values(compositions));
+            console.log('Carros em doca:', carsInDock);
+            
+            Object.values(compositions).forEach(comp => {
+                console.log(`Composição: DT ${comp.dockNumber}-${comp.compositionNumber}, Status: ${comp.status}, CarId: ${comp.carId}`);
+            });
+        }
+
+        // Torna a função de debug disponível globalmente
+        window.debugCompositions = debugCompositions;
     </script>
 </body>
 </html>
