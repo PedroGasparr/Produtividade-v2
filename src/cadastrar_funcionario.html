@@ -55,6 +55,10 @@
             Ocorreu um erro ao cadastrar o funcionário. Verifique os dados e tente novamente.
         </div>
         
+        <div class="validation-message" id="validationMessage">
+            <!-- Mensagens de validação em tempo real -->
+        </div>
+        
         <div class="form-container">
             <form id="employeeForm">
                 <div class="form-group">
@@ -64,13 +68,16 @@
                 
                 <div class="form-group">
                     <label for="employeeCode">Código do Funcionário</label>
-                    <input type="text" id="employeeCode" placeholder="Ex: GZL-EO-1234" disabled required>
+                    <input type="text" id="employeeCode" placeholder="Ex: GZL-EO-1234" required disabled>
                     <small>Formato: SIGLAUNIDADE-EO-NÚMERO (Ex: GZL-EO-1234)</small>
+                    <div class="code-validation" id="codeValidation">
+                        <!-- Status da validação do código -->
+                    </div>
                 </div>
                 
                 <div class="form-group">
                     <label for="employeeUnit">Unidade</label>
-                    <input type="text" id="employeeUnit" readonly>
+                    <input type="text" id="employeeUnit" readonly disabled>
                 </div>
                 
                 <div class="form-group">
@@ -96,7 +103,8 @@
                     </select>
                 </div>
                 
-                <button type="submit" class="submit-button">Cadastrar Funcionário</button>
+                <button type="submit" class="submit-button" id="submitBtn">Cadastrar Funcionário</button>
+                <button type="button" class="generate-code-button" id="generateCodeBtn">Gerar Código Automático</button>
             </form>
         </div>
         
@@ -131,10 +139,15 @@
         const userNameElement = document.querySelector('.user-name');
         const employeeForm = document.getElementById('employeeForm');
         const employeeUnitInput = document.getElementById('employeeUnit');
+        const employeeCodeInput = document.getElementById('employeeCode');
         const qrPreview = document.getElementById('qrPreview');
         const downloadBtn = document.getElementById('downloadBtn');
         const successMessage = document.getElementById('successMessage');
         const errorMessage = document.getElementById('errorMessage');
+        const validationMessage = document.getElementById('validationMessage');
+        const codeValidation = document.getElementById('codeValidation');
+        const submitBtn = document.getElementById('submitBtn');
+        const generateCodeBtn = document.getElementById('generateCodeBtn');
         
         // Estado da aplicação
         let currentUser = null;
@@ -142,6 +155,8 @@
         let currentUnit = '';
         let currentEmployeeCode = '';
         let currentEmployeeData = null;
+        let isCodeValid = false;
+        let codeValidationTimeout = null;
         
         // Verificar autenticação
         auth.onAuthStateChanged((user) => {
@@ -158,6 +173,9 @@
                         currentUnit = userData.unit;
                         userUnitInfo.textContent = `Unidade atual: ${currentUnit}`;
                         employeeUnitInput.value = currentUnit;
+                        
+                        // Gerar código automático inicial
+                        generateEmployeeCode();
                     } else {
                         console.error("Documento do usuário não encontrado");
                     }
@@ -242,6 +260,7 @@
         function showSuccess() {
             successMessage.style.display = 'block';
             errorMessage.style.display = 'none';
+            validationMessage.style.display = 'none';
         }
         
         // Mostrar mensagem de erro
@@ -249,13 +268,106 @@
             errorMessage.textContent = message || 'Ocorreu um erro ao cadastrar o funcionário. Verifique os dados e tente novamente.';
             errorMessage.style.display = 'block';
             successMessage.style.display = 'none';
+            validationMessage.style.display = 'none';
+        }
+        
+        // Mostrar mensagem de validação
+        function showValidation(message, type = 'info') {
+            validationMessage.textContent = message;
+            validationMessage.className = `validation-message ${type}`;
+            validationMessage.style.display = 'block';
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+        }
+        
+        // Mostrar status da validação do código
+        function showCodeValidation(message, type = 'info') {
+            codeValidation.textContent = message;
+            codeValidation.className = `code-validation ${type}`;
+            codeValidation.style.display = 'block';
+        }
+        
+        // Esconder validação do código
+        function hideCodeValidation() {
+            codeValidation.style.display = 'none';
         }
         
         // Validar formato do código do funcionário
-        function validateEmployeeCode(code) {
+        function validateEmployeeCodeFormat(code) {
             // Verificar se o código segue o padrão: SIGLAUNIDADE-EO-NÚMERO
             const pattern = /^[A-Z]{3}-EO-\d{4,5}$/;
             return pattern.test(code);
+        }
+        
+        // Verificar se código já existe no sistema
+        function checkEmployeeCodeExists(code) {
+            if (!code || !validateEmployeeCodeFormat(code)) {
+                return Promise.resolve(false);
+            }
+            
+            return db.collection('colaboradores')
+                .where('codigo', '==', code)
+                .get()
+                .then((snapshot) => {
+                    return !snapshot.empty;
+                })
+                .catch((error) => {
+                    console.error("Erro ao verificar código:", error);
+                    return false;
+                });
+        }
+        
+        // Validar código em tempo real
+        function validateEmployeeCode(code) {
+            // Limpar timeout anterior
+            if (codeValidationTimeout) {
+                clearTimeout(codeValidationTimeout);
+            }
+            
+            // Validar formato
+            if (!validateEmployeeCodeFormat(code)) {
+                showCodeValidation('❌ Formato inválido. Use: SIGLAUNIDADE-EO-NÚMERO', 'error');
+                isCodeValid = false;
+                updateSubmitButton();
+                return;
+            }
+            
+            // Mostrar mensagem de verificação
+            showCodeValidation('⏳ Verificando disponibilidade...', 'info');
+            
+            // Debounce para evitar muitas consultas
+            codeValidationTimeout = setTimeout(() => {
+                checkEmployeeCodeExists(code)
+                    .then((exists) => {
+                        if (exists) {
+                            showCodeValidation('❌ Código já está em uso', 'error');
+                            isCodeValid = false;
+                        } else {
+                            showCodeValidation('✅ Código disponível', 'success');
+                            isCodeValid = true;
+                        }
+                        updateSubmitButton();
+                    })
+                    .catch(() => {
+                        showCodeValidation('⚠️ Erro na verificação', 'warning');
+                        isCodeValid = false;
+                        updateSubmitButton();
+                    });
+            }, 500);
+        }
+        
+        // Atualizar estado do botão de envio
+        function updateSubmitButton() {
+            const employeeName = document.getElementById('employeeName').value.trim();
+            const employeeRole = document.getElementById('employeeRole').value;
+            
+            if (employeeName && employeeRole && isCodeValid) {
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+            } else {
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.6';
+            }
         }
         
         // Gerar código automático baseado na unidade
@@ -268,40 +380,49 @@
             // Gerar número aleatório de 4 dígitos
             const randomNumber = Math.floor(1000 + Math.random() * 9000);
             
-            return `${unitPrefix}-EO-${randomNumber}`;
+            const newCode = `${unitPrefix}-EO-${randomNumber}`;
+            employeeCodeInput.value = newCode;
+            
+            // Validar o código gerado
+            validateEmployeeCode(newCode);
+            
+            return newCode;
         }
         
-        // Preencher automaticamente o código do funcionário
-        function autoFillEmployeeCode() {
-            const codeInput = document.getElementById('employeeCode');
-            if (!codeInput.value) {
-                codeInput.value = generateEmployeeCode();
-            }
-        }
+        // Evento de input no código do funcionário
+        employeeCodeInput.addEventListener('input', function() {
+            const code = this.value.trim();
+            validateEmployeeCode(code);
+            updateSubmitButton();
+        });
+        
+        // Evento de input no nome do funcionário
+        document.getElementById('employeeName').addEventListener('input', updateSubmitButton);
+        
+        // Evento de change no cargo
+        document.getElementById('employeeRole').addEventListener('change', updateSubmitButton);
+        
+        // Evento de gerar código automático
+        generateCodeBtn.addEventListener('click', function() {
+            generateEmployeeCode();
+        });
         
         // Evento de envio do formulário
         employeeForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
             // Obter valores do formulário
-            const employeeName = document.getElementById('employeeName').value;
-            const employeeCode = document.getElementById('employeeCode').value;
+            const employeeName = document.getElementById('employeeName').value.trim();
+            const employeeCode = document.getElementById('employeeCode').value.trim();
             const employeeRole = document.getElementById('employeeRole').value;
             const employeeStatus = document.getElementById('employeeStatus').value;
             
-            // Validar código do funcionário
-            if (!validateEmployeeCode(employeeCode)) {
-                showError('Formato do código inválido. Use o formato: SIGLAUNIDADE-EO-NÚMERO (Ex: GZL-EO-1234)');
-                return;
-            }
-            
-            // Verificar se o funcionário já existe
-            db.collection('colaboradores')
-                .where('codigo', '==', employeeCode)
-                .get()
-                .then((snapshot) => {
-                    if (!snapshot.empty) {
-                        showError('Já existe um funcionário com este código.');
+            // Validar se o código ainda está disponível (dupla verificação)
+            checkEmployeeCodeExists(employeeCode)
+                .then((exists) => {
+                    if (exists) {
+                        showError('Este código já está em uso. Por favor, gere um novo código.');
+                        validateEmployeeCode(employeeCode); // Atualizar a validação visual
                         return;
                     }
                     
@@ -317,6 +438,8 @@
                     });
                 })
                 .then((docRef) => {
+                    if (!docRef) return; // Se retornou undefined (código já existe)
+                    
                     // Salvar dados do funcionário para uso posterior
                     currentEmployeeCode = employeeCode;
                     currentEmployeeData = {
@@ -341,16 +464,20 @@
                     
                     // Limpar formulário (exceto unidade)
                     document.getElementById('employeeName').value = '';
-                    document.getElementById('employeeCode').value = '';
                     document.getElementById('employeeRole').value = '';
                     document.getElementById('employeeStatus').value = 'ativo';
                     
                     // Gerar novo código automático
-                    autoFillEmployeeCode();
+                    generateEmployeeCode();
+                    
+                    // Resetar validação
+                    isCodeValid = false;
+                    updateSubmitButton();
+                    hideCodeValidation();
                 })
                 .catch((error) => {
                     console.error("Erro ao cadastrar funcionário:", error);
-                    showError();
+                    showError('Erro ao cadastrar funcionário. Tente novamente.');
                 });
         });
         
@@ -385,12 +512,103 @@
                 });
             }
         });
-        
-        // Inicializar o código do funcionário quando a página carregar
-        window.addEventListener('DOMContentLoaded', function() {
-            // Aguardar um pouco para que a unidade seja carregada
-            setTimeout(autoFillEmployeeCode, 1000);
-        });
     </script>
+
+    <style>
+        /* Estilos para as novas funcionalidades de validação */
+        .validation-message {
+            display: none;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+        
+        .validation-message.info {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            color: #1976d2;
+        }
+        
+        .validation-message.success {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            color: #2e7d32;
+        }
+        
+        .validation-message.error {
+            background: #ffebee;
+            border: 1px solid #f44336;
+            color: #c62828;
+        }
+        
+        .validation-message.warning {
+            background: #fff3e0;
+            border: 1px solid #ff9800;
+            color: #ef6c00;
+        }
+        
+        .code-validation {
+            display: none;
+            margin-top: 5px;
+            font-size: 0.9em;
+            font-weight: 500;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        
+        .code-validation.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border: 1px solid #4caf50;
+        }
+        
+        .code-validation.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #f44336;
+        }
+        
+        .code-validation.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #2196f3;
+        }
+        
+        .code-validation.warning {
+            background: #fff3e0;
+            color: #ef6c00;
+            border: 1px solid #ff9800;
+        }
+        
+        .generate-code-button {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+            transition: background-color 0.2s;
+        }
+        
+        .generate-code-button:hover {
+            background: #f57c00;
+        }
+        
+        .submit-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .submit-button:disabled:hover {
+            background-color: #cccccc;
+        }
+        
+        .form-group {
+            position: relative;
+        }
+    </style>
 </body>
 </html>
