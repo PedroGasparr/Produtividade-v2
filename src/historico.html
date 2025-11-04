@@ -8,9 +8,204 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- Biblioteca para gerar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <link rel="stylesheet" href="../css/historico.css">
     <style>
-        /* Estilos adicionais para o botão de mudança de unidade */
+        /* Estilos para os cards de resumo */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .summary-card {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 4px solid #4a6da7;
+            transition: transform 0.3s;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .summary-card h3 {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .summary-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .summary-card .sub-value {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Cards específicos para tipos de operação */
+        .summary-card.carregamento {
+            border-left-color: #4CAF50;
+        }
+
+        .summary-card.carregamento-paletizado {
+            border-left-color: #2196F3;
+        }
+
+        .summary-card.descarga {
+            border-left-color: #FF9800;
+        }
+
+        .summary-card.separacao {
+            border-left-color: #9C27B0;
+        }
+        
+        /* Estilos para a tabela */
+        .table-container {
+            overflow-x: auto;
+            width: 100%;
+        }
+
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+        
+        .history-table th,
+        .history-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+        }
+        
+        .history-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+            position: sticky;
+            top: 0;
+        }
+        
+        .history-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        /* Status badges */
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        
+        .status-completed {
+            background-color: #4caf50;
+            color: white;
+        }
+        
+        .status-active {
+            background-color: #2196f3;
+            color: white;
+        }
+        
+        .status-paused {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        /* Botões de ação */
+        .edit-btn {
+            background: #4a6da7;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .edit-btn:hover {
+            background: #3a5a8f;
+        }
+
+        .expand-btn {
+            background: none;
+            border: none;
+            color: #4a6da7;
+            cursor: pointer;
+            font-size: 14px;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Linha de detalhes */
+        .details-row {
+            background-color: #fafafa;
+        }
+        
+        .details-content {
+            padding: 20px;
+            border-top: 1px solid #eee;
+        }
+        
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .detail-group {
+            margin-bottom: 15px;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #2c3e50;
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .detail-value {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        /* Botão de PDF */
+        .pdf-btn {
+            background-color: #d32f2f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .pdf-btn:hover {
+            background-color: #b71c1c;
+        }
+        
+        /* Botão de mudança de unidade */
         .change-unit-btn {
             background-color: #4a6da7;
             color: white;
@@ -42,11 +237,11 @@
         .unit-modal-content {
             background-color: #fefefe;
             margin: 10% auto;
-            padding: 20px;
+            padding: 25px;
             border-radius: 8px;
             width: 400px;
             max-width: 90%;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
         
         .unit-modal-header {
@@ -54,20 +249,21 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
-            padding-bottom: 10px;
+            padding-bottom: 15px;
             border-bottom: 1px solid #eee;
         }
         
         .unit-modal-title {
             font-size: 18px;
             font-weight: bold;
-            color: #333;
+            color: #2c3e50;
         }
         
         .unit-close-btn {
             font-size: 24px;
             cursor: pointer;
             color: #777;
+            transition: color 0.3s;
         }
         
         .unit-close-btn:hover {
@@ -76,7 +272,7 @@
         
         .unit-select {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             margin-bottom: 20px;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -90,16 +286,21 @@
         }
         
         .unit-cancel-btn, .unit-confirm-btn {
-            padding: 8px 16px;
+            padding: 10px 20px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
+            transition: all 0.3s;
         }
         
         .unit-cancel-btn {
             background-color: #f0f0f0;
             color: #333;
+        }
+
+        .unit-cancel-btn:hover {
+            background-color: #e0e0e0;
         }
         
         .unit-confirm-btn {
@@ -109,6 +310,122 @@
         
         .unit-confirm-btn:hover {
             background-color: #3a5a8f;
+        }
+
+        /* Modal de edição */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 8px;
+            width: 500px;
+            max-width: 90%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 25px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .close-btn {
+            font-size: 24px;
+            cursor: pointer;
+            color: #777;
+            transition: color 0.3s;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .modal-body {
+            padding: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #4a6da7;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 20px 25px;
+            border-top: 1px solid #eee;
+        }
+
+        .cancel-btn, .save-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .cancel-btn {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        .cancel-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        .save-btn {
+            background-color: #4a6da7;
+            color: white;
+        }
+
+        .save-btn:hover {
+            background-color: #3a5a8f;
+        }
+
+        @media (max-width: 768px) {
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </head>
@@ -156,7 +473,7 @@
             <div class="error-message" id="passwordError"></div>
         </div>
         
-        <div class="filters-container" id="filtersContainer">
+        <div class="filters-container" id="filtersContainer" style="display: none;">
             <div class="filters-header">
                 <h2 class="filters-title">Filtros</h2>
             </div>
@@ -210,10 +527,69 @@
             <div class="filter-buttons">
                 <button id="clearFilters" class="filter-btn clear-btn">Limpar Filtros</button>
                 <button id="applyFilters" class="filter-btn apply-btn">Aplicar Filtros</button>
+                <button id="generatePDF" class="pdf-btn">Gerar PDF do Dia</button>
+            </div>
+        </div>
+
+        <!-- Cards de Resumo -->
+        <div class="summary-cards" id="summaryCards" style="display: none;">
+            <div class="summary-card">
+                <h3>Tempo Total</h3>
+                <div class="value" id="totalTime">0h 0min</div>
+                <div class="sub-value" id="totalMinutes">0 minutos</div>
+            </div>
+            
+            <div class="summary-card">
+                <h3>Tempo Médio Geral</h3>
+                <div class="value" id="avgTime">0h 0min</div>
+                <div class="sub-value" id="avgMinutes">0 minutos</div>
+            </div>
+            
+            <div class="summary-card">
+                <h3>Volume Total Carregado</h3>
+                <div class="value" id="totalTons">0</div>
+                <div class="sub-value">toneladas</div>
+            </div>
+            
+            <div class="summary-card">
+                <h3>Total de Mix</h3>
+                <div class="value" id="totalMix">0</div>
+                <div class="sub-value">tipos de material</div>
+            </div>
+            
+            <div class="summary-card">
+                <h3>Operações Realizadas</h3>
+                <div class="value" id="totalOperations">0</div>
+                <div class="sub-value">carregamentos</div>
+            </div>
+
+            <!-- Novos cards para tempo médio por tipo de operação -->
+            <div class="summary-card carregamento">
+                <h3>Tempo Médio - Carregamento</h3>
+                <div class="value" id="avgTimeCarregamento">0h 0min</div>
+                <div class="sub-value" id="avgMinutesCarregamento">0 minutos</div>
+            </div>
+            
+            <div class="summary-card carregamento-paletizado">
+                <h3>Tempo Médio - Carreg. Paletizado</h3>
+                <div class="value" id="avgTimePaletizado">0h 0min</div>
+                <div class="sub-value" id="avgMinutesPaletizado">0 minutos</div>
+            </div>
+            
+            <div class="summary-card descarga">
+                <h3>Tempo Médio - Descarga</h3>
+                <div class="value" id="avgTimeDescarga">0h 0min</div>
+                <div class="sub-value" id="avgMinutesDescarga">0 minutos</div>
+            </div>
+            
+            <div class="summary-card separacao">
+                <h3>Tempo Médio - Separação</h3>
+                <div class="value" id="avgTimeSeparacao">0h 0min</div>
+                <div class="sub-value" id="avgMinutesSeparacao">0 minutos</div>
             </div>
         </div>
         
-        <div class="history-container" id="historyContainer">
+        <div class="history-container" id="historyContainer" style="display: none;">
             <div class="history-header">
                 <h2 class="history-title">Histórico de Carregamentos</h2>
                 <div class="history-summary" id="historySummary">Mostrando 0 registros</div>
@@ -227,25 +603,31 @@
                 Nenhum dado encontrado com os filtros aplicados.
             </div>
             
-            <table class="history-table" id="historyTable" style="display: none;">
-                <thead>
-                    <tr>
-                        <th>Data/Hora</th>
-                        <th>Colaborador</th>
-                        <th>Tipo</th>
-                        <th>Status</th>
-                        <th>Doca</th>
-                        <th>DT</th>
-                        <th>Toneladas</th>
-                        <th>Mix</th>
-                        <th>Veículo</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="historyTableBody">
-                    <!-- Dados serão preenchidos via JavaScript -->
-                </tbody>
-            </table>
+            <div class="table-container">
+                <table class="history-table" id="historyTable" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px;"></th>
+                            <th>Data/Hora Início</th>
+                            <th>Data/Hora Fim</th>
+                            <th>Colaborador Principal</th>
+                            <th>Outros Colaboradores</th>
+                            <th>Tipo</th>
+                            <th>Status</th>
+                            <th>Doca</th>
+                            <th>DT</th>
+                            <th>Toneladas</th>
+                            <th>Mix</th>
+                            <th>Veículo</th>
+                            <th>Tempo Total</th>
+                            <th style="width: 80px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <!-- Dados serão preenchidos via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
     
@@ -354,6 +736,8 @@
         const historyTableBody = document.getElementById('historyTableBody');
         const historySummary = document.getElementById('historySummary');
         const editModal = document.getElementById('editModal');
+        const summaryCards = document.getElementById('summaryCards');
+        const generatePDFBtn = document.getElementById('generatePDF');
         
         // Elementos do modal de mudança de unidade
         const changeUnitBtn = document.getElementById('changeUnitBtn');
@@ -363,6 +747,25 @@
         const unitCancelBtn = document.getElementById('unitCancelBtn');
         const unitConfirmBtn = document.getElementById('unitConfirmBtn');
         
+        // Elementos dos cards de resumo
+        const totalTimeElement = document.getElementById('totalTime');
+        const totalMinutesElement = document.getElementById('totalMinutes');
+        const avgTimeElement = document.getElementById('avgTime');
+        const avgMinutesElement = document.getElementById('avgMinutes');
+        const totalTonsElement = document.getElementById('totalTons');
+        const totalMixElement = document.getElementById('totalMix');
+        const totalOperationsElement = document.getElementById('totalOperations');
+        
+        // Novos elementos para cards de tempo médio por tipo
+        const avgTimeCarregamentoElement = document.getElementById('avgTimeCarregamento');
+        const avgMinutesCarregamentoElement = document.getElementById('avgMinutesCarregamento');
+        const avgTimePaletizadoElement = document.getElementById('avgTimePaletizado');
+        const avgMinutesPaletizadoElement = document.getElementById('avgMinutesPaletizado');
+        const avgTimeDescargaElement = document.getElementById('avgTimeDescarga');
+        const avgMinutesDescargaElement = document.getElementById('avgMinutesDescarga');
+        const avgTimeSeparacaoElement = document.getElementById('avgTimeSeparacao');
+        const avgMinutesSeparacaoElement = document.getElementById('avgMinutesSeparacao');
+        
         // Estado da aplicação
         let currentUser = null;
         let userData = null;
@@ -370,6 +773,7 @@
         let operationsData = [];
         let employeesData = [];
         let currentEditId = null;
+        let expandedRows = new Set();
         const ADMIN_PASSWORD = "195#%$*7advan!7"; // Senha de administração
         
         // Verificar autenticação
@@ -443,6 +847,7 @@
                 passwordSection.style.display = 'none';
                 filtersContainer.style.display = 'block';
                 historyContainer.style.display = 'block';
+                summaryCards.style.display = 'grid';
                 loadHistoryData();
             } else {
                 passwordError.textContent = 'Senha incorreta. Tente novamente.';
@@ -462,9 +867,10 @@
                 .then((querySnapshot) => {
                     operationsData = [];
                     querySnapshot.forEach((doc) => {
+                        const data = doc.data();
                         operationsData.push({
                             id: doc.id,
-                            ...doc.data()
+                            ...data
                         });
                     });
                     
@@ -475,6 +881,40 @@
                     console.error("Erro ao carregar histórico:", error);
                     showHistoryError('Erro ao carregar histórico.');
                 });
+        }
+        
+        // Função corrigida para filtrar datas
+        function filterByDate(data, startDate, endDate) {
+            return data.filter(operation => {
+                const operationDate = operation.createdAt ? operation.createdAt.toDate() : new Date(0);
+                
+                // Se não há filtro de data, incluir todas as operações
+                if (!startDate && !endDate) {
+                    return true;
+                }
+                
+                let include = true;
+                
+                // Filtro de data inicial
+                if (startDate) {
+                    const start = new Date(startDate);
+                    start.setHours(0, 0, 0, 0); // Início do dia
+                    if (operationDate < start) {
+                        include = false;
+                    }
+                }
+                
+                // Filtro de data final
+                if (endDate) {
+                    const end = new Date(endDate);
+                    end.setHours(23, 59, 59, 999); // Final do dia
+                    if (operationDate > end) {
+                        include = false;
+                    }
+                }
+                
+                return include;
+            });
         }
         
         // Aplicar filtros
@@ -488,23 +928,8 @@
             
             let filteredData = operationsData;
             
-            // Filtrar por data
-            if (startDate) {
-                const start = new Date(startDate);
-                filteredData = filteredData.filter(op => {
-                    const opDate = op.createdAt ? op.createdAt.toDate() : new Date(0);
-                    return opDate >= start;
-                });
-            }
-            
-            if (endDate) {
-                const end = new Date(endDate);
-                end.setHours(23, 59, 59, 999); // Final do dia
-                filteredData = filteredData.filter(op => {
-                    const opDate = op.createdAt ? op.createdAt.toDate() : new Date(0);
-                    return opDate <= end;
-                });
-            }
+            // Filtrar por data (função corrigida)
+            filteredData = filterByDate(filteredData, startDate, endDate);
             
             // Filtrar por status
             if (status) {
@@ -534,6 +959,87 @@
             
             // Exibir dados filtrados
             displayHistoryData(filteredData);
+            updateSummaryCards(filteredData);
+        }
+        
+        // Atualizar cards de resumo
+        function updateSummaryCards(data) {
+            const completedOperations = data.filter(op => op.status === 'completed');
+            
+            // Calcular totais gerais
+            const totalTons = completedOperations.reduce((sum, op) => sum + (op.tonsLoaded || 0), 0);
+            const totalMix = completedOperations.reduce((sum, op) => sum + (op.materialMix || 0), 0);
+            const totalOperationsCount = completedOperations.length;
+            
+            // Calcular tempo total e médio geral
+            let totalMinutes = 0;
+            completedOperations.forEach(op => {
+                if (op.startTime && op.endTime) {
+                    const start = op.startTime.toDate();
+                    const end = op.endTime.toDate();
+                    const duration = (end - start) / (1000 * 60); // minutos
+                    totalMinutes += duration;
+                }
+            });
+            
+            const avgMinutes = totalOperationsCount > 0 ? totalMinutes / totalOperationsCount : 0;
+            
+            // Atualizar elementos gerais
+            totalTonsElement.textContent = totalTons.toFixed(1);
+            totalMixElement.textContent = totalMix;
+            totalOperationsElement.textContent = totalOperationsCount;
+            
+            // Formatando tempo geral
+            const totalHours = Math.floor(totalMinutes / 60);
+            const totalMins = Math.round(totalMinutes % 60);
+            totalTimeElement.textContent = `${totalHours}h ${totalMins}min`;
+            totalMinutesElement.textContent = `${Math.round(totalMinutes)} minutos`;
+            
+            const avgHours = Math.floor(avgMinutes / 60);
+            const avgMins = Math.round(avgMinutes % 60);
+            avgTimeElement.textContent = `${avgHours}h ${avgMins}min`;
+            avgMinutesElement.textContent = `${Math.round(avgMinutes)} minutos`;
+            
+            // Calcular tempo médio por tipo de operação
+            calculateAverageTimeByType(completedOperations);
+        }
+        
+        // Calcular tempo médio por tipo de operação
+        function calculateAverageTimeByType(completedOperations) {
+            const types = {
+                'carregamento': { totalMinutes: 0, count: 0 },
+                'carregamento_Paletizado': { totalMinutes: 0, count: 0 },
+                'descarga': { totalMinutes: 0, count: 0 },
+                'separacao': { totalMinutes: 0, count: 0 }
+            };
+            
+            // Calcular tempo total para cada tipo
+            completedOperations.forEach(op => {
+                if (op.startTime && op.endTime && types[op.type]) {
+                    const start = op.startTime.toDate();
+                    const end = op.endTime.toDate();
+                    const duration = (end - start) / (1000 * 60); // minutos
+                    
+                    types[op.type].totalMinutes += duration;
+                    types[op.type].count += 1;
+                }
+            });
+            
+            // Atualizar cards para cada tipo
+            updateTypeCard('carregamento', types.carregamento, avgTimeCarregamentoElement, avgMinutesCarregamentoElement);
+            updateTypeCard('carregamento_Paletizado', types.carregamento_Paletizado, avgTimePaletizadoElement, avgMinutesPaletizadoElement);
+            updateTypeCard('descarga', types.descarga, avgTimeDescargaElement, avgMinutesDescargaElement);
+            updateTypeCard('separacao', types.separacao, avgTimeSeparacaoElement, avgMinutesSeparacaoElement);
+        }
+        
+        // Atualizar card individual de tipo
+        function updateTypeCard(typeName, typeData, timeElement, minutesElement) {
+            const avgMinutes = typeData.count > 0 ? typeData.totalMinutes / typeData.count : 0;
+            const avgHours = Math.floor(avgMinutes / 60);
+            const avgMins = Math.round(avgMinutes % 60);
+            
+            timeElement.textContent = `${avgHours}h ${avgMins}min`;
+            minutesElement.textContent = `${Math.round(avgMinutes)} minutos (${typeData.count} ops)`;
         }
         
         // Exibir dados do histórico
@@ -556,11 +1062,24 @@
             
             // Preencher tabela
             data.forEach(operation => {
-                const row = document.createElement('tr');
+                const isExpanded = expandedRows.has(operation.id);
                 
-                // Formatar data
-                const opDate = operation.createdAt ? operation.createdAt.toDate() : new Date(0);
-                const formattedDate = opDate.toLocaleString('pt-BR');
+                // Formatar datas
+                const startDate = operation.startTime ? operation.startTime.toDate() : new Date(0);
+                const endDate = operation.endTime ? operation.endTime.toDate() : new Date(0);
+                const formattedStartDate = startDate.toLocaleString('pt-BR');
+                const formattedEndDate = endDate > new Date(0) ? endDate.toLocaleString('pt-BR') : 'Em andamento';
+                
+                // Calcular tempo total
+                let totalTime = 'N/A';
+                if (operation.startTime && operation.endTime) {
+                    const start = operation.startTime.toDate();
+                    const end = operation.endTime.toDate();
+                    const duration = (end - start) / (1000 * 60); // minutos
+                    const hours = Math.floor(duration / 60);
+                    const minutes = Math.round(duration % 60);
+                    totalTime = `${hours}h ${minutes}min`;
+                }
                 
                 // Encontrar nome do colaborador
                 let employeeName = operation.employeeName || 'N/A';
@@ -600,9 +1119,18 @@
                         statusText = operation.status || 'N/A';
                 }
                 
-                row.innerHTML = `
-                    <td>${formattedDate}</td>
+                // Linha principal
+                const mainRow = document.createElement('tr');
+                mainRow.innerHTML = `
+                    <td>
+                        <button class="expand-btn" data-id="${operation.id}">
+                            ${isExpanded ? '▼' : '►'}
+                        </button>
+                    </td>
+                    <td>${formattedStartDate}</td>
+                    <td>${formattedEndDate}</td>
                     <td>${employeeName}</td>
+                    <td>${operation.additionalLoaders ? operation.additionalLoaders.join(', ') : 'Nenhum'}</td>
                     <td>${formattedType}</td>
                     <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                     <td>${operation.dock || 'N/A'}</td>
@@ -610,21 +1138,79 @@
                     <td>${operation.tonsLoaded || '0'}</td>
                     <td>${operation.materialMix || '0'}</td>
                     <td>${operation.vehicleType || 'N/A'}</td>
+                    <td>${totalTime}</td>
                     <td>
                         <button class="edit-btn" data-id="${operation.id}">Editar</button>
                     </td>
                 `;
                 
-                historyTableBody.appendChild(row);
+                historyTableBody.appendChild(mainRow);
+                
+                // Linha de detalhes (expandida)
+                if (isExpanded) {
+                    const detailsRow = document.createElement('tr');
+                    detailsRow.className = 'details-row';
+                    detailsRow.id = `details-${operation.id}`;
+                    detailsRow.innerHTML = `
+                        <td colspan="14">
+                            <div class="details-content">
+                                <div class="details-grid">
+                                    <div class="detail-group">
+                                        <span class="detail-label">Observações:</span>
+                                        <span class="detail-value">${operation.observation || 'Nenhuma'}</span>
+                                    </div>
+                                    <div class="detail-group">
+                                        <span class="detail-label">Motivo de Pausa:</span>
+                                        <span class="detail-value">${operation.pauseReason || 'Nenhuma'}</span>
+                                    </div>
+                                    <div class="detail-group">
+                                        <span class="detail-label">Motivo do Atraso (>10min):</span>
+                                        <span class="detail-value">${operation.delayReason || 'Nenhum'}</span>
+                                    </div>
+                                    <div class="detail-group">
+                                        <span class="detail-label">Armazéns Utilizados:</span>
+                                        <span class="detail-value">${operation.warehouses ? operation.warehouses.join(', ') : 'N/A'}</span>
+                                    </div>
+                                    <div class="detail-group">
+                                        <span class="detail-label">Composição:</span>
+                                        <span class="detail-value">${operation.compositionNumber || 'N/A'}</span>
+                                    </div>
+                                    <div class="detail-group">
+                                        <span class="detail-label">Carro Mantido em Doca:</span>
+                                        <span class="detail-value">${operation.keepCarInDock ? 'Sim' : 'Não'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    `;
+                    historyTableBody.appendChild(detailsRow);
+                }
             });
             
-            // Adicionar event listeners aos botões de edição
+            // Adicionar event listeners
+            document.querySelectorAll('.expand-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const operationId = this.getAttribute('data-id');
+                    toggleDetails(operationId);
+                });
+            });
+            
             document.querySelectorAll('.edit-btn').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const operationId = this.getAttribute('data-id');
                     openEditModal(operationId);
                 });
             });
+        }
+        
+        // Alternar detalhes
+        function toggleDetails(operationId) {
+            if (expandedRows.has(operationId)) {
+                expandedRows.delete(operationId);
+            } else {
+                expandedRows.add(operationId);
+            }
+            applyFilters();
         }
         
         // Abrir modal de edição
@@ -686,6 +1272,107 @@
                 });
         }
         
+        // Gerar PDF
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Título
+            doc.setFontSize(20);
+            doc.text('Relatório Diário de Carregamentos', 105, 15, { align: 'center' });
+            
+            // Informações da unidade e data
+            doc.setFontSize(12);
+            doc.text(`Unidade: ${currentUnit}`, 14, 25);
+            doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 14, 32);
+            
+            // Filtros aplicados
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            let filtersText = 'Filtros: ';
+            if (startDate) filtersText += `De ${startDate} `;
+            if (endDate) filtersText += `Até ${endDate}`;
+            if (!startDate && !endDate) filtersText += 'Todos os dados';
+            doc.text(filtersText, 14, 39);
+            
+            // Dados para a tabela
+            const filteredData = getFilteredData();
+            const tableData = filteredData.map(op => {
+                const start = op.startTime ? op.startTime.toDate().toLocaleString('pt-BR') : 'N/A';
+                const end = op.endTime ? op.endTime.toDate().toLocaleString('pt-BR') : 'Em andamento';
+                const employee = employeesData.find(emp => emp.codigo === op.employeeCode);
+                const employeeName = employee ? employee.nome : op.employeeCode;
+                
+                return [
+                    start,
+                    end,
+                    employeeName,
+                    op.type,
+                    op.dock || 'N/A',
+                    op.dockNumber || 'N/A',
+                    op.tonsLoaded || '0',
+                    op.materialMix || '0',
+                    op.vehicleType || 'N/A'
+                ];
+            });
+            
+            // Adicionar tabela
+            doc.autoTable({
+                startY: 45,
+                head: [['Início', 'Fim', 'Colaborador', 'Tipo', 'Doca', 'DT', 'Toneladas', 'Mix', 'Veículo']],
+                body: tableData,
+                styles: { fontSize: 8 },
+                headStyles: { fillColor: [74, 109, 167] }
+            });
+            
+            // Resumo
+            const finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(14);
+            doc.text('Resumo', 14, finalY);
+            
+            doc.setFontSize(10);
+            doc.text(`Total de Operações: ${totalOperationsElement.textContent}`, 14, finalY + 8);
+            doc.text(`Volume Total: ${totalTonsElement.textContent} toneladas`, 14, finalY + 16);
+            doc.text(`Mix Total: ${totalMixElement.textContent} tipos`, 14, finalY + 24);
+            doc.text(`Tempo Total: ${totalTimeElement.textContent}`, 14, finalY + 32);
+            doc.text(`Tempo Médio: ${avgTimeElement.textContent} por operação`, 14, finalY + 40);
+            
+            // Salvar PDF
+            doc.save(`relatorio_carregamentos_${currentUnit}_${new Date().toISOString().split('T')[0]}.pdf`);
+        }
+        
+        // Obter dados filtrados atuais
+        function getFilteredData() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const status = document.getElementById('statusFilter').value;
+            const type = document.getElementById('typeFilter').value;
+            const employee = document.getElementById('employeeFilter').value;
+            const dock = document.getElementById('dockFilter').value.toLowerCase();
+            
+            let filteredData = operationsData;
+            
+            // Usar a função corrigida de filtro de data
+            filteredData = filterByDate(filteredData, startDate, endDate);
+            
+            if (status) filteredData = filteredData.filter(op => op.status === status);
+            if (type) filteredData = filteredData.filter(op => op.type === type);
+            if (employee) {
+                filteredData = filteredData.filter(op => 
+                    op.employeeCode === employee || 
+                    (op.additionalLoaders && op.additionalLoaders.includes(employee))
+                );
+            }
+            if (dock) {
+                filteredData = filteredData.filter(op => 
+                    (op.dock && op.dock.toLowerCase().includes(dock)) ||
+                    (op.dockNumber && op.dockNumber.toLowerCase().includes(dock))
+                );
+            }
+            
+            return filteredData;
+        }
+        
         // Mostrar loading do histórico
         function showHistoryLoading() {
             historyLoading.style.display = 'flex';
@@ -720,7 +1407,6 @@
         
         // Funções para mudança de unidade
         function openUnitModal() {
-            // Selecionar a unidade atual no dropdown
             unitSelect.value = currentUnit;
             unitModal.style.display = 'block';
         }
@@ -743,19 +1429,14 @@
                 return;
             }
             
-            // Atualizar a unidade no Firestore
             db.collection('users').doc(currentUser.uid).update({
                 unit: selectedUnit
             })
             .then(() => {
-                // Atualizar localmente
                 currentUnit = selectedUnit;
                 userUnitInfo.textContent = `Unidade atual: ${currentUnit}`;
-                
-                // Recarregar dados
                 loadEmployeesData();
                 
-                // Se o histórico já estiver sendo exibido, recarregar
                 if (historyContainer.style.display !== 'none') {
                     loadHistoryData();
                 }
@@ -772,32 +1453,25 @@
         // Event Listeners
         passwordBtn.addEventListener('click', checkPassword);
         passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                checkPassword();
-            }
+            if (e.key === 'Enter') checkPassword();
         });
         
         document.getElementById('applyFilters').addEventListener('click', applyFilters);
         document.getElementById('clearFilters').addEventListener('click', clearFilters);
+        generatePDFBtn.addEventListener('click', generatePDF);
         
         document.getElementById('closeModal').addEventListener('click', closeEditModal);
         document.getElementById('cancelEdit').addEventListener('click', closeEditModal);
         document.getElementById('saveEdit').addEventListener('click', saveEdit);
         
-        // Event Listeners para mudança de unidade
         changeUnitBtn.addEventListener('click', openUnitModal);
         unitCloseBtn.addEventListener('click', closeUnitModal);
         unitCancelBtn.addEventListener('click', closeUnitModal);
         unitConfirmBtn.addEventListener('click', confirmUnitChange);
         
-        // Fechar modais clicando fora deles
         window.addEventListener('click', (e) => {
-            if (e.target === editModal) {
-                closeEditModal();
-            }
-            if (e.target === unitModal) {
-                closeUnitModal();
-            }
+            if (e.target === editModal) closeEditModal();
+            if (e.target === unitModal) closeUnitModal();
         });
         
         // Destacar link ativo na navbar
@@ -813,7 +1487,7 @@
             }
         });
         
-        // Simulação de logout
+        // Logout
         document.querySelector('.logout-btn').addEventListener('click', function() {
             if (confirm('Tem certeza que deseja sair do sistema?')) {
                 auth.signOut().then(() => {
