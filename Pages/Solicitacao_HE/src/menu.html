@@ -431,17 +431,7 @@
                             <label for="function">Função na Hora Extra <span class="required">*</span></label>
                             <select id="function" required>
                                 <option value="">Selecione a função</option>
-                                <option value="operador_empilhadeira">Operador de Empilhadeira</option>
-                                <option value="auxiliar_producao">Auxiliar de Produção</option>
-                                <option value="conferente">Conferente</option>
-                                <option value="separador">Separador</option>
-                                <option value="embalador">Embalador</option>
-                                <option value="operador_maquina">Operador de Máquina</option>
-                                <option value="tecnico_manutencao">Técnico de Manutenção</option>
-                                <option value="supervisor">Supervisor</option>
-                                <option value="analista">Analista</option>
-                                <option value="coordenador">Coordenador</option>
-                                <option value="outro">Outro</option>
+                                <!-- As funções serão carregadas aqui via JavaScript -->
                             </select>
                         </div>
                     </div>
@@ -557,13 +547,13 @@
         const messageDiv = document.getElementById('message');
         const unitInput = document.getElementById('unit');
         const employeeSelect = document.getElementById('employee-name');
+        const functionSelect = document.getElementById('function');
         const reasonSelect = document.getElementById('reason');
         const otherReasonContainer = document.getElementById('other-reason-container');
         const startTimeInput = document.getElementById('start-time');
         const endTimeInput = document.getElementById('end-time');
         const totalHoursInput = document.getElementById('total-hours');
         const workAreaSelect = document.getElementById('work-area');
-        const functionSelect = document.getElementById('function');
         const myRequestsContainer = document.getElementById('my-requests-container');
         const loadingRequests = document.getElementById('loading-requests');
         const tabButtons = document.querySelectorAll('.tab-button');
@@ -575,6 +565,7 @@
         let currentUnit = '';
         let isClientAccount = false;
         let colaboradores = [];
+        let funcoes = [];
 
         // Verificar autenticação
         auth.onAuthStateChanged((user) => {
@@ -600,6 +591,8 @@
                         
                         // Carregar colaboradores da unidade
                         carregarColaboradores();
+                        // Carregar funções da unidade
+                        carregarFuncoes();
                         
                     } else {
                         showMessage('Erro: Dados do usuário não encontrados.', 'error');
@@ -645,13 +638,84 @@
                         employeeSelect.appendChild(option);
                     });
                     
-                    showMessage(`${colaboradores.length} colaboradores carregados da unidade.`, 'success');
-                    setTimeout(() => hideMessage(), 3000);
+                    console.log(`${colaboradores.length} colaboradores carregados da unidade.`);
                 })
                 .catch((error) => {
                     console.error("Erro ao carregar colaboradores:", error);
                     employeeSelect.innerHTML = '<option value="" disabled>Erro ao carregar colaboradores</option>';
                     showMessage('Erro ao carregar lista de colaboradores.', 'error');
+                });
+        }
+
+        // Carregar funções da unidade
+        function carregarFuncoes() {
+            db.collection('funcoes_he')
+                .where('unit', '==', currentUnit)
+                .orderBy('name')
+                .get()
+                .then((snapshot) => {
+                    funcoes = [];
+                    functionSelect.innerHTML = '<option value="">Selecione a função</option>';
+                    
+                    if (snapshot.empty) {
+                        // Se não houver funções cadastradas, usar as funções padrão
+                        functionSelect.innerHTML += `
+                            <option value="operador_empilhadeira">Operador de Empilhadeira</option>
+                            <option value="auxiliar_producao">Auxiliar de Produção</option>
+                            <option value="conferente">Conferente</option>
+                            <option value="separador">Separador</option>
+                            <option value="embalador">Embalador</option>
+                            <option value="operador_maquina">Operador de Máquina</option>
+                            <option value="tecnico_manutencao">Técnico de Manutenção</option>
+                            <option value="supervisor">Supervisor</option>
+                            <option value="analista">Analista</option>
+                            <option value="coordenador">Coordenador</option>
+                            <option value="outro">Outro</option>
+                        `;
+                        console.log('Nenhuma função cadastrada, usando funções padrão.');
+                        return;
+                    }
+
+                    snapshot.forEach((doc) => {
+                        const funcao = {
+                            id: doc.id,
+                            ...doc.data()
+                        };
+                        funcoes.push(funcao);
+                        
+                        // Adicionar opção ao select
+                        const option = document.createElement('option');
+                        option.value = funcao.name.toLowerCase().replace(/\s+/g, '_');
+                        option.textContent = funcao.name;
+                        functionSelect.appendChild(option);
+                    });
+                    
+                    // Adicionar opção "Outro" no final
+                    const outroOption = document.createElement('option');
+                    outroOption.value = 'outro';
+                    outroOption.textContent = 'Outro';
+                    functionSelect.appendChild(outroOption);
+                    
+                    console.log(`${funcoes.length} funções carregadas da unidade.`);
+                })
+                .catch((error) => {
+                    console.error("Erro ao carregar funções:", error);
+                    // Em caso de erro, carregar funções padrão
+                    functionSelect.innerHTML = `
+                        <option value="">Selecione a função</option>
+                        <option value="operador_empilhadeira">Operador de Empilhadeira</option>
+                        <option value="auxiliar_producao">Auxiliar de Produção</option>
+                        <option value="conferente">Conferente</option>
+                        <option value="separador">Separador</option>
+                        <option value="embalador">Embalador</option>
+                        <option value="operador_maquina">Operador de Máquina</option>
+                        <option value="tecnico_manutencao">Técnico de Manutenção</option>
+                        <option value="supervisor">Supervisor</option>
+                        <option value="analista">Analista</option>
+                        <option value="coordenador">Coordenador</option>
+                        <option value="outro">Outro</option>
+                    `;
+                    showMessage('Erro ao carregar lista de funções. Usando funções padrão.', 'error');
                 });
         }
 

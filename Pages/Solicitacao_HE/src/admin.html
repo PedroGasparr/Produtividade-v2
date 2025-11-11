@@ -453,14 +453,14 @@
         }
 
         /* Estilos para a aba de Colaboradores */
-        .colaboradores-container {
+        .colaboradores-container, .funcoes-container {
             background: white;
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
 
-        .colaboradores-header {
+        .colaboradores-header, .funcoes-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -469,7 +469,7 @@
             gap: 15px;
         }
 
-        .colaboradores-actions {
+        .colaboradores-actions, .funcoes-actions {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
@@ -518,12 +518,12 @@
             margin-top: 5px;
         }
 
-        .colaboradores-list {
+        .colaboradores-list, .funcoes-list {
             display: grid;
             gap: 10px;
         }
 
-        .colaborador-item {
+        .colaborador-item, .funcao-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -533,12 +533,12 @@
             border-left: 4px solid #667eea;
         }
 
-        .colaborador-name {
+        .colaborador-name, .funcao-name {
             font-weight: 600;
             color: #333;
         }
 
-        .colaborador-actions {
+        .colaborador-actions, .funcao-actions {
             display: flex;
             gap: 5px;
         }
@@ -586,6 +586,7 @@
             <button class="tab-button active" data-tab="solicitacoes">Solicitações</button>
             <button class="tab-button" data-tab="dashboard">Dashboard</button>
             <button class="tab-button" data-tab="colaboradores">Colaboradores</button>
+            <button class="tab-button" data-tab="funcoes">Funções/Cargos</button>
         </div>
 
         <!-- Tab 1: Solicitações -->
@@ -705,6 +706,43 @@ Pedro Oliveira"></textarea>
                 </div>
             </div>
         </div>
+
+        <!-- Tab 4: Funções/Cargos -->
+        <div id="funcoes-tab" class="tab-content">
+            <div class="funcoes-container">
+                <div class="funcoes-header">
+                    <h2>Gerenciar Funções/Cargos da Unidade</h2>
+                    <div class="funcoes-actions">
+                        <button class="btn btn-primary" onclick="abrirInputFuncoesMassa()">Adicionar em Massa</button>
+                        <button class="btn btn-danger" onclick="limparTodasFuncoes()">Limpar Todas</button>
+                        <button class="back-btn" onclick="voltarParaMenu()">Voltar para o Menu</button>
+                    </div>
+                </div>
+
+                <div id="mass-input-funcoes-container" class="mass-input-container" style="display: none;">
+                    <h3>Adicionar Funções em Massa</h3>
+                    <textarea id="mass-funcoes-input" placeholder="Digite os nomes das funções/cargos, um por linha. Exemplo:
+Operador de Empilhadeira
+Auxiliar de Produção
+Conferente
+Separador
+Embalador"></textarea>
+                    <div class="mass-input-help">
+                        ⓘ Digite uma função por linha. As funções serão salvas automaticamente para sua unidade.
+                    </div>
+                    <div class="funcoes-actions">
+                        <button class="btn btn-primary" onclick="salvarFuncoesMassa()">Salvar Funções</button>
+                        <button class="btn btn-cancel" onclick="fecharInputFuncoesMassa()">Cancelar</button>
+                    </div>
+                </div>
+
+                <div class="funcoes-list" id="funcoes-list">
+                    <div class="loading" id="loading-funcoes">
+                        Carregando funções...
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal para rejeição -->
@@ -762,6 +800,10 @@ Pedro Oliveira"></textarea>
         const loadingColaboradores = document.getElementById('loading-colaboradores');
         const massInputContainer = document.getElementById('mass-input-container');
         const massNamesInput = document.getElementById('mass-names-input');
+        const funcoesList = document.getElementById('funcoes-list');
+        const loadingFuncoes = document.getElementById('loading-funcoes');
+        const massInputFuncoesContainer = document.getElementById('mass-input-funcoes-container');
+        const massFuncoesInput = document.getElementById('mass-funcoes-input');
 
         // Estado da aplicação
         let currentUser = null;
@@ -769,6 +811,7 @@ Pedro Oliveira"></textarea>
         let currentUnit = '';
         let allRequests = [];
         let allColaboradores = [];
+        let allFuncoes = [];
         let currentRejectRequestId = null;
         let statusChart = null;
         let areaChart = null;
@@ -796,6 +839,8 @@ Pedro Oliveira"></textarea>
                         carregarSolicitacoes();
                         // Carregar colaboradores da unidade
                         carregarColaboradores();
+                        // Carregar funções da unidade
+                        carregarFuncoes();
                         
                     } else {
                         showMessage('Erro: Dados do usuário não encontrados.', 'error');
@@ -830,6 +875,10 @@ Pedro Oliveira"></textarea>
                 // Se for a aba de colaboradores, carregar colaboradores
                 else if (tabId === 'colaboradores') {
                     carregarColaboradores();
+                }
+                // Se for a aba de funções, carregar funções
+                else if (tabId === 'funcoes') {
+                    carregarFuncoes();
                 }
             });
         });
@@ -1372,7 +1421,6 @@ Pedro Oliveira"></textarea>
             colaboradoresList.innerHTML = '';
             colaboradoresList.appendChild(loadingColaboradores);
 
-            // ✅ CORREÇÃO: Buscar da coleção correta 'colaboradores_he'
             db.collection('colaboradores_he')
                 .where('unit', '==', currentUnit)
                 .orderBy('name')
@@ -1452,7 +1500,6 @@ Pedro Oliveira"></textarea>
                     return; // Pula nomes duplicados
                 }
 
-                // ✅ CORREÇÃO: Salvar na coleção correta 'colaboradores_he'
                 const newColaboradorRef = db.collection('colaboradores_he').doc();
                 batch.set(newColaboradorRef, {
                     name: name,
@@ -1479,7 +1526,6 @@ Pedro Oliveira"></textarea>
                 return;
             }
 
-            // ✅ CORREÇÃO: Remover da coleção correta 'colaboradores_he'
             db.collection('colaboradores_he').doc(colaboradorId).delete()
                 .then(() => {
                     showMessage('Colaborador removido com sucesso!', 'success');
@@ -1498,7 +1544,6 @@ Pedro Oliveira"></textarea>
 
             const batch = db.batch();
             allColaboradores.forEach(colaborador => {
-                // ✅ CORREÇÃO: Remover da coleção correta 'colaboradores_he'
                 batch.delete(db.collection('colaboradores_he').doc(colaborador.id));
             });
 
@@ -1510,6 +1555,149 @@ Pedro Oliveira"></textarea>
                 .catch((error) => {
                     console.error('Erro ao remover colaboradores:', error);
                     showMessage('Erro ao remover colaboradores.', 'error');
+                });
+        }
+
+        // Funções para gerenciar cargos/funções
+        function carregarFuncoes() {
+            loadingFuncoes.style.display = 'block';
+            funcoesList.innerHTML = '';
+            funcoesList.appendChild(loadingFuncoes);
+
+            db.collection('funcoes_he')
+                .where('unit', '==', currentUnit)
+                .orderBy('name')
+                .onSnapshot((snapshot) => {
+                    allFuncoes = [];
+                    snapshot.forEach((doc) => {
+                        const funcao = {
+                            id: doc.id,
+                            ...doc.data()
+                        };
+                        allFuncoes.push(funcao);
+                    });
+                    
+                    loadingFuncoes.style.display = 'none';
+                    exibirFuncoes();
+                }, (error) => {
+                    console.error("Erro ao carregar funções:", error);
+                    loadingFuncoes.style.display = 'none';
+                    funcoesList.innerHTML = '<div class="no-requests">Erro ao carregar funções.</div>';
+                });
+        }
+
+        function exibirFuncoes() {
+            funcoesList.innerHTML = '';
+            
+            if (allFuncoes.length === 0) {
+                funcoesList.innerHTML = '<div class="no-requests">Nenhuma função/cargo cadastrado.</div>';
+                return;
+            }
+            
+            allFuncoes.forEach(funcao => {
+                const item = document.createElement('div');
+                item.className = 'funcao-item';
+                item.innerHTML = `
+                    <div class="funcao-name">${funcao.name}</div>
+                    <div class="funcao-actions">
+                        <button class="btn btn-danger btn-small" onclick="removerFuncao('${funcao.id}')">
+                            ❌ Remover
+                        </button>
+                    </div>
+                `;
+                funcoesList.appendChild(item);
+            });
+        }
+
+        function abrirInputFuncoesMassa() {
+            massInputFuncoesContainer.style.display = 'block';
+            massFuncoesInput.value = '';
+        }
+
+        function fecharInputFuncoesMassa() {
+            massInputFuncoesContainer.style.display = 'none';
+        }
+
+        function salvarFuncoesMassa() {
+            const funcoesText = massFuncoesInput.value.trim();
+            if (!funcoesText) {
+                alert('Por favor, digite os nomes das funções/cargos.');
+                return;
+            }
+
+            const funcoes = funcoesText.split('\n')
+                .map(funcao => funcao.trim())
+                .filter(funcao => funcao.length > 0);
+
+            if (funcoes.length === 0) {
+                alert('Nenhuma função válida encontrada.');
+                return;
+            }
+
+            const batch = db.batch();
+            const existingFuncoes = allFuncoes.map(f => f.name.toLowerCase());
+
+            funcoes.forEach(funcao => {
+                // Verificar se a função já existe
+                if (existingFuncoes.includes(funcao.toLowerCase())) {
+                    return; // Pula funções duplicadas
+                }
+
+                const newFuncaoRef = db.collection('funcoes_he').doc();
+                batch.set(newFuncaoRef, {
+                    name: funcao,
+                    unit: currentUnit,
+                    createdAt: new Date(),
+                    createdBy: currentUser.uid
+                });
+            });
+
+            batch.commit()
+                .then(() => {
+                    showMessage(`${funcoes.length} funções/cargos adicionados com sucesso!`, 'success');
+                    fecharInputFuncoesMassa();
+                    carregarFuncoes();
+                })
+                .catch((error) => {
+                    console.error('Erro ao salvar funções:', error);
+                    showMessage('Erro ao salvar funções.', 'error');
+                });
+        }
+
+        function removerFuncao(funcaoId) {
+            if (!confirm('Tem certeza que deseja remover esta função/cargo?')) {
+                return;
+            }
+
+            db.collection('funcoes_he').doc(funcaoId).delete()
+                .then(() => {
+                    showMessage('Função/cargo removido com sucesso!', 'success');
+                    carregarFuncoes();
+                })
+                .catch((error) => {
+                    console.error('Erro ao remover função:', error);
+                    showMessage('Erro ao remover função.', 'error');
+                });
+        }
+
+        function limparTodasFuncoes() {
+            if (!confirm('Tem certeza que deseja remover TODAS as funções/cargos desta unidade? Esta ação não pode ser desfeita.')) {
+                return;
+            }
+
+            const batch = db.batch();
+            allFuncoes.forEach(funcao => {
+                batch.delete(db.collection('funcoes_he').doc(funcao.id));
+            });
+
+            batch.commit()
+                .then(() => {
+                    showMessage('Todas as funções/cargos foram removidas!', 'success');
+                    carregarFuncoes();
+                })
+                .catch((error) => {
+                    console.error('Erro ao remover funções:', error);
+                    showMessage('Erro ao remover funções.', 'error');
                 });
         }
 

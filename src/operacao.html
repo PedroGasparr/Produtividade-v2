@@ -244,6 +244,56 @@
             background-color: #2196F3;
             color: white;
         }
+
+        /* Novo estilo para local de carregamento */
+        .loading-location-container {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        
+        .loading-location-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+        
+        .location-option {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+        }
+        
+        .location-option:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .location-option.selected {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+        
+        .location-radio {
+            margin-right: 10px;
+        }
+
+        /* Melhorias para exibição de nomes */
+        .employee-name-display {
+            font-weight: bold;
+            color: #333;
+            margin-top: 5px;
+        }
+
+        .load-employee-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
     </style>
 </head>
 <body>
@@ -350,6 +400,7 @@
                     <input type="text" id="employeeCode" placeholder="Ex: GZL-EO-1234">
                     <div class="validation-error" id="employeeCodeError"></div>
                     <div class="validation-success" id="employeeCodeSuccess"></div>
+                    <div class="employee-name-display" id="employeeNameDisplay" style="display: none;"></div>
                     <button class="qr-button" id="scanQRBtn">Ler QR Code</button>
                 </div>
                 
@@ -367,6 +418,27 @@
                         <option value="descarga">Descarga (2h 20min)</option>
                         <option value="separacao">Separação (1h 30min)</option>
                     </select>
+                </div>
+
+                <!-- NOVO CAMPO: LOCAL DE CARREGAMENTO -->
+                <div class="form-group">
+                    <label>Local de Carregamento</label>
+                    <div class="loading-location-container">
+                        <div class="loading-location-options">
+                            <label class="location-option">
+                                <input type="radio" name="loadingLocation" value="logistica" class="location-radio">
+                                Logística
+                            </label>
+                            <label class="location-option">
+                                <input type="radio" name="loadingLocation" value="0300" class="location-radio">
+                                0300
+                            </label>
+                            <label class="location-option">
+                                <input type="radio" name="loadingLocation" value="cross" class="location-radio">
+                                Cross
+                            </label>
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -496,6 +568,7 @@
                 <div class="form-group">
                     <label for="finishEmployeeCode">Código do Funcionário Principal</label>
                     <input type="text" id="finishEmployeeCode" placeholder="Ex: GZL-EO-1234">
+                    <div class="employee-name-display" id="finishEmployeeNameDisplay" style="display: none;"></div>
                     <button class="qr-button" id="scanFinishQRBtn">Ler QR Code</button>
                 </div>
                 
@@ -531,6 +604,7 @@
                 <div class="form-group">
                     <label for="pauseEmployeeCode">Código do Funcionário</label>
                     <input type="text" id="pauseEmployeeCode" placeholder="Ex: GZL-EO-1234">
+                    <div class="employee-name-display" id="pauseEmployeeNameDisplay" style="display: none;"></div>
                     <button class="qr-button" id="scanPauseQRBtn">Ler QR Code</button>
                 </div>
                 
@@ -595,6 +669,7 @@
                 <div class="form-group">
                     <label for="newEmployeeCode">Código do Funcionário a Adicionar</label>
                     <input type="text" id="newEmployeeCode" placeholder="Ex: GZL-EO-1234">
+                    <div class="employee-name-display" id="newEmployeeNameDisplay" style="display: none;"></div>
                     <button class="qr-button" id="scanNewEmployeeQRBtn">Ler QR Code</button>
                 </div>
                 
@@ -770,6 +845,12 @@
         const employeeCodeError = document.getElementById('employeeCodeError');
         const employeeCodeSuccess = document.getElementById('employeeCodeSuccess');
         
+        // Elementos para exibição de nomes
+        const employeeNameDisplay = document.getElementById('employeeNameDisplay');
+        const finishEmployeeNameDisplay = document.getElementById('finishEmployeeNameDisplay');
+        const pauseEmployeeNameDisplay = document.getElementById('pauseEmployeeNameDisplay');
+        const newEmployeeNameDisplay = document.getElementById('newEmployeeNameDisplay');
+        
         // Estado da aplicação
         let currentUser = null;
         let userData = null;
@@ -787,8 +868,12 @@
         let pendingOperationWithDelay = null;
         let currentCarCompositions = {};
         let validatedEmployees = {};
-        let compositions = {}; // Nova coleção para composições
+        let compositions = {};
         
+        // Cache para colaboradores (SOLUÇÃO PARA QUOTA EXCEDIDA)
+        const employeeCache = new Map();
+        const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
         // Verificar autenticação
         auth.onAuthStateChanged((user) => {
             if (user) {
@@ -959,7 +1044,7 @@
                 });
         }
         
-        // Atualizar select de carros em doca - CORREÇÃO COMPLETA
+        // Atualizar select de carros em doca
         function updateCarInDockSelect() {
             selectCarInDock.innerHTML = '<option value="">Selecione um carro em doca</option>';
             
@@ -970,12 +1055,10 @@
                 
                 if (compositionsCount === 1) {
                     // Carro simples - apenas uma opção
-                    // Verificar se existe uma composição com status completed
                     const composition = Object.values(compositions).find(comp => 
                         comp.carId === carId && comp.compositionNumber === 1
                     );
                     
-                    // Se não existe composição OU se existe e NÃO está completed, mostra o carro
                     if (!composition || composition.status !== 'completed') {
                         const option = document.createElement('option');
                         option.value = carId;
@@ -992,12 +1075,10 @@
                         const compositionDock = compositionDocks[i] || car.dock;
                         const compositionId = `${carId}_${i}`;
                         
-                        // Buscar a composição específica
                         const composition = Object.values(compositions).find(comp => 
                             comp.carId === carId && comp.compositionNumber === i
                         );
                         
-                        // Só mostra se a composição NÃO existe ou se existe e NÃO está completed
                         if (!composition || composition.status !== 'completed') {
                             hasAvailableCompositions = true;
                             
@@ -1027,16 +1108,13 @@
                         }
                     }
                     
-                    // Se não há composições disponíveis, verifica se pode remover o carro
                     if (!hasAvailableCompositions) {
-                        // Verificar se TODAS as composições estão completed
                         const allCompositions = Object.values(compositions).filter(comp => 
                             comp.carId === carId
                         );
                         
                         if (allCompositions.length === compositionsCount && 
                             allCompositions.every(comp => comp.status === 'completed')) {
-                            // Todas as composições estão completed, remove o carro da doca
                             removeCarFromDockAutomatically(carId);
                         }
                     }
@@ -1057,7 +1135,7 @@
             });
         }
         
-        // Atualizar display de carros em doca - CORREÇÃO COMPLETA
+        // Atualizar display de carros em doca
         function updateCarInDockDisplay(carId, carData) {
             const carsList = document.getElementById('carsInDockList');
             
@@ -1079,7 +1157,6 @@
                     comp.carId === carId && comp.compositionNumber === i
                 );
                 
-                // Só mostra se a composição NÃO existe ou se existe e NÃO está completed
                 if (!composition || composition.status !== 'completed') {
                     hasAvailableCompositions = true;
                     
@@ -1087,13 +1164,11 @@
                     carItem.id = `car-${carId}-${i}`;
                     carItem.className = 'car-in-dock-item';
                     
-                    // Definir o texto da DT baseado no número da composição
                     let dtText = `DT ${carData.dockNumber}`;
                     if (i > 1) {
                         dtText = `DT ${carData.dockNumber}-${i}`;
                     }
                     
-                    // Usar a doca específica da composição se disponível
                     const compositionDock = compositionDocks[i] || carData.dock;
                     
                     let statusText = 'Disponível';
@@ -1122,7 +1197,6 @@
                     
                     carsList.appendChild(carItem);
                     
-                    // Adicionar evento ao botão de remover
                     const removeBtn = carItem.querySelector('.remove-car-btn');
                     removeBtn.addEventListener('click', function() {
                         const carIdToRemove = this.getAttribute('data-car-id');
@@ -1132,7 +1206,6 @@
                 }
             }
             
-            // Se não há composições disponíveis, verifica se pode remover o carro
             if (!hasAvailableCompositions) {
                 const allCompositions = Object.values(compositions).filter(comp => 
                     comp.carId === carId
@@ -1140,7 +1213,6 @@
                 
                 if (allCompositions.length === compositionsCount && 
                     allCompositions.every(comp => comp.status === 'completed')) {
-                    // Todas as composições estão completed, remove o carro
                     removeCarFromDockAutomatically(carId);
                 }
             }
@@ -1161,10 +1233,8 @@
             const compositionsCount = car.compositionsCount || 1;
             
             if (compositionsCount === 1) {
-                // Se tem apenas uma composição, remove o carro completo
                 db.collection('carsInDock').doc(carId).delete()
                 .then(() => {
-                    // Remove também as composições associadas
                     return db.collection('compositions')
                         .where('carId', '==', carId)
                         .get()
@@ -1184,14 +1254,11 @@
                     alert('Erro ao remover carro: ' + error.message);
                 });
             } else {
-                // Se tem múltiplas composições, atualiza o count
                 const newCount = compositionsCount - 1;
                 
                 if (newCount === 0) {
-                    // Se não sobrou composições, remove o carro
                     db.collection('carsInDock').doc(carId).delete()
                     .then(() => {
-                        // Remove também as composições associadas
                         return db.collection('compositions')
                             .where('carId', '==', carId)
                             .get()
@@ -1211,7 +1278,6 @@
                         alert('Erro ao remover carro: ' + error.message);
                     });
                 } else {
-                    // Atualiza o count de composições e remove a composição específica
                     const updatedCompositionDocks = {...car.compositionDocks};
                     delete updatedCompositionDocks[composition];
                     
@@ -1220,7 +1286,6 @@
                         compositionDocks: updatedCompositionDocks
                     })
                     .then(() => {
-                        // Remove a composição específica
                         return db.collection('compositions')
                             .where('carId', '==', carId)
                             .where('compositionNumber', '==', parseInt(composition))
@@ -1249,7 +1314,6 @@
             const selectedOption = this.options[this.selectedIndex];
             const carId = this.value;
             
-            // Resetar campos
             dockInput.value = '';
             dockNumberInput.value = '';
             selectComposition.innerHTML = '<option value="">Selecione a composição</option>';
@@ -1261,29 +1325,23 @@
                 const compositionsCount = car.compositionsCount || 1;
                 const compositionDocks = car.compositionDocks || {};
                 
-                // Preencher informações básicas
                 dockNumberInput.value = selectedOption.dataset.dockNumber || car.dockNumber;
                 
                 if (compositionsCount === 1) {
-                    // Carro simples
                     dockInput.value = selectedOption.dataset.dock || car.dock;
                     compositionSelectionContainer.style.display = 'none';
                 } else {
-                    // Bitrem - mostrar seleção de composição
-                    dockInput.value = selectedOption.dataset.dock || car.dock; // Doca principal
+                    dockInput.value = selectedOption.dataset.dock || car.dock;
                     compositionSelectionContainer.style.display = 'block';
                     
-                    // Se já foi selecionada uma composição específica no dropdown principal
                     if (selectedOption.dataset.composition) {
                         const compositionNumber = selectedOption.dataset.composition;
                         const compositionDock = selectedOption.dataset.dock;
                         
-                        // Preencher automaticamente a composição
                         selectComposition.innerHTML = `<option value="${compositionNumber}" selected>Composição ${compositionNumber}</option>`;
                         selectedCompositionDock.value = compositionDock;
                         compositionDockInfo.style.display = 'block';
                     } else {
-                        // Mostrar todas as composições disponíveis
                         for (let i = 1; i <= compositionsCount; i++) {
                             const composition = Object.values(compositions).find(comp => 
                                 comp.carId === carId && comp.compositionNumber === i
@@ -1340,10 +1398,8 @@
                         }
                     });
                     
-                    // Atualizar selects de carregamentos
                     updateOperationSelects();
                     
-                    // Mostrar ou esconder container baseado em existirem carregamentos
                     if (Object.keys(activeLoads).length > 0) {
                         activeLoadsContainer.style.display = 'block';
                     } else {
@@ -1363,33 +1419,27 @@
             const addEmployeeSelect = document.getElementById('selectEmployeeOperation');
             const finishOperationType = document.getElementById('finishOperationType');
             
-            // Limpar selects
             pauseSelect.innerHTML = '<option value="">Selecione um carregamento em andamento</option>';
             addEmployeeSelect.innerHTML = '<option value="">Selecione um carregamento em andamento</option>';
             finishOperationType.innerHTML = '<option value="">Selecione a operação</option>';
             
-            // Preencher selects com carregamentos ativos
             Object.keys(activeLoads).forEach(loadId => {
                 const load = activeLoads[loadId];
                 let optionText = `Doca ${load.dock} - DT ${load.dockNumber}`;
                 
-                // Adicionar informação da composição se existir
                 if (load.compositionNumber) {
                     optionText += ` - Composição ${load.compositionNumber}`;
                 }
                 
                 const optionValue = loadId;
                 
-                // Para pausar/retomar
                 const pauseOption = document.createElement('option');
                 pauseOption.value = optionValue;
                 pauseOption.textContent = optionText;
                 pauseSelect.appendChild(pauseOption.cloneNode(true));
                 
-                // Para adicionar/remover funcionário
                 addEmployeeSelect.appendChild(pauseOption.cloneNode(true));
                 
-                // Para finalizar operação
                 const finishOption = document.createElement('option');
                 finishOption.value = loadId;
                 finishOption.textContent = `${getOperationTypeName(load.type)} - ${optionText}`;
@@ -1397,44 +1447,40 @@
             });
         }
         
-        // Função para atualizar a exibição de um carregamento
+        // Função para atualizar a exibição de um carregamento - MELHORADA PARA MOSTRAR NOME
         function updateLoadDisplay(loadId, loadData) {
             let loadElement = document.getElementById(`load-${loadId}`);
             
             if (!loadElement) {
-                // Criar novo elemento se não existir
                 loadElement = document.createElement('div');
                 loadElement.id = `load-${loadId}`;
                 loadElement.className = 'load-card';
                 activeLoadsList.appendChild(loadElement);
             }
             
-            // Calcular tempo decorrido e tempo restante
             const startTime = loadData.startTime.toDate();
             const now = new Date();
             const elapsedMs = now - startTime;
             const elapsedMins = Math.floor(elapsedMs / 60000);
             
-            // Definir tempo limite baseado no tipo de operação
             let timeLimitMs;
             switch(loadData.type) {
                 case 'carregamento':
-                    timeLimitMs = 140 * 60000; // 2h 20min
+                    timeLimitMs = 140 * 60000;
                     break;
                 case 'carregamento_Paletizado':
-                    timeLimitMs = 60 * 60000; // 1h
+                    timeLimitMs = 60 * 60000;
                     break;
                 case 'descarga':
-                    timeLimitMs = 140 * 60000; // 2h 20min
+                    timeLimitMs = 140 * 60000;
                     break;
                 case 'separacao':
-                    timeLimitMs = 90 * 60000; // 1h 30min
+                    timeLimitMs = 90 * 60000;
                     break;
                 default:
-                    timeLimitMs = 120 * 60000; // padrão 2h
+                    timeLimitMs = 120 * 60000;
             }
             
-            // Ajustar tempo decorrido se estiver pausado
             let actualElapsedMs = elapsedMs;
             if (loadData.pausedTime && loadData.status === 'paused') {
                 const pausedTime = loadData.pausedTime.toDate();
@@ -1444,10 +1490,8 @@
             const remainingMs = timeLimitMs - actualElapsedMs;
             const remainingMins = Math.max(0, Math.floor(remainingMs / 60000));
             
-            // Calcular porcentagem do progresso
             const progressPercent = Math.min(100, (actualElapsedMs / timeLimitMs) * 100);
             
-            // Determinar status com base no tempo restante e estado
             let statusClass, statusText, progressClass;
             
             if (loadData.status === 'paused') {
@@ -1458,7 +1502,7 @@
                 statusClass = 'status-danger';
                 statusText = 'Atrasado';
                 progressClass = 'progress-danger';
-            } else if (remainingMs <= 0.2 * timeLimitMs) { // últimos 20%
+            } else if (remainingMs <= 0.2 * timeLimitMs) {
                 statusClass = 'status-warning';
                 statusText = 'Quase terminando';
                 progressClass = 'progress-warning';
@@ -1468,13 +1512,15 @@
                 progressClass = 'progress-normal';
             }
             
-            // Formatar o conteúdo do elemento
+            // SEMPRE MOSTRAR O NOME DO FUNCIONÁRIO EM VEZ DO CÓDIGO
+            const employeeDisplayName = loadData.employeeName || 'Nome não encontrado';
+            
             loadElement.innerHTML = `
                 <div class="load-header">
                     <div class="load-time">Iniciado: ${formatTime(startTime)}</div>
                     <div class="load-status ${statusClass}">${statusText}</div>
                 </div>
-                <div>Colaborador: ${loadData.employeeName || loadData.employeeCode}</div>
+                <div class="load-employee-name">Colaborador: ${employeeDisplayName}</div>
                 <div>Tipo: ${getOperationTypeName(loadData.type)}</div>
                 <div>Tempo decorrido: ${Math.floor(actualElapsedMs / 60000)} min</div>
                 <div>Tempo restante: ${remainingMins} min</div>
@@ -1489,6 +1535,9 @@
                     ` : ''}
                     <div class="detail-item"><span class="detail-label">Veículo:</span> ${loadData.vehicleType || 'N/A'}</div>
                     <div class="detail-item"><span class="detail-label">Armazéns:</span> ${loadData.warehouses ? loadData.warehouses.join(', ') : 'N/A'}</div>
+                    ${loadData.loadingLocation ? `
+                    <div class="detail-item"><span class="detail-label">Local de Carregamento:</span> ${getLoadingLocationName(loadData.loadingLocation)}</div>
+                    ` : ''}
                 </div>
                 ${loadData.additionalLoaders && loadData.additionalLoaders.length > 0 ? `
                 <div class="detail-item"><span class="detail-label">Carregadores adicionais:</span> ${loadData.additionalLoaders.join(', ')}</div>
@@ -1498,12 +1547,10 @@
                 ` : ''}
             `;
             
-            // Se já existe um intervalo para este carregamento, limpe-o
             if (loadIntervals[loadId]) {
                 clearInterval(loadIntervals[loadId]);
             }
             
-            // Atualizar a cada minuto
             loadIntervals[loadId] = setInterval(() => {
                 updateLoadDisplay(loadId, loadData);
             }, 60000);
@@ -1516,7 +1563,6 @@
                 loadElement.remove();
             }
             
-            // Limpar o intervalo se existir
             if (loadIntervals[loadId]) {
                 clearInterval(loadIntervals[loadId]);
                 delete loadIntervals[loadId];
@@ -1545,6 +1591,16 @@
             return types[type] || type;
         }
         
+        // Nova função para obter nome do local de carregamento
+        function getLoadingLocationName(location) {
+            const locations = {
+                'logistica': 'Logística',
+                '0300': '0300',
+                'cross': 'Cross'
+            };
+            return locations[location] || location;
+        }
+        
         // Eventos para mostrar os formulários
         startOperationBtn.addEventListener('click', () => {
             hideAllForms();
@@ -1559,7 +1615,6 @@
         pauseOperationBtn.addEventListener('click', () => {
             hideAllForms();
             pauseOperationForm.style.display = 'block';
-            // Resetar o select de ação
             pauseActionSelect.selectedIndex = 0;
             pauseReasonContainer.style.display = 'none';
         });
@@ -1591,7 +1646,6 @@
             scannerActive = true;
             scanResult.style.display = 'none';
 
-            // Criar canvas para processamento
             if (!canvas) {
                 canvas = document.createElement('canvas');
                 canvasContext = canvas.getContext('2d');
@@ -1651,7 +1705,6 @@
                 if (currentScannerInput) {
                     currentScannerInput.value = code.data;
                     
-                    // Verificar se o colaborador existe apenas para o funcionário principal
                     if (currentScannerInput.id === 'employeeCode' || 
                         currentScannerInput.id === 'finishEmployeeCode' ||
                         currentScannerInput.id === 'pauseEmployeeCode' ||
@@ -1689,50 +1742,42 @@
         // Evento para cancelar o scanner
         cancelScanBtn.addEventListener('click', pararScanner);
         
-        // Função para verificar se colaborador existe E pertence à mesma unidade
+        // FUNÇÃO MELHORADA PARA VERIFICAR COLABORADOR COM CACHE
         function checkEmployeeExistsAndValidate(employeeCode, inputId) {
+            // Verificar cache primeiro
+            const cached = employeeCache.get(employeeCode);
+            if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+                console.log(`Colaborador ${employeeCode} encontrado no cache`);
+                handleEmployeeValidationResult(cached.data, employeeCode, inputId);
+                return;
+            }
+
             db.collection('colaboradores')
                 .where('codigo', '==', employeeCode)
                 .get()
                 .then((snapshot) => {
                     if (snapshot.empty) {
-                        // Colaborador não existe, abrir modal para cadastro
                         employeeIdInput.value = employeeCode;
                         employeeModal.style.display = 'block';
                         
-                        // Mostrar erro no campo específico
                         if (inputId === 'employeeCode') {
                             showValidationError('employeeCode', 'Colaborador não encontrado no sistema');
                         }
                     } else {
-                        // Colaborador existe, verificar se pertence à mesma unidade
                         const employeeData = snapshot.docs[0].data();
-                        const employeeUnit = employeeData.unidade;
                         
-                        if (employeeUnit !== currentUnit) {
-                            // Colaborador pertence a outra unidade
-                            if (inputId === 'employeeCode') {
-                                showValidationError('employeeCode', `Colaborador pertence à unidade "${employeeUnit}" - Não pode operar na unidade "${currentUnit}"`);
-                            }
-                            alert(`ERRO: O colaborador ${employeeCode} pertence à unidade "${employeeUnit}", mas você está na unidade "${currentUnit}". Não é possível iniciar operação.`);
-                            return;
-                        }
+                        // Armazenar no cache
+                        employeeCache.set(employeeCode, {
+                            data: employeeData,
+                            timestamp: Date.now()
+                        });
                         
-                        // Colaborador válido
-                        if (inputId === 'employeeCode') {
-                            showValidationSuccess('employeeCode', `Colaborador válido: ${employeeData.nome || employeeCode}`);
-                        }
-                        
-                        // Armazenar validação
-                        validatedEmployees[employeeCode] = employeeData;
-                        
-                        console.log(`Colaborador válido: ${employeeData.nome || employeeCode} - Unidade: ${employeeUnit}`);
+                        handleEmployeeValidationResult(employeeData, employeeCode, inputId);
                     }
                 })
                 .catch((error) => {
                     console.error("Erro ao verificar colaborador:", error);
                     
-                    // Se for erro de permissão, assumir que o colaborador não existe
                     if (error.code === 'permission-denied') {
                         employeeIdInput.value = employeeCode;
                         employeeModal.style.display = 'block';
@@ -1747,6 +1792,44 @@
                 });
         }
         
+        // Nova função para processar resultado da validação
+        function handleEmployeeValidationResult(employeeData, employeeCode, inputId) {
+            const employeeUnit = employeeData.unidade;
+            
+            if (employeeUnit !== currentUnit) {
+                if (inputId === 'employeeCode') {
+                    showValidationError('employeeCode', `Colaborador pertence à unidade "${employeeUnit}" - Não pode operar na unidade "${currentUnit}"`);
+                }
+                alert(`ERRO: O colaborador ${employeeCode} pertence à unidade "${employeeUnit}", mas você está na unidade "${currentUnit}". Não é possível iniciar operação.`);
+                return;
+            }
+            
+            // Colaborador válido - MOSTRAR O NOME
+            const employeeName = employeeData.nome || employeeCode;
+            if (inputId === 'employeeCode') {
+                showValidationSuccess('employeeCode', `Colaborador válido: ${employeeName}`);
+                showEmployeeName('employeeNameDisplay', employeeName);
+            } else if (inputId === 'finishEmployeeCode') {
+                showEmployeeName('finishEmployeeNameDisplay', employeeName);
+            } else if (inputId === 'pauseEmployeeCode') {
+                showEmployeeName('pauseEmployeeNameDisplay', employeeName);
+            } else if (inputId === 'newEmployeeCode') {
+                showEmployeeName('newEmployeeNameDisplay', employeeName);
+            }
+            
+            validatedEmployees[employeeCode] = employeeData;
+            console.log(`Colaborador válido: ${employeeName} - Unidade: ${employeeUnit}`);
+        }
+        
+        // Nova função para mostrar nome do funcionário
+        function showEmployeeName(displayElementId, employeeName) {
+            const displayElement = document.getElementById(displayElementId);
+            if (displayElement) {
+                displayElement.textContent = `Nome: ${employeeName}`;
+                displayElement.style.display = 'block';
+            }
+        }
+        
         // Funções para mostrar validação
         function showValidationError(field, message) {
             const errorElement = document.getElementById(field + 'Error');
@@ -1755,6 +1838,12 @@
             errorElement.textContent = message;
             errorElement.style.display = 'block';
             successElement.style.display = 'none';
+            
+            // Esconder nome se houver erro
+            const nameDisplay = document.getElementById(field.replace('Code', 'NameDisplay'));
+            if (nameDisplay) {
+                nameDisplay.style.display = 'none';
+            }
         }
         
         function showValidationSuccess(field, message) {
@@ -1772,6 +1861,12 @@
             
             errorElement.style.display = 'none';
             successElement.style.display = 'none';
+            
+            // Esconder nome quando limpar
+            const nameDisplay = document.getElementById(field.replace('Code', 'NameDisplay'));
+            if (nameDisplay) {
+                nameDisplay.style.display = 'none';
+            }
         }
         
         // Evento para validar colaborador principal quando digitar
@@ -1780,7 +1875,6 @@
             clearValidation('employeeCode');
             
             if (employeeCode.length > 0) {
-                // Aguardar um pouco antes de validar (debounce)
                 setTimeout(() => {
                     if (this.value.trim() === employeeCode) {
                         checkEmployeeExistsAndValidate(employeeCode, 'employeeCode');
@@ -1796,7 +1890,6 @@
             
             function validateNext(index) {
                 if (index >= employeesToValidate.length) {
-                    // Todos os colaboradores foram validados
                     const allValid = validationResults.every(result => result.valid);
                     callback(allValid, validationResults);
                     return;
@@ -1804,7 +1897,6 @@
                 
                 const currentEmployee = employeesToValidate[index];
                 
-                // Se já foi validado anteriormente, usar o resultado
                 if (validatedEmployees[currentEmployee]) {
                     validationResults.push({
                         employeeCode: currentEmployee,
@@ -1816,7 +1908,32 @@
                     return;
                 }
                 
-                // Validar no banco de dados
+                // Usar cache para validação em lote
+                const cached = employeeCache.get(currentEmployee);
+                if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+                    const employeeData = cached.data;
+                    const employeeUnit = employeeData.unidade;
+                    
+                    if (employeeUnit !== currentUnit) {
+                        validationResults.push({
+                            employeeCode: currentEmployee,
+                            valid: false,
+                            data: employeeData,
+                            message: `Pertence à unidade "${employeeUnit}"`
+                        });
+                    } else {
+                        validationResults.push({
+                            employeeCode: currentEmployee,
+                            valid: true,
+                            data: employeeData,
+                            message: 'Válido'
+                        });
+                        validatedEmployees[currentEmployee] = employeeData;
+                    }
+                    validateNext(index + 1);
+                    return;
+                }
+                
                 db.collection('colaboradores')
                     .where('codigo', '==', currentEmployee)
                     .get()
@@ -1832,6 +1949,12 @@
                             const employeeData = snapshot.docs[0].data();
                             const employeeUnit = employeeData.unidade;
                             
+                            // Armazenar no cache
+                            employeeCache.set(currentEmployee, {
+                                data: employeeData,
+                                timestamp: Date.now()
+                            });
+                            
                             if (employeeUnit !== currentUnit) {
                                 validationResults.push({
                                     employeeCode: currentEmployee,
@@ -1846,7 +1969,6 @@
                                     data: employeeData,
                                     message: 'Válido'
                                 });
-                                // Armazenar para validações futuras
                                 validatedEmployees[currentEmployee] = employeeData;
                             }
                         }
@@ -1867,7 +1989,7 @@
             validateNext(0);
         }
         
-        // Atualizar lista de funcionários no formulário de adicionar/remover
+        // Atualizar lista de funcionários no formulário de adicionar/remover - MELHORADA PARA MOSTRAR NOMES
         function updateEmployeeList() {
             const selectOperation = document.getElementById('selectEmployeeOperation');
             const employeeList = document.getElementById('currentEmployees');
@@ -1885,22 +2007,37 @@
                 return;
             }
             
+            // Buscar nomes dos funcionários adicionais
+            const additionalLoaderNames = [];
+            if (operation.additionalLoaders && operation.additionalLoaders.length > 0) {
+                operation.additionalLoaders.forEach(loaderCode => {
+                    const cached = employeeCache.get(loaderCode);
+                    if (cached) {
+                        additionalLoaderNames.push(cached.data.nome || loaderCode);
+                    } else {
+                        additionalLoaderNames.push(loaderCode);
+                    }
+                });
+            }
+            
             let html = `<p>Funcionários atuais no carregamento (Doca ${operation.dock} - DT ${operation.dockNumber}):</p>`;
             
-            // Funcionário principal
+            // Funcionário principal - SEMPRE MOSTRAR NOME
+            const mainEmployeeName = operation.employeeName || operation.employeeCode;
             html += `
                 <div class="employee-item">
-                    <span>${operation.employeeName || operation.employeeCode} (Principal)</span>
+                    <span class="load-employee-name">${mainEmployeeName} (Principal)</span>
                     <input type="radio" name="selectedEmployee" value="${operation.employeeCode}" data-type="principal">
                 </div>
             `;
             
             // Funcionários adicionais
             if (operation.additionalLoaders && operation.additionalLoaders.length > 0) {
-                operation.additionalLoaders.forEach(loader => {
+                operation.additionalLoaders.forEach((loader, index) => {
+                    const loaderName = additionalLoaderNames[index] || loader;
                     html += `
                         <div class="employee-item">
-                            <span>${loader}</span>
+                            <span class="load-employee-name">${loaderName}</span>
                             <input type="radio" name="selectedEmployee" value="${loader}" data-type="additional">
                         </div>
                     `;
@@ -1911,7 +2048,6 @@
             
             employeeList.innerHTML = html;
             
-            // Adicionar eventos aos radio buttons
             const radioButtons = employeeList.querySelectorAll('input[type="radio"]');
             radioButtons.forEach(radio => {
                 radio.addEventListener('change', function() {
@@ -1939,6 +2075,7 @@
                 <div class="form-group">
                     <label for="${loaderId}">Código do Carregador Adicional ${loaderCount}</label>
                     <input type="text" id="${loaderId}" placeholder="Ex: GZL-EO-1234">
+                    <div class="employee-name-display" id="${loaderId}NameDisplay" style="display: none;"></div>
                     <button class="qr-button" data-target="${loaderId}">Ler QR Code</button>
                 </div>
                 <button class="remove-loader" data-target="${loaderId}">Remover</button>
@@ -1946,17 +2083,34 @@
             
             additionalLoadersContainer.appendChild(loaderDiv);
             
-            // Adicionar evento ao botão de QR code
             const qrButton = loaderDiv.querySelector('.qr-button');
             qrButton.addEventListener('click', () => {
                 const inputField = document.getElementById(loaderId);
                 iniciarScanner(inputField);
             });
             
-            // Adicionar evento ao botão de remover
             const removeButton = loaderDiv.querySelector('.remove-loader');
             removeButton.addEventListener('click', () => {
                 loaderDiv.remove();
+            });
+            
+            // Adicionar evento de input para validação em tempo real
+            const inputField = document.getElementById(loaderId);
+            inputField.addEventListener('input', function() {
+                const employeeCode = this.value.trim();
+                const nameDisplay = document.getElementById(`${loaderId}NameDisplay`);
+                
+                if (nameDisplay) {
+                    nameDisplay.style.display = 'none';
+                }
+                
+                if (employeeCode.length > 0) {
+                    setTimeout(() => {
+                        if (this.value.trim() === employeeCode) {
+                            checkEmployeeExistsAndValidate(employeeCode, loaderId);
+                        }
+                    }, 500);
+                }
             });
         });
         
@@ -1975,7 +2129,6 @@
                 return;
             }
             
-            // Salvar no Firestore
             db.collection('colaboradores').add({
                 codigo: employeeCode,
                 nome: employeeName,
@@ -1990,6 +2143,16 @@
                 clearValidation('employeeCode');
                 document.getElementById('employeeCode').value = employeeCode;
                 
+                // Adicionar ao cache
+                employeeCache.set(employeeCode, {
+                    data: {
+                        codigo: employeeCode,
+                        nome: employeeName,
+                        unidade: currentUnit
+                    },
+                    timestamp: Date.now()
+                });
+                
                 // Validar automaticamente o novo colaborador
                 setTimeout(() => {
                     checkEmployeeExistsAndValidate(employeeCode, 'employeeCode');
@@ -2001,7 +2164,7 @@
             });
         });
         
-        // Registrar carro em doca - ATUALIZADA PARA CRIAR COMPOSIÇÕES
+        // Registrar carro em doca
         document.getElementById('submitCarInDockBtn').addEventListener('click', () => {
             const dockNumber = document.getElementById('carDockNumber').value;
             const mainDock = document.getElementById('carDock').value;
@@ -2012,7 +2175,6 @@
                 return;
             }
             
-            // Coletar docas das composições se houver mais de uma
             const compositionDocks = {};
             if (compositionsCount > 1) {
                 for (let i = 1; i <= compositionsCount; i++) {
@@ -2027,7 +2189,6 @@
                 compositionDocks[1] = mainDock;
             }
             
-            // Verificar se já existe um carro com esta DT em doca
             db.collection('carsInDock')
                 .where('dockNumber', '==', dockNumber)
                 .where('unit', '==', currentUnit)
@@ -2039,7 +2200,6 @@
                         return;
                     }
                     
-                    // Registrar o carro em doca
                     return db.collection('carsInDock').add({
                         dockNumber: dockNumber,
                         dock: mainDock,
@@ -2052,7 +2212,6 @@
                     });
                 })
                 .then((carRef) => {
-                    // Criar composições para cada parte do bitrem
                     const compositionPromises = [];
                     
                     for (let i = 1; i <= compositionsCount; i++) {
@@ -2085,7 +2244,7 @@
                 });
         });
         
-        // Iniciar operação - ATUALIZADA PARA USAR COMPOSIÇÕES
+        // Iniciar operação - ATUALIZADA COM LOCAL DE CARREGAMENTO
         document.getElementById('submitOperationBtn').addEventListener('click', () => {
             const employeeCode = document.getElementById('employeeCode').value;
             const operationType = document.getElementById('operationType').value;
@@ -2096,7 +2255,16 @@
             const keepCarInDock = document.getElementById('simultaneousLoading').checked;
             const compositionNumber = document.getElementById('selectComposition').value;
             
-            // Coletar armazéns selecionados
+            // Obter local de carregamento selecionado
+            const loadingLocationInput = document.querySelector('input[name="loadingLocation"]:checked');
+            const loadingLocation = loadingLocationInput ? loadingLocationInput.value : null;
+            
+            // Validação do local de carregamento
+            if (!loadingLocation) {
+                alert('Por favor, selecione o local de carregamento');
+                return;
+            }
+            
             const selectedWarehouses = Array.from(warehouseCheckboxes)
                 .filter(cb => cb.checked)
                 .map(cb => {
@@ -2104,7 +2272,6 @@
                     return label;
                 });
             
-            // Coletar carregadores adicionais
             const additionalLoaders = [];
             const additionalLoaderInputs = document.querySelectorAll('.additional-loader input[type="text"]');
             additionalLoaderInputs.forEach(input => {
@@ -2113,23 +2280,19 @@
                 }
             });
             
-            // Validação básica
             if (!employeeCode || !operationType || !carInDockId || selectedWarehouses.length === 0) {
                 alert('Por favor, preencha todos os campos obrigatórios');
                 return;
             }
             
-            // Determinar a doca correta
             let finalDock = dock;
             const selectedOption = selectCarInDock.options[selectCarInDock.selectedIndex];
             const carInDock = carsInDock[carInDockId];
             
             if (carInDock && carInDock.compositionsCount > 1) {
                 if (selectedOption.dataset.composition) {
-                    // Usar a doca da composição selecionada no dropdown principal
                     finalDock = selectedOption.dataset.dock;
                 } else if (compositionNumber) {
-                    // Usar a doca da composição selecionada no select de composição
                     const compositionDocks = carInDock.compositionDocks || {};
                     finalDock = compositionDocks[compositionNumber] || dock;
                 } else {
@@ -2138,7 +2301,6 @@
                 }
             }
             
-            // VALIDAÇÃO DOS COLABORADORES
             validateAllEmployees(employeeCode, additionalLoaders, (allValid, results) => {
                 if (!allValid) {
                     let errorMessage = 'ERRO: Validação de colaboradores falhou:\n\n';
@@ -2158,7 +2320,6 @@
                     return;
                 }
                 
-                // Todos os colaboradores são válidos, continuar com a operação
                 proceedWithOperation(
                     employeeCode,
                     operationType,
@@ -2169,7 +2330,8 @@
                     selectedWarehouses,
                     additionalLoaders,
                     keepCarInDock,
-                    compositionNumber || selectedOption.dataset.composition
+                    compositionNumber || selectedOption.dataset.composition,
+                    loadingLocation
                 );
             });
         });
@@ -2185,17 +2347,16 @@
             selectedWarehouses,
             additionalLoaders,
             keepCarInDock,
-            compositionNumber = null
+            compositionNumber = null,
+            loadingLocation = null
         ) {
-            // Verificar se há atraso no início do carregamento
             const carInDock = carsInDock[carInDockId];
             if (carInDock) {
                 const arrivalTime = carInDock.arrivalTime.toDate();
                 const now = new Date();
-                const timeDiff = (now - arrivalTime) / (1000 * 60); // diferença em minutos
+                const timeDiff = (now - arrivalTime) / (1000 * 60);
                 
                 if (timeDiff > 10) {
-                    // Mostrar modal de atraso
                     pendingOperationWithDelay = {
                         employeeCode,
                         operationType,
@@ -2206,7 +2367,8 @@
                         selectedWarehouses,
                         additionalLoaders,
                         keepCarInDock,
-                        compositionNumber: compositionNumber
+                        compositionNumber,
+                        loadingLocation
                     };
                     
                     delayModal.style.display = 'flex';
@@ -2214,7 +2376,6 @@
                 }
             }
             
-            // Se não há atraso, prosseguir com a operação normalmente
             createOperation(
                 employeeCode,
                 operationType,
@@ -2225,11 +2386,13 @@
                 selectedWarehouses,
                 additionalLoaders,
                 keepCarInDock,
-                compositionNumber
+                compositionNumber,
+                null,
+                loadingLocation
             );
         }
         
-        // Função para criar a operação no banco de dados - ATUALIZADA PARA COMPOSIÇÕES
+        // Função para criar a operação no banco de dados - ATUALIZADA COM LOCAL DE CARREGAMENTO
         function createOperation(
             employeeCode,
             operationType,
@@ -2241,13 +2404,12 @@
             additionalLoaders,
             keepCarInDock,
             compositionNumber = null,
-            delayReason = null
+            delayReason = null,
+            loadingLocation = null
         ) {
-            // Buscar dados dos colaboradores validados
             const employeeData = validatedEmployees[employeeCode] || {};
             const employeeName = employeeData.nome || '';
             
-            // Criar a operação no Firestore
             db.collection('operations').add({
                 employeeCode: employeeCode,
                 employeeName: employeeName,
@@ -2265,12 +2427,11 @@
                 carInDockId: carInDockId,
                 keepCarInDock: keepCarInDock,
                 compositionNumber: compositionNumber,
-                delayReason: delayReason
+                delayReason: delayReason,
+                loadingLocation: loadingLocation // NOVO CAMPO
             })
             .then((operationRef) => {
-                // Se for um bitrem, atualizar a composição específica
                 if (compositionNumber) {
-                    // Encontrar a composição correspondente
                     return db.collection('compositions')
                         .where('carId', '==', carInDockId)
                         .where('compositionNumber', '==', parseInt(compositionNumber))
@@ -2287,7 +2448,6 @@
                             return Promise.resolve();
                         });
                 } else {
-                    // Para carros simples
                     if (!keepCarInDock) {
                         return db.collection('carsInDock').doc(carInDockId).update({
                             status: 'in_use'
@@ -2319,10 +2479,13 @@
                 warehouseCheckboxes.forEach(cb => cb.checked = false);
                 updateSelectedWarehouses();
                 
+                // Limpar seleção de local de carregamento
+                const locationRadios = document.querySelectorAll('input[name="loadingLocation"]');
+                locationRadios.forEach(radio => radio.checked = false);
+                
                 // Limpar carregadores adicionais
                 document.getElementById('additionalLoaders').innerHTML = '';
                 
-                // Resetar operação pendente
                 pendingOperationWithDelay = null;
             })
             .catch((error) => {
@@ -2354,10 +2517,8 @@
                 return;
             }
             
-            // Fechar modal
             delayModal.style.display = 'none';
             
-            // Continuar com a criação da operação com o motivo do atraso
             if (pendingOperationWithDelay) {
                 createOperation(
                     pendingOperationWithDelay.employeeCode,
@@ -2370,12 +2531,13 @@
                     pendingOperationWithDelay.additionalLoaders,
                     pendingOperationWithDelay.keepCarInDock,
                     pendingOperationWithDelay.compositionNumber,
-                    finalDelayReason
+                    finalDelayReason,
+                    pendingOperationWithDelay.loadingLocation
                 );
             }
         });
         
-        // Finalizar operação - ATUALIZADA PARA COMPOSIÇÕES
+        // Finalizar operação
         document.getElementById('submitFinishBtn').addEventListener('click', () => {
             const employeeCode = document.getElementById('finishEmployeeCode').value;
             const operationId = document.getElementById('finishOperationType').value;
@@ -2383,7 +2545,6 @@
             const tonsLoaded = document.getElementById('tonsLoaded').value;
             const observation = document.getElementById('observation').value;
             
-            // Validação básica
             if (!employeeCode || !operationId || !materialMix || !tonsLoaded) {
                 alert('Por favor, preencha todos os campos obrigatórios');
                 return;
@@ -2395,7 +2556,6 @@
                 return;
             }
             
-            // Verificar se o funcionário pertence à operação
             if (operation.employeeCode !== employeeCode && 
                 (!operation.additionalLoaders || !operation.additionalLoaders.includes(employeeCode))) {
                 alert('Este funcionário não pertence à operação selecionada');
@@ -2406,7 +2566,6 @@
             const keepCarInDock = operation.keepCarInDock;
             const compositionNumber = operation.compositionNumber;
             
-            // Atualizar a operação no Firestore
             db.collection('operations').doc(operationId).update({
                 status: 'completed',
                 endTime: new Date(),
@@ -2416,7 +2575,6 @@
                 completedBy: currentUser.uid
             })
             .then(() => {
-                // Se for uma composição de bitrem, marcar como concluída
                 if (compositionNumber) {
                     return db.collection('compositions')
                         .where('carId', '==', carInDockId)
@@ -2433,7 +2591,6 @@
                             return Promise.resolve();
                         })
                         .then(() => {
-                            // Verificar se todas as composições foram concluídas
                             return db.collection('compositions')
                                 .where('carId', '==', carInDockId)
                                 .where('status', 'in', ['available', 'in_use'])
@@ -2441,27 +2598,22 @@
                         })
                         .then((snapshot) => {
                             if (snapshot.empty) {
-                                // Todas as composições foram concluídas, remover o carro
                                 return db.collection('carsInDock').doc(carInDockId).delete();
                             }
                             return Promise.resolve();
                         });
                 } else {
-                    // Para carros simples
                     if (!keepCarInDock) {
                         return db.collection('carsInDock').doc(carInDockId).delete();
                     } else {
-                        // Verificar se ainda há operações usando este carro
                         return db.collection('operations')
                             .where('carInDockId', '==', carInDockId)
                             .where('status', 'in', ['active', 'paused'])
                             .get()
                             .then((snapshot) => {
                                 if (snapshot.empty) {
-                                    // Se não há mais operações, remove o carro da doca
                                     return db.collection('carsInDock').doc(carInDockId).delete();
                                 } else {
-                                    // Se ainda há operações, mantém o carro
                                     return Promise.resolve();
                                 }
                             });
@@ -2472,7 +2624,6 @@
                 alert('Operação finalizada com sucesso!');
                 finishOperationForm.style.display = 'none';
                 
-                // Limpar formulário
                 document.getElementById('finishEmployeeCode').value = '';
                 document.getElementById('materialMix').value = '';
                 document.getElementById('tonsLoaded').value = '';
@@ -2492,13 +2643,11 @@
             const action = document.getElementById('pauseAction').value;
             const reason = document.getElementById('pauseReason').value;
             
-            // Validação básica
             if (!employeeCode || !operationId) {
                 alert('Por favor, preencha todos os campos obrigatórios');
                 return;
             }
             
-            // Verificar se o funcionário pertence à operação
             const operation = activeLoads[operationId];
             if (!operation || (operation.employeeCode !== employeeCode && 
                 (!operation.additionalLoaders || !operation.additionalLoaders.includes(employeeCode)))) {
@@ -2506,7 +2655,6 @@
                 return;
             }
             
-            // Atualizar a operação no Firestore
             if (action === 'pausar') {
                 db.collection('operations').doc(operationId).update({
                     status: 'paused',
@@ -2517,8 +2665,6 @@
                 .then(() => {
                     alert('Operação pausada com sucesso!');
                     pauseOperationForm.style.display = 'none';
-                    
-                    // Limpar formulário
                     document.getElementById('pauseEmployeeCode').value = '';
                 })
                 .catch((error) => {
@@ -2526,7 +2672,6 @@
                     alert('Erro ao pausar operação: ' + error.message);
                 });
             } else {
-                // Calcular o tempo pausado para ajustar o tempo total
                 const now = new Date();
                 const pausedTime = operation.pausedTime.toDate();
                 const pausedDuration = now - pausedTime;
@@ -2541,8 +2686,6 @@
                 .then(() => {
                     alert('Operação retomada com sucesso!');
                     pauseOperationForm.style.display = 'none';
-                    
-                    // Limpar formulário
                     document.getElementById('pauseEmployeeCode').value = '';
                 })
                 .catch((error) => {
@@ -2557,7 +2700,6 @@
             const employeeCode = document.getElementById('newEmployeeCode').value;
             const operationId = document.getElementById('selectEmployeeOperation').value;
             
-            // Validação básica
             if (!employeeCode || !operationId) {
                 alert('Por favor, preencha todos os campos obrigatórios');
                 return;
@@ -2574,12 +2716,10 @@
                     const data = doc.data();
                     const additionalLoaders = data.additionalLoaders || [];
                     
-                    // Verificar se o funcionário já está na operação
                     if (data.employeeCode === employeeCode || additionalLoaders.includes(employeeCode)) {
                         throw new Error("Este funcionário já está nesta operação!");
                     }
                     
-                    // Adicionar o funcionário à lista
                     additionalLoaders.push(employeeCode);
                     
                     transaction.update(operationRef, {
@@ -2589,8 +2729,6 @@
             }).then(() => {
                 alert('Funcionário adicionado com sucesso!');
                 document.getElementById('newEmployeeCode').value = '';
-                
-                // Atualizar a lista de funcionários
                 updateEmployeeList();
             }).catch((error) => {
                 console.error("Erro ao adicionar funcionário:", error);
@@ -2605,7 +2743,7 @@
                 return;
             }
             
-            if (!confirm(`Tem certeza que deseja remover o funcionário ${selectedEmployeeToRemove.code} deste carregamento?`)) {
+            if (!confirm(`Tem certeza que deseja remover o funcionário deste carregamento?`)) {
                 return;
             }
             
@@ -2691,6 +2829,16 @@
 
         // Torna a função de debug disponível globalmente
         window.debugCompositions = debugCompositions;
+        
+        // Limpar cache periodicamente (opcional)
+        setInterval(() => {
+            const now = Date.now();
+            for (let [key, value] of employeeCache.entries()) {
+                if (now - value.timestamp > CACHE_DURATION) {
+                    employeeCache.delete(key);
+                }
+            }
+        }, CACHE_DURATION);
     </script>
 </body>
 </html>
