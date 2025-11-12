@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatórios - ProdPlan</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(115deg, #00ffb3 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding-top: 100px;
+        }
+
+        /* NAVBAR */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 0 20px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 80px;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .navbar-logo {
+            font-size: 2rem;
+            color: #667eea;
+        }
+
+        .navbar-brand h1 {
+            font-size: 1.5rem;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .navbar-menu {
+            display: flex;
+            list-style: none;
+            gap: 10px;
+        }
+
+        .navbar-item {
+            position: relative;
+        }
+
+        .navbar-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 18px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #555;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .navbar-link:hover {
+            background-color: #f0f2f5;
+            color: #667eea;
+        }
+
+        .navbar-link.active {
+            background-color: #667eea;
+            color: white;
+        }
+
+        .navbar-link i {
+            font-size: 1.1rem;
+        }
+
+        .navbar-user {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info {
+            background: #f8f9fa;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            color: #495057;
+        }
+
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn:hover {
+            background: #c82333;
+        }
+
+        /* CONTEÚDO PRINCIPAL */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .page-title {
+            color: white;
+            font-size: 2rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        /* INFO DA UNIDADE */
+        .unit-info {
+            background: #e7f3ff;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .unit-info i {
+            color: #667eea;
+            font-size: 1.2rem;
+        }
+
+        .unit-info strong {
+            color: #333;
+        }
+
+        /* FILTROS */
+        .filters-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-input, .form-select {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+        }
+
+        /* CARDS DE RESUMO */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .summary-icon {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+
+        .summary-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .summary-label {
+            color: #666;
+            font-size: 1rem;
+        }
+
+        .card-total { border-left: 4px solid #667eea; }
+        .card-hoje { border-left: 4px solid #28a745; }
+        .card-validos { border-left: 4px solid #17a2b8; }
+        .card-expirados { border-left: 4px solid #dc3545; }
+
+        /* TABELA DE CHECKLISTS */
+        .table-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .table-title {
+            color: #333;
+            font-size: 1.5rem;
+        }
+
+        .checklists-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .checklists-table th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .checklists-table td {
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: top;
+        }
+
+        .checklists-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* STATUS BADGES */
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-valid {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-expired {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        /* PROGRESS BAR DE VALIDADE */
+        .validity-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .validity-progress {
+            flex: 1;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .validity-progress-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-valid { background: #28a745; }
+        .progress-warning { background: #ffc107; }
+        .progress-expired { background: #dc3545; }
+
+        .validity-time {
+            font-size: 0.8rem;
+            color: #666;
+            min-width: 80px;
+            text-align: right;
+        }
+
+        /* DETALHES DO CHECKLIST */
+        .checklist-details {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .checklist-details.active {
+            display: block;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .details-categories {
+            margin-top: 20px;
+        }
+
+        .category-summary {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .category-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .category-title {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .category-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9rem;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .stat-ok { color: #28a745; }
+        .stat-nok { color: #dc3545; }
+        .stat-na { color: #6c757d; }
+
+        /* MODAL DE DETALHES */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            color: #333;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        /* MENSAGENS */
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.active {
+            display: block;
+        }
+
+        /* RESPONSIVIDADE */
+        @media (max-width: 768px) {
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-actions {
+                justify-content: stretch;
+            }
+
+            .checklists-table {
+                display: block;
+                overflow-x: auto;
+            }
+
+            .summary-cards {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            <i class="fas fa-industry navbar-logo"></i>
+            <h1>ProdPlan</h1>
+        </div>
+        
+        <ul class="navbar-menu">
+            <li class="navbar-item">
+                <a href="checklist.html" class="navbar-link">
+                    <i class="fas fa-clipboard-check"></i>
+                    <span>Checklist</span>
+                </a>
+            </li>
+            <li class="navbar-item">
+                <a href="controle.html" class="navbar-link">
+                    <i class="fas fa-tasks"></i>
+                    <span>Controle</span>
+                </a>
+            </li>
+            <li class="navbar-item">
+                <a href="maquinas.html" class="navbar-link">
+                    <i class="fas fa-cogs"></i>
+                    <span>Máquinas</span>
+                </a>
+            </li>
+            <li class="navbar-item">
+                <a href="relatorios.html" class="navbar-link active">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Relatórios</span>
+                </a>
+            </li>
+            <li class="navbar-item">
+                <a href="Manutencao.html" class="navbar-link">
+                    <i class="fas fa-gear"></i>
+                    <span>Manutenção</span>
+                </a>
+            </li>
+        </ul>
+        
+        <div class="navbar-user">
+            <div class="user-info" id="userInfo">
+                <i class="fas fa-user"></i>
+                <span>Carregando...</span>
+            </div>
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Sair</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <div class="container">
+        <div class="page-header">
+            <h1 class="page-title">Relatórios de Checklists</h1>
+            <button class="btn" id="refreshData">
+                <i class="fas fa-sync-alt"></i>
+                <span>Atualizar Dados</span>
+            </button>
+        </div>
+
+        <!-- MENSAGENS -->
+        <div class="message" id="message"></div>
+
+        <!-- INFO DA UNIDADE -->
+        <div class="unit-info">
+            <i class="fas fa-building"></i>
+            <div>
+                <strong>Unidade Atual:</strong> <span id="currentUnit">Carregando...</span>
+            </div>
+        </div>
+
+        <!-- FILTROS -->
+        <div class="filters-container">
+            <div class="filters-grid">
+                <div class="form-group">
+                    <label class="form-label" for="dateFilter">Data</label>
+                    <input type="date" id="dateFilter" class="form-input">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="machineFilter">Máquina</label>
+                    <select id="machineFilter" class="form-select">
+                        <option value="">Todas as Máquinas</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="statusFilter">Status de Validade</label>
+                    <select id="statusFilter" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="valid">Válidos</option>
+                        <option value="warning">Prestes a Expirar</option>
+                        <option value="expired">Expirados</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="operatorFilter">Operador</label>
+                    <input type="text" id="operatorFilter" class="form-input" placeholder="Filtrar por operador...">
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button class="btn btn-secondary" id="clearFilters">
+                    <i class="fas fa-times"></i>
+                    <span>Limpar Filtros</span>
+                </button>
+                <button class="btn" id="applyFilters">
+                    <i class="fas fa-filter"></i>
+                    <span>Aplicar Filtros</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- CARDS DE RESUMO -->
+        <div class="summary-cards">
+            <div class="summary-card card-total">
+                <div class="summary-icon">
+                    <i class="fas fa-clipboard-list" style="color: #667eea;"></i>
+                </div>
+                <div class="summary-number" id="totalChecklists">0</div>
+                <div class="summary-label">Total de Checklists</div>
+            </div>
+            <div class="summary-card card-hoje">
+                <div class="summary-icon">
+                    <i class="fas fa-calendar-day" style="color: #28a745;"></i>
+                </div>
+                <div class="summary-number" id="todayChecklists">0</div>
+                <div class="summary-label">Checklists Hoje</div>
+            </div>
+            <div class="summary-card card-validos">
+                <div class="summary-icon">
+                    <i class="fas fa-check-circle" style="color: #17a2b8;"></i>
+                </div>
+                <div class="summary-number" id="validChecklists">0</div>
+                <div class="summary-label">Checklists Válidos</div>
+            </div>
+            <div class="summary-card card-expirados">
+                <div class="summary-icon">
+                    <i class="fas fa-exclamation-triangle" style="color: #dc3545;"></i>
+                </div>
+                <div class="summary-number" id="expiredChecklists">0</div>
+                <div class="summary-label">Checklists Expirados</div>
+            </div>
+        </div>
+
+        <!-- TABELA DE CHECKLISTS -->
+        <div class="table-container">
+            <div class="table-header">
+                <h2 class="table-title">Checklists Realizados na Unidade</h2>
+                <div class="validity-info">
+                    <small style="color: #666;">Validade: 8 horas | ✅ Válido | ⚠️ Prestes a expirar | ❌ Expirado</small>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="checklists-table">
+                    <thead>
+                        <tr>
+                            <th>Máquina</th>
+                            <th>Operador</th>
+                            <th>Data/Hora</th>
+                            <th>Status Itens</th>
+                            <th>Validade</th>
+                            <th>Tempo Restante</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="checklistsTableBody">
+                        <!-- Dados serão carregados aqui -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DE DETALHES -->
+    <div class="modal" id="detailsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Detalhes do Checklist</h3>
+                <button class="close-modal" id="closeModalBtn">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Conteúdo do modal será preenchido aqui -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMu17OV-5ST1rlg00zbpt6Hv37GKqkX4A",
+            authDomain: "projetos-d868d.firebaseapp.com",
+            databaseURL: "https://projetos-d868d-default-rtdb.firebaseio.com",
+            projectId: "projetos-d868d",
+            storageBucket: "projetos-d868d.firebasestorage.app",
+            messagingSenderId: "420029352781",
+            appId: "1:420029352781:web:05176699348e0ccdd78504",
+            measurementId: "G-FXWXRX04WF"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Variáveis globais
+        let currentUser = null;
+        let currentUserData = null;
+        let checklists = [];
+        let filteredChecklists = [];
+        let machines = [];
+        const CHECKLIST_VALIDITY_HOURS = 8; // Validade de 8 horas
+
+        // Elementos DOM
+        const checklistsTableBody = document.getElementById('checklistsTableBody');
+        const detailsModal = document.getElementById('detailsModal');
+        const modalBody = document.getElementById('modalBody');
+        const messageDiv = document.getElementById('message');
+        const currentUnitSpan = document.getElementById('currentUnit');
+
+        // Verificar autenticação
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                // Carregar dados do usuário
+                db.collection('users').doc(user.uid).get().then((doc) => {
+                    if (doc.exists) {
+                        currentUserData = doc.data();
+                        document.getElementById('userInfo').innerHTML = `
+                            <i class="fas fa-user"></i>
+                            <span><strong>${currentUserData.name}</strong> - ${currentUserData.unit} | ${currentUserData.userType}</span>
+                        `;
+                        
+                        // Atualizar informação da unidade
+                        currentUnitSpan.textContent = currentUserData.unit;
+                        
+                        // Carregar dados da unidade
+                        loadMachines();
+                        loadChecklists();
+                    }
+                });
+            } else {
+                window.location.href = '../index.html';
+            }
+        });
+
+        // Carregar máquinas da unidade para o filtro
+        function loadMachines() {
+            if (!currentUserData) return;
+            
+            db.collection('machines')
+                .where('unit', '==', currentUserData.unit) // FILTRO POR UNIDADE
+                .get()
+                .then((querySnapshot) => {
+                    const machineFilter = document.getElementById('machineFilter');
+                    machineFilter.innerHTML = '<option value="">Todas as Máquinas</option>';
+                    
+                    querySnapshot.forEach((doc) => {
+                        const machine = doc.data();
+                        const option = document.createElement('option');
+                        option.value = doc.id;
+                        option.textContent = machine.name;
+                        machineFilter.appendChild(option);
+                    });
+                })
+                .catch((error) => {
+                    console.error("Erro ao carregar máquinas: ", error);
+                });
+        }
+
+        // Carregar checklists da unidade
+        function loadChecklists() {
+            if (!currentUserData) return;
+            
+            db.collection('checklists')
+                .where('userUnit', '==', currentUserData.unit) // FILTRO POR UNIDADE
+                .orderBy('createdAt', 'desc')
+                .get()
+                .then((querySnapshot) => {
+                    checklists = [];
+                    querySnapshot.forEach((doc) => {
+                        const checklist = {
+                            id: doc.id,
+                            ...doc.data()
+                        };
+                        checklists.push(checklist);
+                    });
+                    
+                    applyFilters();
+                    updateSummaryCards();
+                    startValidityTimer();
+                })
+                .catch((error) => {
+                    console.error("Erro ao carregar checklists: ", error);
+                    showMessage('Erro ao carregar checklists da unidade. Tente novamente.', 'error');
+                });
+        }
+
+        // Calcular validade do checklist
+        function calculateValidity(checklist) {
+            const createdAt = checklist.createdAt.toDate();
+            const now = new Date();
+            const validityEnd = new Date(createdAt.getTime() + (CHECKLIST_VALIDITY_HOURS * 60 * 60 * 1000));
+            
+            const timeRemaining = validityEnd - now;
+            const hoursRemaining = timeRemaining / (1000 * 60 * 60);
+            const percentage = Math.max(0, (timeRemaining / (CHECKLIST_VALIDITY_HOURS * 60 * 60 * 1000)) * 100);
+            
+            let status = 'valid';
+            if (timeRemaining <= 0) {
+                status = 'expired';
+            } else if (hoursRemaining <= 4) { // Aviso 4 horas antes
+                status = 'warning';
+            }
+            
+            return {
+                status: status,
+                hoursRemaining: hoursRemaining,
+                percentage: percentage,
+                validityEnd: validityEnd
+            };
+        }
+
+        // Atualizar cartões de resumo
+        function updateSummaryCards() {
+            const today = new Date().toDateString();
+            let total = 0;
+            let todayCount = 0;
+            let validCount = 0;
+            let expiredCount = 0;
+            
+            checklists.forEach(checklist => {
+                total++;
+                
+                // Checklists de hoje
+                if (checklist.createdAt.toDate().toDateString() === today) {
+                    todayCount++;
+                }
+                
+                // Status de validade
+                const validity = calculateValidity(checklist);
+                if (validity.status === 'valid') validCount++;
+                if (validity.status === 'expired') expiredCount++;
+            });
+            
+            document.getElementById('totalChecklists').textContent = total;
+            document.getElementById('todayChecklists').textContent = todayCount;
+            document.getElementById('validChecklists').textContent = validCount;
+            document.getElementById('expiredChecklists').textContent = expiredCount;
+        }
+
+        // Aplicar filtros
+        function applyFilters() {
+            const dateFilter = document.getElementById('dateFilter').value;
+            const machineFilter = document.getElementById('machineFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const operatorFilter = document.getElementById('operatorFilter').value.toLowerCase();
+            
+            filteredChecklists = checklists.filter(checklist => {
+                // Filtro por data
+                if (dateFilter) {
+                    const checklistDate = checklist.createdAt.toDate().toISOString().split('T')[0];
+                    if (checklistDate !== dateFilter) return false;
+                }
+                
+                // Filtro por máquina
+                if (machineFilter && checklist.machineId !== machineFilter) {
+                    return false;
+                }
+                
+                // Filtro por operador
+                if (operatorFilter && !checklist.operatorName.toLowerCase().includes(operatorFilter)) {
+                    return false;
+                }
+                
+                // Filtro por status de validade
+                if (statusFilter) {
+                    const validity = calculateValidity(checklist);
+                    if (validity.status !== statusFilter) return false;
+                }
+                
+                return true;
+            });
+            
+            renderChecklistsTable();
+        }
+
+        // Renderizar tabela de checklists
+        function renderChecklistsTable() {
+            checklistsTableBody.innerHTML = '';
+            
+            if (filteredChecklists.length === 0) {
+                checklistsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px; color: #666;">
+                            <i class="fas fa-clipboard-list" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                            <h3>Nenhum checklist encontrado na unidade ${currentUserData.unit}</h3>
+                            <p>${checklists.length === 0 ? 'Nenhum checklist foi realizado ainda nesta unidade.' : 'Tente ajustar os filtros.'}</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            filteredChecklists.forEach(checklist => {
+                const validity = calculateValidity(checklist);
+                const row = document.createElement('tr');
+                
+                // Calcular estatísticas dos itens
+                let okCount = 0, nokCount = 0, naCount = 0;
+                Object.keys(checklist.checklistData).forEach(category => {
+                    Object.keys(checklist.checklistData[category]).forEach(item => {
+                        const status = checklist.checklistData[category][item].status;
+                        if (status === 'ok') okCount++;
+                        if (status === 'nok') nokCount++;
+                        if (status === 'na') naCount++;
+                    });
+                });
+                
+                // Formatar tempo restante
+                let timeText = '';
+                if (validity.status === 'expired') {
+                    timeText = 'Expirado';
+                } else {
+                    const hours = Math.floor(validity.hoursRemaining);
+                    const minutes = Math.floor((validity.hoursRemaining - hours) * 60);
+                    timeText = `${hours}h ${minutes}m`;
+                }
+                
+                // Determinar cor da barra de progresso
+                let progressClass = '';
+                if (validity.status === 'valid') progressClass = 'progress-valid';
+                if (validity.status === 'warning') progressClass = 'progress-warning';
+                if (validity.status === 'expired') progressClass = 'progress-expired';
+                
+                row.innerHTML = `
+                    <td>
+                        <strong>${checklist.machineName}</strong>
+                        <br>
+                        <small style="color: #667eea;">
+                            <i class="fas fa-building"></i> ${checklist.unit || currentUserData.unit}
+                        </small>
+                    </td>
+                    <td>${checklist.operatorName}</td>
+                    <td>
+                        ${checklist.createdAt.toDate().toLocaleDateString('pt-BR')}
+                        <br>
+                        <small>${checklist.createdAt.toDate().toLocaleTimeString('pt-BR')}</small>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 10px; font-size: 0.9rem;">
+                            <span style="color: #28a745;">✅ ${okCount}</span>
+                            <span style="color: #dc3545;">❌ ${nokCount}</span>
+                            <span style="color: #6c757d;">⚠️ ${naCount}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="validity-container">
+                            <div class="validity-progress">
+                                <div class="validity-progress-bar ${progressClass}" style="width: ${validity.percentage}%"></div>
+                            </div>
+                            <div class="validity-time">${timeText}</div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge status-${validity.status}">
+                            ${validity.status === 'valid' ? '✅ Válido' : 
+                              validity.status === 'warning' ? '⚠️ Prestes a Expirar' : '❌ Expirado'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-secondary" onclick="showChecklistDetails('${checklist.id}')" style="padding: 8px 12px;">
+                            <i class="fas fa-eye"></i>
+                            <span>Detalhes</span>
+                        </button>
+                    </td>
+                `;
+                
+                checklistsTableBody.appendChild(row);
+            });
+        }
+
+        // Mostrar detalhes do checklist
+        function showChecklistDetails(checklistId) {
+            const checklist = checklists.find(c => c.id === checklistId);
+            if (!checklist) return;
+            
+            const validity = calculateValidity(checklist);
+            
+            // Calcular estatísticas por categoria
+            let categoriesHtml = '';
+            Object.keys(checklist.checklistData).forEach(categoryKey => {
+                const category = checklist.checklistData[categoryKey];
+                let okCount = 0, nokCount = 0, naCount = 0;
+                
+                Object.keys(category).forEach(item => {
+                    const status = category[item].status;
+                    if (status === 'ok') okCount++;
+                    if (status === 'nok') nokCount++;
+                    if (status === 'na') naCount++;
+                });
+                
+                // Encontrar título da categoria
+                const categoryTitles = {
+                    'seguranca': 'Segurança',
+                    'sistema_eletrico': 'Sistema Elétrico',
+                    'sistema_hidraulico': 'Sistema Hidráulico',
+                    'sistema_mecanico': 'Sistema Mecânico',
+                    'sistema_lubrificacao': 'Sistema de Lubrificação',
+                    'componentes_operacao': 'Componentes de Operação',
+                    'limpeza_conservacao': 'Limpeza e Conservação'
+                };
+                
+                categoriesHtml += `
+                    <div class="category-summary">
+                        <div class="category-header">
+                            <div class="category-title">${categoryTitles[categoryKey] || categoryKey}</div>
+                            <div class="category-stats">
+                                <div class="stat-item stat-ok">✅ ${okCount}</div>
+                                <div class="stat-item stat-nok">❌ ${nokCount}</div>
+                                <div class="stat-item stat-na">⚠️ ${naCount}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            modalBody.innerHTML = `
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <strong>Máquina:</strong> ${checklist.machineName}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Operador:</strong> ${checklist.operatorName}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Unidade:</strong> ${checklist.unit || currentUserData.unit}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Data/Hora:</strong> ${checklist.createdAt.toDate().toLocaleString('pt-BR')}
+                    </div>
+                    <div class="detail-item">
+                        <strong>Status Validade:</strong>
+                        <span class="status-badge status-${validity.status}">
+                            ${validity.status === 'valid' ? '✅ Válido' : 
+                              validity.status === 'warning' ? '⚠️ Prestes a Expirar' : '❌ Expirado'}
+                        </span>
+                    </div>
+                </div>
+                
+                ${checklist.observations ? `
+                    <div style="margin: 20px 0;">
+                        <strong>Observações:</strong>
+                        <p style="background: white; padding: 15px; border-radius: 8px; margin-top: 5px;">${checklist.observations}</p>
+                    </div>
+                ` : ''}
+                
+                ${checklist.maintenanceNotes ? `
+                    <div style="margin: 20px 0;">
+                        <strong>Itens para Manutenção:</strong>
+                        <p style="background: #fff3cd; padding: 15px; border-radius: 8px; margin-top: 5px;">${checklist.maintenanceNotes}</p>
+                    </div>
+                ` : ''}
+                
+                <div class="details-categories">
+                    <h4 style="margin-bottom: 15px;">Resumo por Categoria</h4>
+                    ${categoriesHtml}
+                </div>
+            `;
+            
+            detailsModal.classList.add('active');
+        }
+
+        // Timer para atualizar validade em tempo real
+        function startValidityTimer() {
+            setInterval(() => {
+                if (filteredChecklists.length > 0) {
+                    renderChecklistsTable();
+                    updateSummaryCards();
+                }
+            }, 60000); // Atualizar a cada minuto
+        }
+
+        // Event Listeners
+        document.getElementById('applyFilters').addEventListener('click', applyFilters);
+        document.getElementById('clearFilters').addEventListener('click', () => {
+            document.getElementById('dateFilter').value = '';
+            document.getElementById('machineFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('operatorFilter').value = '';
+            applyFilters();
+        });
+        
+        document.getElementById('refreshData').addEventListener('click', () => {
+            loadChecklists();
+            showMessage('Dados atualizados com sucesso!', 'success');
+        });
+        
+        document.getElementById('closeModalBtn').addEventListener('click', () => {
+            detailsModal.classList.remove('active');
+        });
+
+        // Fechar modal ao clicar fora
+        detailsModal.addEventListener('click', (e) => {
+            if (e.target === detailsModal) {
+                detailsModal.classList.remove('active');
+            }
+        });
+
+        // Função para mostrar mensagens
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type} active`;
+            
+            setTimeout(() => {
+                messageDiv.classList.remove('active');
+            }, 5000);
+        }
+
+        // Logout
+        function logout() {
+            firebase.auth().signOut().then(() => {
+                window.location.href = '../index.html';
+            });
+        }
+    </script>
+</body>
+</html>
