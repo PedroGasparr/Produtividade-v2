@@ -671,6 +671,17 @@
                     <label class="form-label" for="operatorName">Nome do Operador:</label>
                     <input type="text" class="form-input" id="operatorName" placeholder="Digite seu nome">
                 </div>
+                <div class="form-group">
+                    <label class="form-label" for="turno">Turno do Operador:</label>
+
+                    <select name="turno" id="turno" required>
+                        <option value="" disabled selected>Selecione o turno</option>
+                        <option value="a">Turno A</option>
+                        <option value="b">Turno B</option>
+                        <option value="c">Turno C</option>
+                        <option value="d">Turno D</option>
+                    </select>
+                </div>
             </div>
         </div>
     </div>
@@ -1027,11 +1038,17 @@
 
         function submitChecklist() {
             const operatorName = document.getElementById('operatorName').value.trim();
+            const turno =  document.getElementById('turno').value.trim();
             const observations = document.getElementById('observations').value.trim();
             const maintenanceNotes = document.getElementById('maintenanceNotes').value.trim();
             
             if (!operatorName) {
                 showMessage('Por favor, informe o nome do operador.', 'error');
+                return;
+            }
+
+            if (!turno) {
+                showMessage('Por favor, selecione o turno do operador.', 'error');
                 return;
             }
             
@@ -1055,14 +1072,15 @@
                 machineId: selectedMachine.id,
                 machineName: selectedMachine.name,
                 operatorName: operatorName,
+                turno:turno,
                 observations: observations,
                 maintenanceNotes: maintenanceNotes,
                 checklistData: checklistData,
                 status: 'completed',
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 createdBy: currentUser.uid,
-                unit: currentUserData.unit, // SALVAR COM A UNIDADE DO USUÁRIO
-                userUnit: currentUserData.unit // CAMPO ADICIONAL PARA FILTRAGEM
+                unit: currentUserData.unit, 
+                userUnit: currentUserData.unit 
             };
             
             // Salvar no Firestore
@@ -1073,6 +1091,7 @@
                         backToSelectionBtn.click();
                         // Limpar formulário
                         document.getElementById('operatorName').value = '';
+                        document.getElementById('turno').value = '';
                         document.getElementById('observations').value = '';
                         document.getElementById('maintenanceNotes').value = '';
                     }, 2000);
