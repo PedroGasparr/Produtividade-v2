@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exportar CSV de Todas as Unidades</title>
+    <!-- Importar Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(to right, #4a6da7, #3a5a8f);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .user-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 5px solid #4a6da7;
+        }
+
+        .user-info h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .user-info p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .password-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .password-section h2 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+        }
+
+        .password-section p {
+            color: #666;
+            margin-bottom: 25px;
+            font-size: 15px;
+        }
+
+        .password-input {
+            width: 100%;
+            max-width: 400px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .password-input:focus {
+            outline: none;
+            border-color: #4a6da7;
+            box-shadow: 0 0 0 3px rgba(74, 109, 167, 0.1);
+        }
+
+        .password-btn {
+            background: linear-gradient(to right, #4a6da7, #3a5a8f);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px;
+        }
+
+        .password-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(74, 109, 167, 0.2);
+        }
+
+        .password-btn:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            color: #e74c3c;
+            margin-top: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .export-section {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 30px;
+            margin-top: 30px;
+        }
+
+        .export-section h2 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .export-info {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .export-info h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .export-info p {
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .export-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .export-btn {
+            background: linear-gradient(to right, #27ae60, #219a52);
+            color: white;
+            border: none;
+            padding: 18px 35px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 200px;
+            justify-content: center;
+        }
+
+        .export-btn i {
+            font-size: 18px;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(39, 174, 96, 0.2);
+        }
+
+        .export-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .export-btn:disabled:hover {
+            transform: none;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 25px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4a6da7;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-text {
+            font-weight: 500;
+        }
+
+        .units-list {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .units-list h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .units-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .unit-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            border-left: 4px solid #4a6da7;
+        }
+
+        .unit-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .unit-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .unit-label {
+            color: #2c3e50;
+            font-weight: 500;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .unit-stats {
+            font-size: 12px;
+            color: #666;
+            background: #e8f4fc;
+            padding: 3px 8px;
+            border-radius: 12px;
+        }
+
+        .select-all {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #e8f4fc;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .select-all label {
+            font-weight: 600;
+            color: #2c3e50;
+            cursor: pointer;
+            flex: 1;
+        }
+
+        .date-filters {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .date-filters h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .date-inputs {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .date-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .date-group label {
+            color: #2c3e50;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .date-input {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .date-input:focus {
+            outline: none;
+            border-color: #4a6da7;
+            box-shadow: 0 0 0 3px rgba(74, 109, 167, 0.1);
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #4a6da7;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn:hover {
+            background: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+            border-left: 5px solid #28a745;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            margin-top: 20px;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, #4a6da7, #3a5a8f);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 20px;
+            }
+            
+            .content {
+                padding: 25px;
+            }
+            
+            .export-controls {
+                flex-direction: column;
+            }
+            
+            .export-btn {
+                width: 100%;
+            }
+            
+            .units-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .back-btn {
+                position: relative;
+                top: 0;
+                left: 0;
+                margin-bottom: 20px;
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <a href="historico.html" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Voltar ao Histórico
+    </a>
+
+    <div class="container">
+        <div class="header">
+            <h1>Exportar CSV de Todas as Unidades</h1>
+            <p>Exporte dados consolidados de todas as unidades em um único arquivo CSV</p>
+        </div>
+
+        <div class="content">
+            <div class="user-info" id="userInfo">
+                <h3>Carregando informações...</h3>
+                <p>Por favor, aguarde enquanto carregamos seus dados.</p>
+            </div>
+
+            <div class="password-section" id="passwordSection">
+                <h2>Acesso Restrito</h2>
+                <p>Esta função requer permissão de administrador. Digite a senha para continuar:</p>
+                <input type="password" id="passwordInput" class="password-input" placeholder="Digite a senha de administração">
+                <button id="passwordBtn" class="password-btn">
+                    <i class="fas fa-lock"></i> Verificar Acesso
+                </button>
+                <div class="error-message" id="passwordError"></div>
+            </div>
+
+            <div class="export-section" id="exportSection">
+                <h2>Exportar Dados Consolidados</h2>
+                
+                <div class="export-info">
+                    <h3>Instruções</h3>
+                    <p>1. Selecione as unidades que deseja incluir na exportação</p>
+                    <p>2. Defina o período de dados (opcional)</p>
+                    <p>3. Clique em "Exportar CSV" para gerar o arquivo consolidado</p>
+                    <p>4. O arquivo conterá dados completos de todas as operações</p>
+                </div>
+
+                <div class="units-list">
+                    <h3>Selecionar Unidades</h3>
+                    <div class="select-all">
+                        <input type="checkbox" id="selectAllUnits" class="unit-checkbox">
+                        <label for="selectAllUnits">Selecionar/Deselecionar Todas</label>
+                    </div>
+                    <div class="units-grid" id="unitsGrid">
+                        <!-- Unidades serão carregadas via JavaScript -->
+                    </div>
+                </div>
+
+                <div class="date-filters">
+                    <h3>Filtrar por Período (Opcional)</h3>
+                    <div class="date-inputs">
+                        <div class="date-group">
+                            <label for="startDate"><i class="fas fa-calendar-alt"></i> Data Inicial</label>
+                            <input type="date" id="startDate" class="date-input">
+                        </div>
+                        <div class="date-group">
+                            <label for="endDate"><i class="fas fa-calendar-alt"></i> Data Final</label>
+                            <input type="date" id="endDate" class="date-input">
+                        </div>
+                    </div>
+                    <div class="select-all" style="margin-top: 15px;">
+                        <input type="checkbox" id="clearDates" class="unit-checkbox">
+                        <label for="clearDates">Exportar todos os dados (ignorar filtro de datas)</label>
+                    </div>
+                </div>
+
+                <div class="progress-bar" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+
+                <div class="export-controls">
+                    <button id="exportCSVBtn" class="export-btn" disabled>
+                        <i class="fas fa-file-csv"></i> Exportar CSV Consolidado
+                    </button>
+                </div>
+
+                <div class="status-indicator">
+                    <div class="loading-spinner" id="loadingSpinner"></div>
+                    <div class="status-text" id="statusText">Pronto para exportar</div>
+                </div>
+
+                <div class="success-message" id="successMessage">
+                    <i class="fas fa-check-circle"></i> CSV exportado com sucesso! O download começará automaticamente.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMu17OV-5ST1rlg00zbpt6Hv37GKqkX4A",
+            authDomain: "projetos-d868d.firebaseapp.com",
+            databaseURL: "https://projetos-d868d-default-rtdb.firebaseio.com",
+            projectId: "projetos-d868d",
+            storageBucket: "projetos-d868d.firebasestorage.app",
+            messagingSenderId: "420029352781",
+            appId: "1:420029352781:web:05176699348e0ccdd78504",
+            measurementId: "G-FXWXRX04WF"
+        };
+        
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        
+        // Elementos da interface
+        const userInfo = document.getElementById('userInfo');
+        const passwordSection = document.getElementById('passwordSection');
+        const passwordInput = document.getElementById('passwordInput');
+        const passwordBtn = document.getElementById('passwordBtn');
+        const passwordError = document.getElementById('passwordError');
+        const exportSection = document.getElementById('exportSection');
+        const unitsGrid = document.getElementById('unitsGrid');
+        const selectAllCheckbox = document.getElementById('selectAllUnits');
+        const exportCSVBtn = document.getElementById('exportCSVBtn');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const statusText = document.getElementById('statusText');
+        const successMessage = document.getElementById('successMessage');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const clearDatesCheckbox = document.getElementById('clearDates');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        
+        // Senha de administração
+        const ADMIN_PASSWORD = "195#%$*7advan!7";
+        
+        // Estado da aplicação
+        let currentUser = null;
+        let userData = null;
+        let selectedUnits = new Set();
+        let allUnits = [
+            "Unidade Maracanau",
+            "Unidade Belem",
+            "Unidade Mogi Das Cruzes",
+            "Unidade Imperatriz",
+            "Unidade Cariacica",
+            "Unidade Aracruz"
+        ];
+        let employeesCache = new Map(); // Cache para dados de colaboradores
+
+        // Verificar autenticação
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                updateUserInfo();
+            } else {
+                window.location.href = 'login.html';
+            }
+        });
+
+        // Atualizar informações do usuário
+        function updateUserInfo() {
+            db.collection('users').doc(currentUser.uid).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        userData = doc.data();
+                        userInfo.innerHTML = `
+                            <h3>${userData.name}</h3>
+                            <p>Unidade atual: ${userData.unit || 'Não definida'}</p>
+                            <p>Permissão: ${userData.role || 'Usuário'}</p>
+                        `;
+                    }
+                })
+                .catch((error) => {
+                    console.error("Erro ao buscar dados do usuário:", error);
+                });
+        }
+
+        // Verificar senha de administração
+        function checkPassword() {
+            const password = passwordInput.value.trim();
+            
+            if (password === ADMIN_PASSWORD) {
+                passwordError.style.display = 'none';
+                passwordSection.style.display = 'none';
+                exportSection.style.display = 'block';
+                loadUnitsList();
+            } else {
+                passwordError.textContent = 'Senha incorreta. Tente novamente.';
+                passwordError.style.display = 'block';
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+        }
+
+        // Carregar lista de unidades
+        function loadUnitsList() {
+            unitsGrid.innerHTML = '';
+            
+            allUnits.forEach(unit => {
+                const unitElement = document.createElement('div');
+                unitElement.className = 'unit-item';
+                unitElement.innerHTML = `
+                    <input type="checkbox" id="unit_${unit}" class="unit-checkbox" value="${unit}">
+                    <label for="unit_${unit}" class="unit-label">${unit}</label>
+                    <div class="unit-stats" id="stats_${unit}">Carregando...</div>
+                `;
+                unitsGrid.appendChild(unitElement);
+                
+                // Carregar estatísticas da unidade
+                loadUnitStats(unit);
+            });
+            
+            // Adicionar event listeners
+            document.querySelectorAll('.unit-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', updateExportButton);
+            });
+            
+            selectAllCheckbox.addEventListener('change', toggleSelectAll);
+            clearDatesCheckbox.addEventListener('change', toggleDateFilters);
+        }
+
+        // Carregar estatísticas de uma unidade
+        function loadUnitStats(unitName) {
+            const statsElement = document.getElementById(`stats_${unitName}`);
+            
+            // Buscar operações da unidade
+            db.collection('operations')
+                .where('unit', '==', unitName)
+                .get()
+                .then((querySnapshot) => {
+                    const total = querySnapshot.size;
+                    const completed = querySnapshot.docs.filter(doc => 
+                        doc.data().status === 'completed'
+                    ).length;
+                    
+                    statsElement.textContent = `${completed}/${total} concluídos`;
+                })
+                .catch((error) => {
+                    console.error(`Erro ao carregar estatísticas de ${unitName}:`, error);
+                    statsElement.textContent = 'Erro';
+                });
+        }
+
+        // Alternar seleção de todas as unidades
+        function toggleSelectAll() {
+            const checkboxes = document.querySelectorAll('.unit-checkbox:not(#selectAllUnits)');
+            const isChecked = selectAllCheckbox.checked;
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+                if (isChecked) {
+                    selectedUnits.add(checkbox.value);
+                } else {
+                    selectedUnits.delete(checkbox.value);
+                }
+            });
+            
+            updateExportButton();
+        }
+
+        // Atualizar botão de exportação
+        function updateExportButton() {
+            selectedUnits.clear();
+            const checkboxes = document.querySelectorAll('.unit-checkbox:not(#selectAllUnits):checked');
+            
+            checkboxes.forEach(checkbox => {
+                selectedUnits.add(checkbox.value);
+            });
+            
+            // Atualizar checkbox "Selecionar Todos"
+            const allCheckboxes = document.querySelectorAll('.unit-checkbox:not(#selectAllUnits)');
+            selectAllCheckbox.checked = allCheckboxes.length === checkboxes.length;
+            
+            // Habilitar/desabilitar botão de exportação
+            exportCSVBtn.disabled = selectedUnits.size === 0;
+        }
+
+        // Alternar campos de data
+        function toggleDateFilters() {
+            const isChecked = clearDatesCheckbox.checked;
+            startDateInput.disabled = isChecked;
+            endDateInput.disabled = isChecked;
+        }
+
+        // Buscar dados de um colaborador específico pelo código
+        async function getEmployeeByCode(employeeCode) {
+            if (!employeeCode) return { nome: "N/A", codigo: "N/A" };
+            
+            // Verificar primeiro no cache
+            if (employeesCache.has(employeeCode)) {
+                return employeesCache.get(employeeCode);
+            }
+            
+            // Se não estiver no cache, buscar no Firestore
+            try {
+                const querySnapshot = await db.collection('colaboradores')
+                    .where('codigo', '==', employeeCode)
+                    .limit(1)
+                    .get();
+                
+                if (!querySnapshot.empty) {
+                    const doc = querySnapshot.docs[0];
+                    const data = doc.data();
+                    const employeeData = {
+                        nome: data.nome || "N/A",
+                        codigo: data.codigo || employeeCode
+                    };
+                    
+                    // Armazenar no cache
+                    employeesCache.set(employeeCode, employeeData);
+                    return employeeData;
+                }
+                
+                // Se não encontrar, retornar com o código
+                return { nome: employeeCode, codigo: employeeCode };
+            } catch (error) {
+                console.error(`Erro ao buscar colaborador ${employeeCode}:`, error);
+                return { nome: employeeCode, codigo: employeeCode };
+            }
+        }
+
+        // Buscar dados completos de todos os colaboradores adicionais
+        async function getAdditionalLoadersData(additionalLoadersArray) {
+            if (!additionalLoadersArray || !Array.isArray(additionalLoadersArray) || additionalLoadersArray.length === 0) {
+                return [];
+            }
+            
+            const loadersData = [];
+            
+            for (const loaderCode of additionalLoadersArray) {
+                if (loaderCode && typeof loaderCode === 'string') {
+                    const employeeData = await getEmployeeByCode(loaderCode);
+                    loadersData.push(employeeData);
+                }
+            }
+            
+            return loadersData;
+        }
+
+        // Exportar CSV consolidado
+        async function exportConsolidatedCSV() {
+            if (selectedUnits.size === 0) {
+                alert('Selecione pelo menos uma unidade para exportar.');
+                return;
+            }
+            
+            // Ativar modo de carregamento
+            exportCSVBtn.disabled = true;
+            loadingSpinner.style.display = 'block';
+            progressBar.style.display = 'block';
+            statusText.textContent = 'Preparando exportação...';
+            
+            const startDate = clearDatesCheckbox.checked ? null : startDateInput.value;
+            const endDate = clearDatesCheckbox.checked ? null : endDateInput.value;
+            
+            // Coletar dados de todas as unidades selecionadas
+            const allOperations = [];
+            const unitsArray = Array.from(selectedUnits);
+            
+            // Atualizar progresso
+            progressFill.style.width = '0%';
+            
+            for (let i = 0; i < unitsArray.length; i++) {
+                const unit = unitsArray[i];
+                statusText.textContent = `Carregando dados de ${unit}... (${i + 1}/${unitsArray.length})`;
+                progressFill.style.width = `${((i) / unitsArray.length) * 100}%`;
+                
+                try {
+                    const unitOperations = await loadOperationsForUnit(unit, startDate, endDate);
+                    allOperations.push(...unitOperations);
+                } catch (error) {
+                    console.error(`Erro ao carregar dados de ${unit}:`, error);
+                }
+            }
+            
+            if (allOperations.length === 0) {
+                statusText.textContent = 'Nenhum dado encontrado para as unidades selecionadas.';
+                loadingSpinner.style.display = 'none';
+                exportCSVBtn.disabled = false;
+                return;
+            }
+            
+            // Atualizar progresso
+            progressFill.style.width = '100%';
+            statusText.textContent = 'Gerando arquivo CSV...';
+            
+            // Gerar CSV
+            generateConsolidatedCSV(allOperations);
+            
+            // Finalizar
+            setTimeout(() => {
+                loadingSpinner.style.display = 'none';
+                successMessage.style.display = 'block';
+                statusText.textContent = `Exportação concluída! ${allOperations.length} registros exportados.`;
+                exportCSVBtn.disabled = false;
+                
+                // Resetar progresso
+                setTimeout(() => {
+                    progressFill.style.width = '0%';
+                    progressBar.style.display = 'none';
+                    successMessage.style.display = 'none';
+                }, 3000);
+            }, 1000);
+        }
+
+        // Carregar operações de uma unidade
+        async function loadOperationsForUnit(unitName, startDate, endDate) {
+            let query = db.collection('operations')
+                .where('unit', '==', unitName)
+                .orderBy('createdAt', 'desc');
+            
+            // Executar query
+            const snapshot = await query.get();
+            
+            // Filtrar por data no código JavaScript
+            const operations = [];
+            
+            for (const doc of snapshot.docs) {
+                const data = doc.data();
+                
+                // Aplicar filtro de data
+                if (startDate || endDate) {
+                    const opDate = data.createdAt ? data.createdAt.toDate() : new Date(0);
+                    
+                    if (startDate) {
+                        const start = new Date(startDate);
+                        start.setHours(0, 0, 0, 0);
+                        if (opDate < start) continue;
+                    }
+                    
+                    if (endDate) {
+                        const end = new Date(endDate);
+                        end.setHours(23, 59, 59, 999);
+                        if (opDate > end) continue;
+                    }
+                }
+                
+                // Buscar dados dos colaboradores adicionais
+                let additionalLoadersData = [];
+                if (data.additionalLoaders && Array.isArray(data.additionalLoaders) && data.additionalLoaders.length > 0) {
+                    additionalLoadersData = await getAdditionalLoadersData(data.additionalLoaders);
+                }
+                
+                operations.push({
+                    ...data,
+                    id: doc.id,
+                    additionalLoadersData: additionalLoadersData
+                });
+            }
+            
+            return operations;
+        }
+
+        // Gerar CSV consolidado - MANTENDO TODAS AS COLUNAS EXISTENTES
+        function generateConsolidatedCSV(operations) {
+            // Definir cabeçalhos - Mantendo todas as colunas existentes e adicionando as novas
+            const headers = [
+                'ID',
+                'Data/Hora Início',
+                'Data/Hora Fim',
+                'Colaborador Principal',
+                'Colaborador Principal Código',
+                'Outros Colaboradores (Códigos)',
+                'Outros Colaboradores (Nomes)',
+                'Tipo de Operação',
+                'Status',
+                'Doca',
+                'Número DT',
+                'Toneladas',
+                'Mix de Material',
+                'Tipo de Veículo',
+                'Tempo Total (min)',
+                'Observações',
+                'Motivo de Pausa',
+                'Motivo do Atraso (>10min)',
+                'Armazéns Utilizados',
+                'Composição',
+                'Carro Mantido em Doca',
+                'Unidade',
+                'Data de Criação',
+                'Criado Por',
+                'Completado Por',
+                'ID Carro em Doca'
+            ];
+            
+            // Preparar dados
+            const csvData = operations.map(operation => {
+                const start = operation.startTime ? operation.startTime.toDate() : new Date(0);
+                const end = operation.endTime ? operation.endTime.toDate() : new Date(0);
+                const startStr = start.toLocaleString('pt-BR');
+                const endStr = end > new Date(0) ? end.toLocaleString('pt-BR') : 'Em andamento';
+                
+                // Formatar tipo
+                const typeMap = {
+                    'carregamento': 'Carregamento',
+                    'carregamento_Paletizado': 'Carregamento Paletizado',
+                    'descarga': 'Descarga',
+                    'separacao': 'Separação'
+                };
+                const formattedType = typeMap[operation.type] || operation.type;
+                
+                // Formatar status
+                const statusMap = {
+                    'completed': 'Concluído',
+                    'active': 'Em Andamento',
+                    'paused': 'Pausado'
+                };
+                const formattedStatus = statusMap[operation.status] || operation.status;
+                
+                // Calcular tempo total em minutos
+                let totalMinutes = 0;
+                if (operation.startTime && operation.endTime) {
+                    const startDate = operation.startTime.toDate();
+                    const endDate = operation.endTime.toDate();
+                    totalMinutes = Math.round((endDate - startDate) / (1000 * 60));
+                }
+                
+                // Formatar lista de armazéns (se existir)
+                const warehouses = operation.warehouses ? 
+                    operation.warehouses.join('; ') : 
+                    'N/A';
+                
+                // Buscar dados do colaborador principal (se não estiver no cache, usar os dados da operação)
+                const mainEmployeeName = operation.employeeName || operation.employeeCode || 'N/A';
+                
+                // Formatar dados dos colaboradores adicionais
+                const additionalCodes = operation.additionalLoaders ? 
+                    operation.additionalLoaders.join('; ') : 
+                    'Nenhum';
+                
+                const additionalNames = operation.additionalLoadersData && operation.additionalLoadersData.length > 0 ?
+                    operation.additionalLoadersData.map(emp => emp.nome || emp.codigo || 'N/A').join('; ') :
+                    'Nenhum';
+                
+                // Data de criação
+                const createdAt = operation.createdAt ? 
+                    operation.createdAt.toDate().toLocaleString('pt-BR') : 
+                    'N/A';
+                
+                return [
+                    operation.id,
+                    `"${startStr}"`,
+                    `"${endStr}"`,
+                    `"${mainEmployeeName}"`,
+                    operation.employeeCode || 'N/A',
+                    `"${additionalCodes}"`,
+                    `"${additionalNames}"`,
+                    formattedType,
+                    formattedStatus,
+                    operation.dock || 'N/A',
+                    operation.dockNumber || 'N/A',
+                    operation.tonsLoaded || '0',
+                    operation.materialMix || '0',
+                    operation.vehicleType || 'N/A',
+                    totalMinutes,
+                    `"${operation.observation || ''}"`,
+                    `"${operation.pauseReason || ''}"`,
+                    `"${operation.delayReason || ''}"`,
+                    `"${warehouses}"`,
+                    operation.compositionNumber || 'N/A',
+                    operation.keepCarInDock ? 'Sim' : 'Não',
+                    operation.unit || 'N/A',
+                    `"${createdAt}"`,
+                    operation.createdBy || 'N/A',
+                    operation.completedBy || 'N/A',
+                    operation.carInDockId || 'N/A'
+                ];
+            });
+            
+            // Criar conteúdo CSV
+            let csvContent = headers.join(',') + '\n';
+            csvData.forEach(row => {
+                csvContent += row.join(',') + '\n';
+            });
+            
+            // Criar blob e fazer download
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            // Nome do arquivo
+            const today = new Date().toISOString().split('T')[0];
+            const unitsSuffix = selectedUnits.size === allUnits.length ? 
+                'todas_unidades' : 
+                `${selectedUnits.size}_unidades`;
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `consolidado_${unitsSuffix}_${today}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            URL.revokeObjectURL(url);
+        }
+
+        // ========== EVENT LISTENERS ==========
+        
+        passwordBtn.addEventListener('click', checkPassword);
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkPassword();
+        });
+        
+        exportCSVBtn.addEventListener('click', exportConsolidatedCSV);
+        
+        // Adicionar event listener para checkboxes de unidades
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('unit-checkbox') && e.target.id !== 'selectAllUnits') {
+                if (e.target.checked) {
+                    selectedUnits.add(e.target.value);
+                } else {
+                    selectedUnits.delete(e.target.value);
+                }
+                updateExportButton();
+            }
+        });
+    </script>
+</body>
+</html>
