@@ -1245,24 +1245,32 @@
                 timeClass = 'warning';
             }
             
-            // Encontrar colaborador principal
-            let mainEmployeeName = operation.employeeName || 'Carregando...';
+            // Coletar TODOS os nomes dos funcionários envolvidos
+            let allEmployeeNames = [];
+            
+            // Adicionar colaborador principal
             const mainEmployee = employeesData.find(emp => emp.codigo === operation.employeeCode);
             if (mainEmployee) {
-                mainEmployeeName = mainEmployee.nome;
+                allEmployeeNames.push(mainEmployee.nome);
+            } else {
+                allEmployeeNames.push(operation.employeeName || operation.employeeCode || 'Não identificado');
             }
             
-            // Encontrar outros colaboradores
-            let otherCollaborators = [];
+            // Adicionar colaboradores adicionais
             if (operation.additionalLoaders && Array.isArray(operation.additionalLoaders)) {
                 operation.additionalLoaders.forEach(code => {
                     const employee = employeesData.find(emp => emp.codigo === code);
                     if (employee) {
-                        otherCollaborators.push(employee.nome);
+                        allEmployeeNames.push(employee.nome);
                     } else {
-                        otherCollaborators.push(`Código: ${code}`);
+                        allEmployeeNames.push(code);
                     }
                 });
+            }
+            
+            // Se não encontrou nenhum nome, usar códigos como fallback
+            if (allEmployeeNames.length === 0) {
+                allEmployeeNames = ['Colaborador não identificado'];
             }
             
             const operationTypeMap = {
@@ -1288,18 +1296,11 @@
                         
                         <div class="dock-details">
                             <div class="dock-detail">
-                                <strong>Colaborador:</strong>
-                                <span>${mainEmployeeName}</span>
-                            </div>
-                            
-                            ${otherCollaborators.length > 0 ? `
-                            <div class="dock-detail">
-                                <strong>Outros:</strong>
+                                <strong>TODOS OS COLABORADORES:</strong>
                                 <div class="collaborators-list">
-                                    ${otherCollaborators.map(name => `<div class="collaborator-item">${name}</div>`).join('')}
+                                    ${allEmployeeNames.map(name => `<div class="collaborator-item">${name}</div>`).join('')}
                                 </div>
                             </div>
-                            ` : ''}
                             
                             <div class="dock-detail">
                                 <strong>Tipo:</strong>

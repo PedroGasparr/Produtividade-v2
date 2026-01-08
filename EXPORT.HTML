@@ -223,7 +223,7 @@
                 <div class="download-info">
                     <h3><i class="fas fa-info-circle"></i> Informações do Download</h3>
                     <p><i class="fas fa-check-circle" style="color: #28a745;"></i> <strong>Todas as unidades:</strong> Dados de todas as unidades serão incluídos</p>
-                    <p><i class="fas fa-check-circle" style="color: #28a745;"></i> <strong>Sem filtros:</strong> Todos os dados disponíveis serão exportados</p>
+                    <p><i class="fas fa-check-circle" style="color: #28a745;"></i> <strong>Cálculos de tempo:</strong> Tempo total, atrasos e pausas calculados</p>
                     <p><i class="fas fa-check-circle" style="color: #28a745;"></i> <strong>Arquivo único:</strong> Nome fixo: <code>dados_consolidados_completos.csv</code></p>
                     <p><i class="fas fa-check-circle" style="color: #28a745;"></i> <strong>Automático:</strong> O download começará automaticamente</p>
                 </div>
@@ -391,6 +391,81 @@
             return loadersData;
         }
 
+        // Função para calcular tempo limite baseado no tipo de operação
+        function getTimeLimitByType(operationType) {
+            // Tempos em minutos
+            const timeLimits = {
+                'carregamento': 140,           // 2h 20min
+                'carregamento_Paletizado': 60,  // 1h
+                'descarga': 140,               // 2h 20min
+                'separacao': 90                // 1h 30min
+            };
+            return timeLimits[operationType] || 120; // Padrão 2h
+        }
+
+        // Função para calcular tempo total de pausas
+        function calculatePauseTime(operation) {
+            let totalPauseTime = 0;
+            
+            // Se já temos o tempo total de pausa calculado
+            if (operation.totalPausedTime) {
+                totalPauseTime = operation.totalPausedTime; // Já está em milissegundos
+            }
+            
+            // Se a operação está atualmente pausada, adicionar tempo desde o início da pausa
+            if (operation.status === 'paused' && operation.pausedTime) {
+                const pausedTime = operation.pausedTime.toDate();
+                const now = new Date();
+                totalPauseTime += (now - pausedTime);
+            }
+            
+            // Converter de milissegundos para minutos
+            return Math.round(totalPauseTime / (1000 * 60));
+        }
+
+        // Função para calcular tempo real de operação (excluindo pausas)
+        function calculateRealOperationTime(operation) {
+            if (!operation.startTime) return 0;
+            
+            const startTime = operation.startTime.toDate();
+            const endTime = operation.endTime ? operation.endTime.toDate() : new Date();
+            const totalTimeMs = endTime - startTime;
+            const pauseTimeMs = (operation.calculatedData?.pauseTime || calculatePauseTime(operation)) * 60 * 1000;
+            
+            return Math.round((totalTimeMs - pauseTimeMs) / (1000 * 60)); // Retornar em minutos
+        }
+
+        // Função para calcular tempo total bruto (incluindo pausas)
+        function calculateTotalTime(operation) {
+            if (!operation.startTime) return 0;
+            
+            const startTime = operation.startTime.toDate();
+            const endTime = operation.endTime ? operation.endTime.toDate() : new Date();
+            return Math.round((endTime - startTime) / (1000 * 60)); // minutos
+        }
+
+        // Função para calcular atraso
+        function calculateDelayTime(operation) {
+            const timeLimit = getTimeLimitByType(operation.type);
+            const realOperationTime = calculateRealOperationTime(operation);
+            
+            if (realOperationTime > timeLimit) {
+                return realOperationTime - timeLimit;
+            }
+            return 0;
+        }
+
+        // Função para calcular eficiência
+        function calculateEfficiency(operation) {
+            const timeLimit = getTimeLimitByType(operation.type);
+            const realOperationTime = calculateRealOperationTime(operation);
+            
+            if (realOperationTime > 0 && timeLimit > 0) {
+                return Math.round((timeLimit / realOperationTime) * 100);
+            }
+            return 0;
+        }
+
         // Exportar CSV consolidado - TODOS OS DADOS, SEM FILTRO
         async function exportConsolidatedCSV() {
             try {
@@ -443,10 +518,26 @@
                                 additionalLoadersData = await getAdditionalLoadersData(data.additionalLoaders);
                             }
                             
+                            // Calcular todos os tempos
+                            const totalTime = calculateTotalTime(data);
+                            const pauseTime = calculatePauseTime(data);
+                            const realOperationTime = calculateRealOperationTime(data);
+                            const delayTime = calculateDelayTime(data);
+                            const timeLimit = getTimeLimitByType(data.type);
+                            const efficiency = calculateEfficiency(data);
+                            
                             unitOperations.push({
                                 ...data,
                                 id: doc.id,
-                                additionalLoadersData: additionalLoadersData
+                                additionalLoadersData: additionalLoadersData,
+                                calculatedData: {
+                                    totalTime: totalTime,
+                                    pauseTime: pauseTime,
+                                    realOperationTime: realOperationTime,
+                                    delayTime: delayTime,
+                                    timeLimit: timeLimit,
+                                    efficiency: efficiency
+                                }
                             });
                             
                             processedDocuments++;
@@ -492,9 +583,9 @@
             }
         }
 
-        // Gerar CSV consolidado
+        // Gerar CSV consolidado - MANTENDO TODAS AS COLUNAS ORIGINAIS E ADICIONANDO NOVAS
         function generateConsolidatedCSV(operations) {
-            // Definir cabeçalhos
+            // Definir cabeçalhos - mantendo os originais e adicionando novos
             const headers = [
                 'ID',
                 'Data/Hora Início',
@@ -510,7 +601,7 @@
                 'Toneladas',
                 'Mix de Material',
                 'Tipo de Veículo',
-                'Tempo Total (min)',
+                'Tempo Total (min)',                      // COLUNA ORIGINAL MANTIDA
                 'Observações',
                 'Motivo de Pausa',
                 'Motivo do Atraso (>10min)',
@@ -521,7 +612,14 @@
                 'Data de Criação',
                 'Criado Por',
                 'Completado Por',
-                'ID Carro em Doca'
+                'ID Carro em Doca',
+                // NOVAS COLUNAS ADICIONADAS
+                'Tempo Limite Previsto (min)',
+                'Tempo Real de Operação (min)',
+                'Tempo Total de Pausas (min)',
+                'Tempo de Atraso (min)',
+                'Percentual de Atraso (%)',
+                'Eficiência (%)'
             ];
             
             // Preparar dados
@@ -548,12 +646,25 @@
                 };
                 const formattedStatus = statusMap[operation.status] || operation.status;
                 
-                // Calcular tempo total em minutos
+                // Calcular tempo total em minutos (coluna original)
                 let totalMinutes = 0;
                 if (operation.startTime && operation.endTime) {
                     const startDate = operation.startTime.toDate();
                     const endDate = operation.endTime.toDate();
                     totalMinutes = Math.round((endDate - startDate) / (1000 * 60));
+                }
+                
+                // Dados calculados
+                const timeLimit = operation.calculatedData?.timeLimit || getTimeLimitByType(operation.type);
+                const pauseTime = operation.calculatedData?.pauseTime || 0;
+                const realOperationTime = operation.calculatedData?.realOperationTime || calculateRealOperationTime(operation);
+                const delayTime = operation.calculatedData?.delayTime || 0;
+                const efficiency = operation.calculatedData?.efficiency || 0;
+                
+                // Calcular percentual de atraso
+                let delayPercentage = 0;
+                if (delayTime > 0 && timeLimit > 0) {
+                    delayPercentage = Math.round((delayTime / timeLimit) * 100);
                 }
                 
                 // Formatar lista de armazéns
@@ -578,7 +689,11 @@
                     operation.createdAt.toDate().toLocaleString('pt-BR') : 
                     'N/A';
                 
+                // Verificar se há atraso no início da operação (delayReason)
+                const inicioAtraso = operation.delayReason ? 'Sim' : 'Não';
+                
                 return [
+                    // COLUNAS ORIGINAIS (mantidas na ordem original)
                     operation.id,
                     `"${startStr}"`,
                     `"${endStr}"`,
@@ -593,10 +708,10 @@
                     operation.tonsLoaded || '0',
                     operation.materialMix || '0',
                     operation.vehicleType || 'N/A',
-                    totalMinutes,
+                    totalMinutes,  // Tempo Total (min) - COLUNA ORIGINAL
                     `"${operation.observation || ''}"`,
                     `"${operation.pauseReason || ''}"`,
-                    `"${operation.delayReason || ''}"`,
+                    `"${inicioAtraso}: ${operation.delayReason || ''}"`,
                     `"${warehouses}"`,
                     operation.compositionNumber || 'N/A',
                     operation.keepCarInDock ? 'Sim' : 'Não',
@@ -604,7 +719,14 @@
                     `"${createdAt}"`,
                     operation.createdBy || 'N/A',
                     operation.completedBy || 'N/A',
-                    operation.carInDockId || 'N/A'
+                    operation.carInDockId || 'N/A',
+                    // NOVAS COLUNAS ADICIONADAS
+                    timeLimit,
+                    realOperationTime,
+                    pauseTime,
+                    delayTime,
+                    delayPercentage,
+                    efficiency
                 ];
             });
             

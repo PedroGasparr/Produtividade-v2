@@ -728,6 +728,218 @@
             box-shadow: 0 4px 12px rgba(74, 109, 167, 0.3);
         }
         
+        /* ESTILOS PARA CARDS DE DTs FINALIZADAS */
+        .completed-dts-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .section-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .section-toggle:hover {
+            background: #e9ecef;
+        }
+        
+        .section-toggle h3 {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .toggle-arrow {
+            font-size: 20px;
+            transition: transform 0.3s;
+        }
+        
+        .section-toggle.expanded .toggle-arrow {
+            transform: rotate(180deg);
+        }
+        
+        .completed-dts-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease;
+        }
+        
+        .completed-dts-content.expanded {
+            max-height: none; /* REMOVIDO O LIMITE FIXO - CORREÇÃO PARA CARDS CORTADOS */
+            overflow: visible;
+        }
+        
+        .completed-dts-container {
+            margin-top: 15px;
+            min-height: 200px;
+        }
+        
+        .completed-dts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        
+        .completed-dt-card {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border-left: 4px solid #4CAF50;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.5s ease;
+            min-height: 200px; /* ALTURA MÍNIMA PARA EVITAR CARDS CORTADOS */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .completed-dt-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+        
+        .completed-dt-card::before {
+            content: '✅';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 20px;
+            opacity: 0.2;
+        }
+        
+        .completed-dt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .dt-number {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .dt-unidade {
+            background: #e8f4fd;
+            color: #3498db;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .dt-details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .dt-detail-item {
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            min-height: 60px; /* ALTURA MÍNIMA PARA ITENS DE DETALHES */
+        }
+        
+        .dt-detail-label {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+        
+        .dt-detail-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .dt-operation-type {
+            font-size: 12px;
+            background: #e8f5e9;
+            color: #388e3c;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        
+        .dt-vehicle-type {
+            font-size: 12px;
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        
+        .dt-time-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #666;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        
+        .dt-duration {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        
+        .no-completed-data {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .no-completed-data .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        
+        .no-completed-data h4 {
+            margin: 10px 0;
+            color: #666;
+        }
+        
+        .no-completed-data p {
+            font-size: 14px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        
         /* MODAL */
         .unit-modal {
             display: none;
@@ -807,6 +1019,14 @@
             }
             
             .time-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .completed-dts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .dt-details-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -989,6 +1209,70 @@
             </div>
         </div>
 
+        <!-- SEÇÃO DE DTs FINALIZADAS HOJE -->
+        <div class="completed-dts-section">
+            <div class="section-toggle" id="completedDtsToggle">
+                <h3>
+                    <span>✅ DTs Finalizadas Hoje - Todas as Unidades</span>
+                    <span class="toggle-arrow">▼</span>
+                </h3>
+                <div style="font-size: 12px; color: #666; display: flex; align-items: center; gap: 10px;">
+                    <span id="totalCompletedCount">0</span> DTs encontradas
+                </div>
+            </div>
+            
+            <div class="completed-dts-content" id="completedDtsContent">
+                <div class="filters-row" style="margin-bottom: 15px;">
+                    <div class="filter-group">
+                        <label class="filter-label">Data:</label>
+                        <input type="date" id="filterDate" class="filter-input">
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Tipo de Operação:</label>
+                        <select id="filterOperationType" class="filter-select">
+                            <option value="all">Todos os tipos</option>
+                            <option value="carregamento">Carregamento</option>
+                            <option value="carregamento_Paletizado">Carregamento Paletizado</option>
+                            <option value="descarga">Descarga</option>
+                            <option value="separacao">Separação</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Tipo de Veículo:</label>
+                        <select id="filterVehicleType" class="filter-select">
+                            <option value="all">Todos os tipos</option>
+                            <option value="carreta">Carreta</option>
+                            <option value="truck">Truck</option>
+                            <option value="bitruck">Bitruck</option>
+                            <option value="vuc">VUC</option>
+                            <option value="carroceria">Carroceria</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Filtrar Unidade:</label>
+                        <select id="filterUnit" class="filter-select">
+                            <option value="all">Todas as unidades</option>
+                            <!-- Unidades serão preenchidas dinamicamente -->
+                        </select>
+                    </div>
+                    <button id="refreshCompleted" class="btn-compare" style="background: #4CAF50; padding: 10px 15px; height: fit-content;">
+                        🔄 Atualizar
+                    </button>
+                </div>
+                
+                <div class="completed-dts-container" id="completedDtsContainer">
+                    <div class="loading" style="padding: 40px;">
+                        <div class="loading-spinner"></div>
+                        <p style="text-align: center; margin-top: 10px; color: #666;">Carregando DTs finalizadas...</p>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 15px; font-size: 12px; color: #666; text-align: center;">
+                    Atualizado em: <span id="lastCompletedUpdate">--:--:--</span>
+                </div>
+            </div>
+        </div>
+
         <!-- DASHBOARD GRID -->
         <div class="dashboard-grid">
             <!-- SEÇÃO PRINCIPAL: UNIDADES -->
@@ -1111,8 +1395,9 @@
         let unitsData = {};
         let allUnitsList = [];
         let operationsData = [];
-        let waitingCarsData = {}; // Carros APENAS aguardando (em doca)
-        let loadingCarsData = {}; // Carros em carregamento (em operação)
+        let waitingCarsData = {};
+        let loadingCarsData = {};
+        let completedDTsData = [];
         let realTimeListeners = [];
         
         // Elementos da interface
@@ -1132,6 +1417,14 @@
         const compareUnit2 = document.getElementById('compareUnit2');
         const btnCompare = document.getElementById('btnCompare');
         const compareContainer = document.getElementById('compareContainer');
+        const filterDate = document.getElementById('filterDate');
+        const filterOperationType = document.getElementById('filterOperationType');
+        const filterVehicleType = document.getElementById('filterVehicleType');
+        const filterUnit = document.getElementById('filterUnit');
+        const refreshCompleted = document.getElementById('refreshCompleted');
+        const completedDtsToggle = document.getElementById('completedDtsToggle');
+        const completedDtsContent = document.getElementById('completedDtsContent');
+        const totalCompletedCount = document.getElementById('totalCompletedCount');
 
         // Inicialização
         auth.onAuthStateChanged((user) => {
@@ -1156,12 +1449,15 @@
                             setupRealTimeListeners();
                             setupTabs();
                             setupCompareListeners();
+                            setupCompletedDTsListeners();
                             
-                            // Atualizar dados principais
+                            // Carregar dados principais
                             loadAllUnitsData();
+                            loadCompletedDTs();
                             
                             // Atualizar a cada 30 segundos
                             setInterval(loadAllUnitsData, 30000);
+                            setInterval(loadCompletedDTs, 60000);
                         });
                         
                     }
@@ -1189,6 +1485,19 @@
             });
         }
 
+        // Configurar toggle para DTs finalizadas
+        function setupCompletedDTsToggle() {
+            completedDtsToggle.addEventListener('click', () => {
+                completedDtsToggle.classList.toggle('expanded');
+                completedDtsContent.classList.toggle('expanded');
+                
+                // Se está expandindo, carregar dados se necessário
+                if (completedDtsToggle.classList.contains('expanded') && completedDTsData.length === 0) {
+                    loadCompletedDTs();
+                }
+            });
+        }
+
         // Configurar listeners para comparação
         function setupCompareListeners() {
             [compareUnit1, compareUnit2].forEach(select => {
@@ -1207,6 +1516,23 @@
             });
         }
 
+        // Configurar listeners para DTs finalizadas
+        function setupCompletedDTsListeners() {
+            // Configurar data atual (ajustada para mostrar dados do dia atual)
+            const today = new Date();
+            filterDate.value = today.toISOString().split('T')[0];
+            
+            // Adicionar listeners aos filtros
+            filterDate.addEventListener('change', loadCompletedDTs);
+            filterOperationType.addEventListener('change', filterCompletedDTs);
+            filterVehicleType.addEventListener('change', filterCompletedDTs);
+            filterUnit.addEventListener('change', filterCompletedDTs);
+            refreshCompleted.addEventListener('click', loadCompletedDTs);
+            
+            // Configurar toggle
+            setupCompletedDTsToggle();
+        }
+
         // Carregar lista de unidades RÁPIDO
         async function loadUnitsList() {
             try {
@@ -1214,25 +1540,42 @@
                 
                 // Buscar unidades de forma mais rápida
                 const operationsSnapshot = await db.collection('operations')
-                    .limit(100) // Limitar para carregar mais rápido
+                    .limit(100)
                     .get();
                 
                 const unitsSet = new Set();
                 
                 operationsSnapshot.forEach(doc => {
                     const data = doc.data();
-                    if (data.unit) unitsSet.add(data.unit);
+                    if (data.unit && data.unit !== "Unidade John Deere") { // FILTRO: Excluir John Deere
+                        unitsSet.add(data.unit);
+                    }
                 });
                 
                 allUnitsList = Array.from(unitsSet);
-                console.log("Unidades encontradas:", allUnitsList);
+                console.log("Unidades encontradas (excluindo John Deere):", allUnitsList);
                 
                 // Preencher selects de comparação
                 populateCompareSelects();
                 
+                // Preencher select de filtro de unidade
+                populateUnitFilterSelect();
+                
             } catch (error) {
                 console.error("Erro ao carregar lista de unidades:", error);
             }
+        }
+
+        // Preencher select de filtro de unidade
+        function populateUnitFilterSelect() {
+            filterUnit.innerHTML = '<option value="all">Todas as unidades</option>';
+            
+            allUnitsList.forEach(unitName => {
+                const option = document.createElement('option');
+                option.value = unitName;
+                option.textContent = unitName;
+                filterUnit.appendChild(option);
+            });
         }
 
         // Preencher selects de comparação
@@ -1415,7 +1758,7 @@
                 const operationsSnapshot = await db.collection('operations')
                     .where('createdAt', '>=', dateRange.start)
                     .where('createdAt', '<=', dateRange.end)
-                    .limit(1000) // Limitar para carregar mais rápido
+                    .limit(1000)
                     .get();
                 
                 operationsData = operationsSnapshot.docs.map(doc => ({
@@ -1472,9 +1815,9 @@
                             avgTime: avgTime,
                             efficiency: calculateEfficiency(avgTime),
                             totalTons: totalTons,
-                            avgMix: avgMix, // Média de TODAS as operações
-                            carsWaiting: waitingCars.length, // Sem /11
-                            carsLoading: loadingCars.length, // Com /11
+                            avgMix: avgMix,
+                            carsWaiting: waitingCars.length,
+                            carsLoading: loadingCars.length,
                             loadingWithTotal: loadingWithTotal,
                             loadingPercentage: loadingPercentage,
                             totalDocks: 11,
@@ -1497,6 +1840,289 @@
             } catch (error) {
                 console.error("Erro ao carregar dados:", error);
             }
+        }
+
+        // Carregar DTs finalizadas - VERSÃO CORRIGIDA DEFINITIVA
+        async function loadCompletedDTs() {
+            try {
+                const container = document.getElementById('completedDtsContainer');
+                container.innerHTML = `
+                    <div class="loading" style="padding: 40px;">
+                        <div class="loading-spinner"></div>
+                        <p style="text-align: center; margin-top: 10px; color: #666;">Carregando DTs finalizadas...</p>
+                    </div>
+                `;
+                
+                // Obter data do filtro
+                const selectedDate = filterDate.value;
+                const operationType = filterOperationType.value;
+                const vehicleType = filterVehicleType.value;
+                const selectedUnit = filterUnit.value;
+                
+                // CORREÇÃO DEFINITIVA: Converter data considerando fuso horário brasileiro (GMT-3)
+                const dateParts = selectedDate.split('-');
+                const year = parseInt(dateParts[0]);
+                const month = parseInt(dateParts[1]) - 1; // JavaScript: Janeiro = 0
+                const day = parseInt(dateParts[2]);
+                
+                console.log(`=== FILTRO DE DATA ===`);
+                console.log(`Data selecionada: ${selectedDate}`);
+                console.log(`Dia: ${day}, Mês: ${month + 1}, Ano: ${year}`);
+                
+                // Criar datas considerando fuso horário de Brasília (GMT-3)
+                // Início do dia em Brasília (00:00:00 GMT-3)
+                const startDate = new Date(year, month, day, 0, 0, 0, 0);
+                // Ajustar para UTC: adicionar 3 horas
+                const startDateUTC = new Date(startDate.getTime() + (3 * 60 * 60 * 1000));
+                
+                // Fim do dia em Brasília (23:59:59.999 GMT-3)
+                const endDate = new Date(year, month, day, 23, 59, 59, 999);
+                // Ajustar para UTC: adicionar 3 horas
+                const endDateUTC = new Date(endDate.getTime() + (3 * 60 * 60 * 1000));
+                
+                console.log(`Início local (Brasília): ${startDate.toLocaleString('pt-BR')}`);
+                console.log(`Início UTC: ${startDateUTC.toISOString()}`);
+                console.log(`Fim local (Brasília): ${endDate.toLocaleString('pt-BR')}`);
+                console.log(`Fim UTC: ${endDateUTC.toISOString()}`);
+                
+                // Buscar operações finalizadas no intervalo UTC
+                let query = db.collection('operations')
+                    .where('status', '==', 'completed')
+                    .where('endTime', '>=', startDateUTC)
+                    .where('endTime', '<=', endDateUTC);
+                
+                const snapshot = await query.get();
+                
+                completedDTsData = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                console.log(`Total encontrado: ${completedDTsData.length} DTs`);
+                
+                // DEBUG: Verificar as datas encontradas
+                completedDTsData.forEach((dt, index) => {
+                    if (dt.endTime) {
+                        const endTimeDate = dt.endTime.toDate();
+                        const endTimeLocal = new Date(endTimeDate.getTime());
+                        const endTimeUTC = endTimeDate.toISOString();
+                        
+                        console.log(`DT ${index + 1}: ${dt.dockNumber || 'N/A'} - 
+                                   Local: ${endTimeLocal.toLocaleString('pt-BR')} - 
+                                   UTC: ${endTimeUTC} - 
+                                   Unidade: ${dt.unit || 'N/A'}`);
+                    }
+                });
+                
+                // Aplicar filtros adicionais
+                filterCompletedDTs();
+                
+                // Atualizar timestamp
+                document.getElementById('lastCompletedUpdate').textContent = new Date().toLocaleTimeString('pt-BR');
+                
+            } catch (error) {
+                console.error("Erro ao carregar DTs finalizadas:", error);
+                document.getElementById('completedDtsContainer').innerHTML = `
+                    <div class="no-completed-data">
+                        <div class="icon">⚠️</div>
+                        <h4>Erro ao carregar dados</h4>
+                        <p>Ocorreu um erro ao carregar as DTs finalizadas. Tente novamente.</p>
+                        <p style="color: #f44336; margin-top: 10px; font-size: 12px;">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Filtrar DTs finalizadas
+        function filterCompletedDTs() {
+            const operationType = filterOperationType.value;
+            const vehicleType = filterVehicleType.value;
+            const selectedUnit = filterUnit.value;
+            
+            let filteredDTs = completedDTsData;
+            
+            // Filtrar por tipo de operação
+            if (operationType !== 'all') {
+                filteredDTs = filteredDTs.filter(dt => dt.type === operationType);
+            }
+            
+            // Filtrar por tipo de veículo
+            if (vehicleType !== 'all') {
+                filteredDTs = filteredDTs.filter(dt => dt.vehicleType === vehicleType);
+            }
+            
+            // Filtrar por unidade (excluir John Deere sempre)
+            filteredDTs = filteredDTs.filter(dt => dt.unit !== "Unidade John Deere");
+            
+            // Filtrar por unidade selecionada
+            if (selectedUnit !== 'all') {
+                filteredDTs = filteredDTs.filter(dt => dt.unit === selectedUnit);
+            }
+            
+            // Atualizar contador
+            totalCompletedCount.textContent = filteredDTs.length;
+            
+            // Atualizar display
+            updateCompletedDTsDisplay(filteredDTs);
+        }
+
+        // Atualizar display de DTs finalizadas
+        function updateCompletedDTsDisplay(dts) {
+            const container = document.getElementById('completedDtsContainer');
+            const lastCompletedUpdate = document.getElementById('lastCompletedUpdate');
+            
+            lastCompletedUpdate.textContent = new Date().toLocaleTimeString('pt-BR');
+            
+            if (dts.length === 0) {
+                container.innerHTML = `
+                    <div class="no-completed-data">
+                        <div class="icon">📭</div>
+                        <h4>Nenhuma DT finalizada encontrada</h4>
+                        <p>Não foram encontradas DTs finalizadas para a data e filtros selecionados.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Ordenar por horário de término (mais recente primeiro)
+            dts.sort((a, b) => {
+                const timeA = a.endTime ? a.endTime.toDate().getTime() : 0;
+                const timeB = b.endTime ? b.endTime.toDate().getTime() : 0;
+                return timeB - timeA;
+            });
+            
+            // Criar grid de cards
+            const grid = document.createElement('div');
+            grid.className = 'completed-dts-grid';
+            grid.id = 'completedDtsGrid';
+            
+            container.innerHTML = '';
+            container.appendChild(grid);
+            
+            dts.forEach(dt => {
+                const card = createDTCompletedCard(dt);
+                grid.appendChild(card);
+            });
+            
+            // CORREÇÃO: Forçar redimensionamento para evitar cards cortados
+            setTimeout(() => {
+                if (completedDtsContent.classList.contains('expanded')) {
+                    const containerHeight = container.scrollHeight;
+                    completedDtsContent.style.maxHeight = containerHeight + 100 + 'px';
+                }
+            }, 100);
+        }
+
+        // Criar card de DT finalizada - VERSÃO CORRIGIDA
+        function createDTCompletedCard(dt) {
+            const card = document.createElement('div');
+            card.className = 'completed-dt-card';
+            
+            // Calcular duração
+            let duration = 'N/A';
+            if (dt.startTime && dt.endTime) {
+                try {
+                    const start = dt.startTime.toDate();
+                    const end = dt.endTime.toDate();
+                    const diffMs = end - start;
+                    const diffMins = Math.floor(diffMs / (1000 * 60));
+                    const hours = Math.floor(diffMins / 60);
+                    const minutes = diffMins % 60;
+                    duration = `${hours}h ${minutes.toString().padStart(2, '0')}min`;
+                } catch (error) {
+                    console.error('Erro ao calcular duração:', error);
+                }
+            }
+            
+            // Formatar horários - CORREÇÃO: Converter UTC para fuso local
+            let startTime = 'N/A';
+            let endTime = 'N/A';
+            let date = 'N/A';
+            
+            if (dt.endTime) {
+                try {
+                    const endDate = dt.endTime.toDate();
+                    // Converter UTC para fuso local
+                    const localDate = new Date(endDate.getTime());
+                    endTime = localDate.toLocaleTimeString('pt-BR').slice(0,5);
+                    date = localDate.toLocaleDateString('pt-BR');
+                } catch (error) {
+                    console.error('Erro ao formatar data fim:', error);
+                }
+            }
+            
+            if (dt.startTime) {
+                try {
+                    const startDate = dt.startTime.toDate();
+                    // Converter UTC para fuso local
+                    const localDate = new Date(startDate.getTime());
+                    startTime = localDate.toLocaleTimeString('pt-BR').slice(0,5);
+                } catch (error) {
+                    console.error('Erro ao formatar data início:', error);
+                }
+            }
+            
+            // Mapear tipo de operação para nome amigável
+            const operationTypes = {
+                'carregamento': 'Carregamento',
+                'carregamento_Paletizado': 'Carregamento Paletizado',
+                'descarga': 'Descarga',
+                'separacao': 'Separação',
+                'shipment': 'Shipment'
+            };
+            
+            const operationName = operationTypes[dt.type] || dt.type || 'N/A';
+            
+            // Mapear tipo de veículo para nome amigável
+            const vehicleTypes = {
+                'carreta': 'Carreta',
+                'truck': 'Truck',
+                'bitruck': 'Bitruck',
+                'vuc': 'VUC',
+                'carroceria': 'Carroceria',
+                'bitrem': 'Bitrem',
+                'toco': 'Toco'
+            };
+            
+            const vehicleName = vehicleTypes[dt.vehicleType] || dt.vehicleType || 'N/A';
+            
+            card.innerHTML = `
+                <div class="completed-dt-header">
+                    <div class="dt-number">DT: ${dt.dockNumber || 'N/A'}</div>
+                    <div class="dt-unidade">${dt.unit || 'N/A'}</div>
+                </div>
+                
+                <div class="dt-details-grid">
+                    <div class="dt-detail-item">
+                        <span class="dt-detail-label">📅 Data</span>
+                        <span class="dt-detail-value">${date}</span>
+                    </div>
+                    <div class="dt-detail-item">
+                        <span class="dt-detail-label">⏰ Início</span>
+                        <span class="dt-detail-value">${startTime}</span>
+                    </div>
+                    <div class="dt-detail-item">
+                        <span class="dt-detail-label">⏱️ Fim</span>
+                        <span class="dt-detail-value">${endTime}</span>
+                    </div>
+                    <div class="dt-detail-item">
+                        <span class="dt-detail-label">⏳ Duração</span>
+                        <span class="dt-detail-value">${duration}</span>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 8px;">
+                    <div class="dt-operation-type">${operationName}</div>
+                    <div class="dt-vehicle-type">${vehicleName}</div>
+                </div>
+                
+                <div class="dt-time-info">
+                    <span>Doca: ${dt.dock || 'N/A'}</span>
+                    <span class="dt-duration">Finalizada</span>
+                </div>
+            `;
+            
+            return card;
         }
 
         // Atualizar seção de resumo
